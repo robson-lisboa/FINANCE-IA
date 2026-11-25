@@ -3,6 +3,7 @@ import { Activity, ArrowDownRight, ArrowUpRight, Lightbulb, ShieldAlert, Trendin
 import FinancialAssistant from "./FinancialAssistant";
 import PurchaseSimulator from "./PurchaseSimulator";
 import FinancialStressTest from "./FinancialStressTest";
+import InvestigationPanel from "./InvestigationPanel";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; accessToken: string };
@@ -91,6 +92,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     <FinancialAssistant accessToken={accessToken}/>
     <PurchaseSimulator transactions={transactions} formatMoney={formatMoney}/>
     <FinancialStressTest transactions={transactions} formatMoney={formatMoney}/>
+    <InvestigationPanel transactions={transactions} formatMoney={formatMoney}/>
     <div className="panel predictive-panel">
       <div className="panel-heading"><div><h2>Plano inteligente até o fim do mês</h2><p>Limite diário calculado com o saldo dos lançamentos registrados</p></div><TrendingUp size={18} className="subtle-icon"/></div>
       <div className="predictive-kpis">
