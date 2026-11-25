@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -20,8 +20,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
+      - name: Synchronize dependency lockfile
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Commit synchronized lockfile
+        run: |
+          if ! git diff --quiet -- package-lock.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add package-lock.json
+            git commit -m "chore: synchronize npm lockfile"
+            git push
+          fi
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
       - name: Run automated tests
         run: npm test
       - name: Check TypeScript and build Vite
