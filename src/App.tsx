@@ -5,7 +5,7 @@ import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, read
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
   CircleHelp, Download, LayoutDashboard, Lightbulb, Menu, Plus, Search,
-  Settings, Target, TrendingUp, Wallet, X, Trash2, Sparkles, FileText
+  Settings, Target, TrendingUp, Wallet, X, Trash2, Sparkles, FileText, Pencil, CheckCircle2
 } from "lucide-react";
 import {
   Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis
@@ -97,6 +97,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   });
   const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "goals", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -209,15 +210,34 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     return months.map(({ month, income, expenses }) => ({ month, income, expenses }));
   }, [transactions]);
 
+  const openNewTransaction = () => {
+    setEditingId(null);
+    setForm({ title: "", category: "Outros", date: today, amount: "", type: "expense" });
+    setModalOpen(true);
+  };
+
+  const openEditTransaction = (transaction: Transaction) => {
+    setEditingId(transaction.id);
+    setForm({ title: transaction.title, category: transaction.category, date: transaction.date, amount: String(transaction.amount).replace(".", ","), type: transaction.type });
+    setModalOpen(true);
+  };
+
   const addTransaction = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = Number(form.amount.replace(",", "."));
     if (!cloudLoaded || !form.title.trim() || !Number.isFinite(amount) || amount <= 0) return;
     setCloudError("");
     try {
-      const saved = await insertTransactions(session, [{ title: form.title.trim(), category: form.category, date: form.date, amount, type: form.type }]);
-      setTransactions(current => [saved[0], ...current]);
+      const payload = { title: form.title.trim(), category: form.category, date: form.date, amount, type: form.type };
+      if (editingId) {
+        const saved = await updateTransactionInCloud(session, editingId, payload);
+        setTransactions(current => current.map(transaction => transaction.id === editingId ? saved : transaction));
+      } else {
+        const saved = await insertTransactions(session, [payload]);
+        setTransactions(current => [saved[0], ...current]);
+      }
       setForm({ title: "", category: "Outros", date: today, amount: "", type: "expense" });
+      setEditingId(null);
       setModalOpen(false);
     } catch (error) {
       setCloudError(error instanceof Error ? error.message : "Não foi possível salvar o lançamento na nuvem.");
@@ -302,7 +322,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <div className="topbar-actions">
             <div className="date-chip"><CalendarDays size={15}/> {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</div>
             <button className="icon-btn notification-btn" aria-label="Notificações"><Bell size={18}/><i/></button>
-            <button className="primary-btn top-add" onClick={() => setModalOpen(true)}><Plus size={17}/> Novo lançamento</button>
+            <button className="primary-btn top-add" onClick={openNewTransaction}><Plus size={17}/> Novo lançamento</button>
           </div>
         </header>
 
@@ -345,7 +365,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <section className="page-section">
             <div className="page-heading">
               <div><p className="eyebrow">CONTROLE DE MOVIMENTAÇÕES</p><h1>Lançamentos</h1><p className="muted-text">Consulte, pesquise e organize todas as suas receitas e despesas.</p></div>
-              <div className="transaction-actions"><button className="outline-btn" onClick={() => setInvoiceOpen(true)}><FileText size={16}/> Importar fatura</button> <button className="primary-btn" onClick={() => setModalOpen(true)}><Plus size={16}/> Novo lançamento</button></div>
+              <div className="transaction-actions"><button className="outline-btn" onClick={() => setInvoiceOpen(true)}><FileText size={16}/> Importar fatura</button> <button className="primary-btn" onClick={openNewTransaction}><Plus size={16}/> Novo lançamento</button></div>
             </div>
             <div className="panel transactions-panel full-page-panel">
               <div className="table-tools">
@@ -358,6 +378,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                     <div className={`transaction-icon ${t.type}`}>{t.type === "income" ? <ArrowDownLeft size={17}/> : <ArrowUpRight size={17}/>}</div>
                     <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}</span></div>
                     <strong className={`transaction-amount ${t.type}`}>{t.type === "income" ? "+" : "−"} {formatMoney(t.amount)}</strong>
+                    <button className="edit-btn" onClick={() => openEditTransaction(t)} title="Editar lançamento" aria-label={`Editar ${t.title}`}><Pencil size={15}/></button>
                     <button className="delete-btn" onClick={() => deleteTransaction(t.id)} title="Excluir lançamento" aria-label={`Excluir ${t.title}`}><Trash2 size={15}/></button>
                   </div>
                 ))}
@@ -460,7 +481,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
         <section className="lower-grid">
           <div className="panel transactions-panel" id="transactions">
-            <div className="panel-heading transactions-heading"><div><h2>Últimos lançamentos</h2><p>Consulte e organize suas movimentações.</p></div><button className="text-btn" onClick={() => setModalOpen(true)}>Adicionar novo <Plus size={15}/></button></div>
+            <div className="panel-heading transactions-heading"><div><h2>Últimos lançamentos</h2><p>Consulte e organize suas movimentações.</p></div><button className="text-btn" onClick={openNewTransaction}>Adicionar novo <Plus size={15}/></button></div>
             <div className="table-tools"><div className="search-box"><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar lançamento..."/></div><div className="filter-tabs"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "income" ? "selected" : ""} onClick={() => setFilter("income")}>Receitas</button><button className={filter === "expense" ? "selected" : ""} onClick={() => setFilter("expense")}>Despesas</button></div></div>
             <div className="transaction-list">
               {filtered.length === 0 ? <div className="empty-state"><FileText size={24}/><strong>Nenhum lançamento encontrado</strong><span>Adicione uma movimentação ou altere sua busca.</span></div> : filtered.slice(0, 8).map(t => (
@@ -468,6 +489,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                   <div className={`transaction-icon ${t.type}`}>{t.type === "income" ? <ArrowDownLeft size={17}/> : <ArrowUpRight size={17}/>}</div>
                   <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}</span></div>
                   <strong className={`transaction-amount ${t.type}`}>{t.type === "income" ? "+" : "−"} {formatMoney(t.amount)}</strong>
+                  <button className="edit-btn" onClick={() => openEditTransaction(t)} title="Editar lançamento" aria-label={`Editar ${t.title}`}><Pencil size={15}/></button>
                   <button className="delete-btn" onClick={() => deleteTransaction(t.id)} title="Excluir lançamento" aria-label={`Excluir ${t.title}`}><Trash2 size={15}/></button>
                 </div>
               ))}
@@ -507,12 +529,12 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       </div>}
       {modalOpen && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModalOpen(false); }}>
         <form className="modal" onSubmit={addTransaction}>
-          <div className="modal-heading"><div><span className="eyebrow">MOVIMENTAÇÃO FINANCEIRA</span><h2>Novo lançamento</h2></div><button type="button" className="icon-btn" onClick={() => setModalOpen(false)} aria-label="Fechar"><X size={19}/></button></div>
+          <div className="modal-heading"><div><span className="eyebrow">MOVIMENTAÇÃO FINANCEIRA</span><h2>{editingId ? "Editar lançamento" : "Novo lançamento"}</h2></div><button type="button" className="icon-btn" onClick={() => setModalOpen(false)} aria-label="Fechar"><X size={19}/></button></div>
           <div className="type-switch"><button type="button" className={form.type === "expense" ? "active expense-tab" : ""} onClick={() => setForm({ ...form, type: "expense" })}>Despesa</button><button type="button" className={form.type === "income" ? "active income-tab" : ""} onClick={() => setForm({ ...form, type: "income" })}>Receita</button></div>
           <label>Descrição<input required autoFocus placeholder="Ex.: Compra de materiais" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}/></label>
           <div className="form-two"><label>Valor ({settings.currency})<input required inputMode="decimal" placeholder="0,00" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}/></label><label>Data<input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}/></label></div>
           <label>Categoria<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{(form.type === "income" ? ["Salário", "Serviços", "Vendas", "Investimentos", "Outros"] : ["Alimentação", "Moradia", "Transporte", "Saúde", "Educação", "Lazer", "Serviços", "Outros"]).map(c => <option key={c}>{c}</option>)}</select></label>
-          <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setModalOpen(false)}>Cancelar</button><button type="submit" className="primary-btn" disabled={!cloudLoaded || cloudBusy}><Plus size={16}/> Salvar lançamento</button></div>
+          <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => { setModalOpen(false); setEditingId(null); }}>Cancelar</button><button type="submit" className="primary-btn" disabled={!cloudLoaded || cloudBusy}>{editingId ? <><CheckCircle2 size={16}/> Salvar alterações</> : <><Plus size={16}/> Salvar lançamento</>}</button></div>
         </form>
       </div>}
     </div>
