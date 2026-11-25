@@ -4,6 +4,7 @@ import InvoiceImporter from "./InvoiceImporter";
 import GoalsManager from "./GoalsManager";
 import FinancialDiagnosis from "./FinancialDiagnosis";
 import PlanningCenter from "./PlanningCenter";
+import ProactiveAdvisor from "./ProactiveAdvisor";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
@@ -448,13 +449,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <div className="chart-note"><span className="note-dot"/> <span>{transactions.length === 0 ? "Ainda não há lançamentos. Adicione receitas e despesas para construir seu histórico." : "Este gráfico é atualizado automaticamente com os lançamentos cadastrados."}</span></div>
           </div>
 
-          <div className="panel insight-panel" id="insights">
-            <div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Análise inteligente</h2><p>Resumo automático dos seus dados</p></div></div>
-            <div className="insight-highlight"><span className="insight-label">VISÃO DO SEU DINHEIRO</span><strong>{monthlyTotals.balance >= 0 ? "Seu resultado do mês está positivo." : "Atenção: resultado mensal negativo."}</strong><p>{monthlyTotals.balance >= 0 ? `As receitas registradas superam as despesas em ${formatMoney(monthlyTotals.balance)} neste mês.` : `As despesas registradas superam as receitas em ${formatMoney(Math.abs(monthlyTotals.balance))} neste mês. Revise seus gastos.`}</p></div>
-            <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} · ${formatMoney(topCategory[1])}` : "Adicione despesas para visualizar."}</p></div></div>
-            <div className="insight-row"><div className="mini-icon green"><TrendingUp size={16}/></div><div><strong>Taxa de economia</strong><p>{savingsRate.toFixed(1).replace(".", ",")}% das receitas permanecem no saldo.</p></div></div>
-            <div className="insight-disclaimer">Considera {monthlyTotals.count} lançamento(s) de {currentTime.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}. Resultado contábil dos registros, não saldo bancário nem dinheiro disponível. Análise informativa.</div>
-          </div>
+          <ProactiveAdvisor transactions={transactions} formatMoney={formatMoney}/>
         </section>
 
         <section className="lower-grid">
