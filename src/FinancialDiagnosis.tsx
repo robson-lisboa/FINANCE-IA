@@ -10,7 +10,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney }: Props)
     const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const previousDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const previousKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
-    const valid = transactions.filter(t => /^\\d{4}-\\d{2}-\\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)));
+    const valid = transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)));
     const sum = (items: Transaction[], type: "income" | "expense") => items.filter(t => t.type === type).reduce((total, t) => total + Number(t.amount), 0);
     const current = valid.filter(t => t.date.startsWith(currentKey));
     const previous = valid.filter(t => t.date.startsWith(previousKey));
