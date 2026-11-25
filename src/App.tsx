@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
+import InvoiceImporter from "./InvoiceImporter";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
@@ -96,6 +97,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   });
   const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "goals", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
+  const [invoiceOpen, setInvoiceOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | Kind>("all");
@@ -343,7 +345,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <section className="page-section">
             <div className="page-heading">
               <div><p className="eyebrow">CONTROLE DE MOVIMENTAÇÕES</p><h1>Lançamentos</h1><p className="muted-text">Consulte, pesquise e organize todas as suas receitas e despesas.</p></div>
-              <button className="primary-btn" onClick={() => setModalOpen(true)}><Plus size={16}/> Novo lançamento</button>
+              <div className="transaction-actions"><button className="outline-btn" onClick={() => setInvoiceOpen(true)}><FileText size={16}/> Importar fatura</button> <button className="primary-btn" onClick={() => setModalOpen(true)}><Plus size={16}/> Novo lançamento</button></div>
             </div>
             <div className="panel transactions-panel full-page-panel">
               <div className="table-tools">
@@ -488,6 +490,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         )}
       </main>
 
+      {invoiceOpen && <InvoiceImporter onClose={() => setInvoiceOpen(false)} onImport={async rows => { const existing = new Set(transactions.filter(t => t.type === "expense").map(t => `${t.title.toLowerCase()}|${t.date}|${t.amount.toFixed(2)}`)); const fresh = rows.filter(row => !existing.has(`${row.title.toLowerCase()}|${row.date}|${row.amount.toFixed(2)}`)); if (!fresh.length) throw new Error("Essas compras já existem nos seus lançamentos. Nenhuma duplicidade foi importada."); const saved = await insertTransactions(session, fresh.map(row => ({ ...row, type: "expense" as Kind }))); setTransactions(current => [...saved, ...current]); }} />}
       {helpOpen && <div className="modal-backdrop help-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setHelpOpen(false); }}>
         <section className="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
           <div className="modal-heading">
