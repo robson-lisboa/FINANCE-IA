@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Activity, AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, ChevronDown, ChevronUp, Radar, Search, ShieldCheck, Sparkles } from "lucide-react";
+import { Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Radar, Search, ShieldCheck, Sparkles } from "lucide-react";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Finding = {
@@ -75,7 +75,7 @@ export default function CentralIntelligence({ transactions, formatMoney }: { tra
 
     const priority = { critical: 0, warning: 1, info: 2 };
     findings.sort((a, b) => priority[a.level] - priority[b.level]);
-    return { findings, currentCount: current.length, income, expenses, hasData: valid.length > 0 };
+    return { findings, currentCount: current.length, income, expenses, hasData: current.length > 0 };
   }, [transactions, formatMoney]);
 
   const levelLabel = (level: Finding["level"]) => level === "critical" ? "Atenção imediata" : level === "warning" ? "Vale investigar" : "Observação";
