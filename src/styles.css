@@ -115,3 +115,33 @@
 .goals-summary strong{font:700 15px Manrope,sans-serif;color:var(--text)}
 .theme-light .goals-page-panel h2{color:#202a3b}
 @media(max-width:600px){.goals-page-panel{padding:20px}.goals-summary{grid-template-columns:1fr}.full-page-panel .transaction-row{gap:8px}}
+
+
+.transaction-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.invoice-modal { width: min(620px, calc(100vw - 32px)); max-height: 88vh; overflow-y: auto; }
+.invoice-drop { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 9px; margin: 18px 0; padding: 28px 16px; border: 1px dashed var(--accent, #9a8cff); border-radius: 14px; background: rgba(154,140,255,.06); cursor: pointer; text-align: center; }
+.invoice-drop svg { color: var(--accent, #9a8cff); }
+.invoice-drop span, .invoice-footnote, .invoice-review-head span { color: var(--muted, #929bb0); font-size: 12px; }
+.invoice-drop input { max-width: 100%; margin-top: 6px; font-size: 12px; }
+.invoice-action { width: 100%; justify-content: center; margin-top: 12px; }
+.invoice-review { margin-top: 18px; }
+.invoice-review-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+.invoice-rows { max-height: 260px; overflow: auto; border: 1px solid var(--border, #303950); border-radius: 10px; }
+.invoice-row { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 11px 13px; border-bottom: 1px solid var(--border, #303950); }
+.invoice-row:last-child { border-bottom: 0; }
+.invoice-row div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.invoice-row strong { overflow-wrap: anywhere; font-size: 13px; }
+.invoice-row small { color: var(--muted, #929bb0); font-size: 11px; }
+.invoice-row b { white-space: nowrap; font-size: 13px; }
+.invoice-error { display: flex; align-items: center; gap: 7px; color: #f07883; font-size: 13px; }
+.invoice-footnote { line-height: 1.5; margin-top: 16px; }
+.invoice-success { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 24px 8px; text-align: center; }
+.invoice-success svg { color: #35c99a; }
+.invoice-success p { color: var(--muted, #929bb0); }
+.spin { animation: invoice-spin 1s linear infinite; }
+@keyframes invoice-spin { to { transform: rotate(360deg); } }
+@media (max-width: 560px) {
+  .transaction-actions { width: 100%; }
+  .transaction-actions > button { flex: 1; justify-content: center; }
+  .invoice-review-head { align-items: flex-start; flex-direction: column; }
+}
