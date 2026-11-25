@@ -89,6 +89,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       return initialTransactions;
     }
   });
+  const [currentTime, setCurrentTime] = useState(() => new Date());
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
       const saved = localStorage.getItem(SETTINGS_KEY);
@@ -111,6 +112,11 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const [cloudLoaded, setCloudLoaded] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [cloudError, setCloudError] = useState("");
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setCurrentTime(new Date()), 60_000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -319,10 +325,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
-            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", goals: "Metas financeiras", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">Bom dia! <span>Vamos cuidar do seu dinheiro.</span></div></div>
+            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", goals: "Metas financeiras", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span></div></div>
           </div>
           <div className="topbar-actions">
-            <div className="date-chip"><CalendarDays size={15}/> {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</div>
+            <div className="date-chip"><CalendarDays size={15}/> {currentTime.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</div>
             <button className="icon-btn notification-btn" aria-label="Notificações"><Bell size={18}/><i/></button>
             <button className="primary-btn top-add" onClick={openNewTransaction}><Plus size={17}/> Novo lançamento</button>
           </div>
