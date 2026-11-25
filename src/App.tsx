@@ -447,15 +447,15 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
         </section>
 
-        <section className="stats-grid">
+        {settings.widgets.stats && <section className="stats-grid">
           <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas registradas" />
           <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas neste mês" />
           <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas neste mês" />
           <StatCard title="Taxa de economia" value={savingsRate === null ? "—" : `${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Resultado sobre receitas do mês" />
-        </section>
+        </section>}
 
-        <section className="content-grid">
-          <div className="panel chart-panel">
+        {(settings.widgets.chart || settings.widgets.advisor) && <section className="content-grid" style={{ gridTemplateColumns: settings.widgets.chart && settings.widgets.advisor ? undefined : "minmax(0, 1fr)" }}>
+          {settings.widgets.chart && <div className="panel chart-panel">
             <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Receitas e despesas dos últimos 6 meses, calculadas pelos seus lançamentos</p></div><button className="select-chip">Últimos 6 meses <ChevronDown size={14}/></button></div>
             <div className="chart-legend"><span><i className="legend-income"/> Receitas</span><span><i className="legend-expense"/> Despesas</span></div>
             <div className="chart-wrap">
@@ -475,13 +475,13 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               </ResponsiveContainer>
             </div>
             <div className="chart-note"><span className="note-dot"/> <span>{transactions.length === 0 ? "Ainda não há lançamentos. Adicione receitas e despesas para construir seu histórico." : "Este gráfico é atualizado automaticamente com os lançamentos cadastrados."}</span></div>
-          </div>
+          </div>}
 
-          <ProactiveAdvisor transactions={transactions} formatMoney={formatMoney}/>
-        </section>
+          {settings.widgets.advisor && <ProactiveAdvisor transactions={transactions} formatMoney={formatMoney}/>}
+        </section>}
 
-        <section className="lower-grid">
-          <div className="panel transactions-panel" id="transactions">
+        {(settings.widgets.transactions || settings.widgets.categories) && <section className="lower-grid" style={{ gridTemplateColumns: settings.widgets.transactions && settings.widgets.categories ? undefined : "minmax(0, 1fr)" }}>
+          {settings.widgets.transactions && <div className="panel transactions-panel" id="transactions">
             <div className="panel-heading transactions-heading"><div><h2>Últimos lançamentos</h2><p>Consulte e organize suas movimentações.</p></div><button className="text-btn" onClick={openNewTransaction}>Adicionar novo <Plus size={15}/></button></div>
             <div className="table-tools"><div className="search-box"><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar lançamento..."/></div><div className="filter-tabs"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "income" ? "selected" : ""} onClick={() => setFilter("income")}>Receitas</button><button className={filter === "expense" ? "selected" : ""} onClick={() => setFilter("expense")}>Despesas</button></div></div>
             <div className="transaction-list">
@@ -495,9 +495,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                 </div>
               ))}
             </div>
-          </div>
+          </div>}
 
-          <div className="panel goals-panel" id="goals">
+          {settings.widgets.categories && <div className="panel goals-panel" id="goals">
             <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição dos gastos neste mês</p></div><Activity size={18} className="subtle-icon"/></div>
             {expenseByCategory.length === 0 ? <div className="empty-state compact">Adicione despesas para ver as categorias.</div> : <div className="category-list">{expenseByCategory.slice(0, 5).map(([category, amount], index) => {
               const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
@@ -505,8 +505,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{formatMoney(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
             })}</div>}
             <div className="category-footer"><span>Total de despesas</span><strong>{formatMoney(monthlyTotals.expenses)}</strong></div>
-          </div>
-        </section>
+          </div>}
+        </section>}
         </section>
         <footer className="footer"><span>© 2026 FINANCE IA</span><span>Organização financeira com clareza.</span><span>Versão 1.0 · Demonstração</span></footer>
         </>
