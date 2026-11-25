@@ -22,5 +22,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm install --no-audit --no-fund
+      - name: Run automated tests
+        run: npm test
       - name: Check TypeScript and build Vite
         run: npm run build
