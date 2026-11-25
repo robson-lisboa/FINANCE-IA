@@ -410,6 +410,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </div>
           </section>
         ) : (
+        <>
         <section className="page-section">
         <section className="page-heading">
           <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>Visão geral</h1><p className="muted-text">Acompanhe sua vida financeira em um só lugar.</p></div>
@@ -483,6 +484,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         </section>
         </section>
         <footer className="footer"><span>© 2026 FINANCE IA</span><span>Organização financeira com clareza.</span><span>Versão 1.0 · Demonstração</span></footer>
+        </>
         )}
       </main>
 
