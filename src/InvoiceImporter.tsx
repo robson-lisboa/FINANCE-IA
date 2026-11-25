@@ -142,7 +142,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
   const audit = useMemo(() => {
-    const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
     const existing = transactions.filter(item => item.type === "expense");
     const exactMatches = rows.filter(row => existing.some(item => normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
     const duplicateMap = new Map<string, InvoiceRow[]>();
@@ -151,7 +151,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
       duplicateMap.set(key, [...(duplicateMap.get(key) || []), row]);
     });
     const repeated = [...duplicateMap.values()].filter(group => group.length > 1);
-    const installmentRows = rows.filter(row => /parc|parcela|\\d{1,2}\\s*\\/\\s*\\d{1,2}/i.test(row.title));
+    const installmentRows = rows.filter(row => /parc|parcela|\d{1,2}\s*\/\s*\d{1,2}/i.test(row.title));
     const totalAlreadyRegistered = exactMatches.reduce((sum, row) => sum + row.amount, 0);
     return { exactMatches, repeated, installmentRows, totalAlreadyRegistered };
   }, [rows, transactions]);
