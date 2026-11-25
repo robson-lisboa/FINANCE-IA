@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { AlertTriangle, ArrowRight, CheckCircle2, ShieldCheck, Sparkles, Target } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ShieldCheck, Sparkles, Target } from "lucide-react";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
