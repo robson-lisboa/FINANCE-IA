@@ -1,4 +1,4 @@
-import { Calculator, Clock3, ShieldAlert } from "lucide-react";
+import { Calculator } from "lucide-react";
 import PurchaseSimulator from "./PurchaseSimulator";
 import FinancialTimeMachine from "./FinancialTimeMachine";
 import FinancialStressTest from "./FinancialStressTest";
