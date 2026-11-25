@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
 type InvoiceRow = { title: string; date: string; amount: number; category: string };
