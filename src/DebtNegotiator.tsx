@@ -30,9 +30,6 @@ export default function DebtNegotiator({ formatMoney }: Props) {
     current: simulatePayoff(debt, rate, payment),
     accelerated: simulatePayoff(debt, rate, payment + extra)
   } : null, [valid, debt, rate, payment, extra]);
-    current: simulatePayoff(debt, rate, payment),
-    accelerated: simulatePayoff(debt, rate, payment + extra)
-  } : null, [valid, debt, rate, payment, extra]);
   const savings = result && !result.current.impossible && !result.accelerated.impossible ? result.current.interest - result.accelerated.interest : null;
   return <section className="panel debt-negotiator">
     <div className="insight-title"><div className="ai-icon"><ShieldCheck size={18}/></div><div><h2>Estratégia para quitar dívidas</h2><p>Compare o pagamento atual com um valor mensal maior</p></div></div>
