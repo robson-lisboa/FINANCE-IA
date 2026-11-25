@@ -1,8 +1,15 @@
 import { useState } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { FormEvent } from "react";
 import { Bot, Send, Sparkles, User, LoaderCircle } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
+
+// Alguns modelos escapam caracteres Markdown mesmo quando o chat espera texto formatado.
+function normalizeMarkdown(value: string): string {
+  return value.replace(/\\\\([#|*_~>])/g, "$1");
+}
 
 export default function FinancialAssistant({ accessToken }: { accessToken: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,7 +50,7 @@ export default function FinancialAssistant({ accessToken }: { accessToken: strin
       <span className="ai-live-label"><i/> IA</span>
     </div>
     <div className="ai-chat-messages" aria-live="polite">
-      {messages.length === 0 ? <div className="ai-chat-welcome"><Sparkles size={22}/><strong>O que você quer entender sobre seu dinheiro?</strong><p>Pergunte sobre seus gastos, metas, faturas ou decisões de compra. A IA consulta os dados registrados na sua conta.</p><div className="ai-prompt-examples"><button type="button" onClick={() => setDraft("Analise minha situação financeira e aponte os principais riscos.")}>Analise minhas finanças</button><button type="button" onClick={() => setDraft("Quais são meus maiores gastos e o que merece atenção?")}>Onde estou gastando mais?</button><button type="button" onClick={() => setDraft("Posso assumir uma compra de R$ 1.500 sem comprometer minhas contas?")}>Posso fazer uma compra?</button></div></div> : messages.map((item, index) => <div className={`ai-chat-message ${item.role}`} key={index}><span className="ai-message-avatar">{item.role === "assistant" ? <Bot size={15}/> : <User size={15}/>}</span><div className="ai-message-content"><strong>{item.role === "assistant" ? "Finance IA" : "Você"}</strong><p>{item.content}</p></div></div>)}
+      {messages.length === 0 ? <div className="ai-chat-welcome"><Sparkles size={22}/><strong>O que você quer entender sobre seu dinheiro?</strong><p>Pergunte sobre seus gastos, metas, faturas ou decisões de compra. A IA consulta os dados registrados na sua conta.</p><div className="ai-prompt-examples"><button type="button" onClick={() => setDraft("Analise minha situação financeira e aponte os principais riscos.")}>Analise minhas finanças</button><button type="button" onClick={() => setDraft("Quais são meus maiores gastos e o que merece atenção?")}>Onde estou gastando mais?</button><button type="button" onClick={() => setDraft("Posso assumir uma compra de R$ 1.500 sem comprometer minhas contas?")}>Posso fazer uma compra?</button></div></div> : messages.map((item, index) => <div className={`ai-chat-message ${item.role}`} key={index}><span className="ai-message-avatar">{item.role === "assistant" ? <Bot size={15}/> : <User size={15}/>}</span><div className="ai-message-content"><strong>{item.role === "assistant" ? "Finance IA" : "Você"}</strong><div className="ai-markdown"><ReactMarkdown remarkPlugins={[remarkGfm]}>{normalizeMarkdown(item.content)}</ReactMarkdown></div></div></div>)}
       {busy && <div className="ai-chat-loading"><LoaderCircle size={16}/> Analisando seus dados...</div>}
     </div>
     {error && <p className="ai-chat-error" role="alert">{error}</p>}
