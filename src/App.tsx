@@ -82,6 +82,7 @@ const today = (() => {
 
 const initialTransactions: Transaction[] = [];function FinanceDashboard({ session, onSignOut }: { session: AuthSession; onSignOut: () => void }) {
   const accountStorageKey = STORAGE_KEY + "-" + session.user.id;
+  const settingsStorageKey = SETTINGS_KEY + "-" + session.user.id;
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem(accountStorageKey);
@@ -95,7 +96,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
-      return readSettings(localStorage.getItem(SETTINGS_KEY));
+      return readSettings(localStorage.getItem(settingsStorageKey));
     } catch {
       return DEFAULT_SETTINGS;
     }
@@ -166,7 +167,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   }, [transactions, cloudLoaded, accountStorageKey]);
 
   useEffect(() => {
-    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+    localStorage.setItem(settingsStorageKey, JSON.stringify(settings));
   }, [settings]);
 
   useEffect(() => {
@@ -462,14 +463,14 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 12, right: 8, left: -18, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b7cff" stopOpacity={0.28}/><stop offset="95%" stopColor="#8b7cff" stopOpacity={0}/></linearGradient>
+                    <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={settings.customAccent || ACCENT_COLORS[settings.accent]} stopOpacity={0.28}/><stop offset="95%" stopColor={settings.customAccent || ACCENT_COLORS[settings.accent]} stopOpacity={0}/></linearGradient>
                     <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#35c99a" stopOpacity={0.16}/><stop offset="95%" stopColor="#35c99a" stopOpacity={0}/></linearGradient>
                   </defs>
                   <CartesianGrid stroke="#242b3d" strokeDasharray="4 5" vertical={false}/>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 12 }}/>
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 11 }} tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: settings.currency, notation: "compact", maximumFractionDigits: 1 }).format(v)}/>
                   <Tooltip contentStyle={{ background: "#151c2d", border: "1px solid #303950", borderRadius: 12, color: "#f4f6fb" }} formatter={(value) => formatMoney(Number(value))}/>
-                  <Area type="monotone" dataKey="income" name="Receitas" stroke="#9a8cff" strokeWidth={2.5} fill="url(#incomeFill)"/>
+                  <Area type="monotone" dataKey="income" name="Receitas" stroke={settings.customAccent || ACCENT_COLORS[settings.accent]} strokeWidth={2.5} fill="url(#incomeFill)"/>
                   <Area type="monotone" dataKey="expenses" name="Despesas" stroke="#35c99a" strokeWidth={2.5} fill="url(#expenseFill)"/>
                 </AreaChart>
               </ResponsiveContainer>
@@ -524,7 +525,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <div className="help-topic"><strong>1. Cadastrar receitas e despesas</strong><p>Clique em “Novo lançamento”, escolha Receita ou Despesa, informe descrição, valor, data e categoria e depois selecione “Salvar lançamento”.</p></div>
           <div className="help-topic"><strong>2. Acompanhar seu saldo</strong><p>Na Visão geral, o saldo é calculado pelas receitas menos as despesas que você cadastrou. Os gráficos são atualizados com esses lançamentos.</p></div>
           <div className="help-topic"><strong>3. Consultar e filtrar lançamentos</strong><p>Use a busca para localizar uma movimentação e os filtros Todos, Receitas e Despesas para organizar a lista.</p></div>
-          <div className="help-topic"><strong>4. Personalizar o sistema</strong><p>Em Configurações, você pode alterar tema, cor principal e a forma de exibição da moeda. A moeda não converte os valores cadastrados.</p></div>
+          <div className="help-topic"><strong>4. Personalizar o sistema</strong><p>Em Configurações, você pode alterar tema, criar uma cor, ajustar texto e espaçamento e escolher quais blocos aparecem no painel. A moeda muda apenas a exibição, sem conversão.</p></div>
           <div className="help-note">Dica: seus lançamentos são sincronizados com sua conta na nuvem. Se aparecer uma mensagem de erro, confira sua conexão e tente novamente.</div>
         </section>
       </div>}
