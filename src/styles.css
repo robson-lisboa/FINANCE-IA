@@ -551,3 +551,33 @@
 .debt-warning{display:flex;align-items:flex-start;gap:7px;color:#f07883;font-size:10px;line-height:1.5}
 .debt-warning svg{flex:none;margin-top:1px}
 @media(max-width:600px){.debt-fields,.debt-scenarios{grid-template-columns:1fr}}
+
+
+/* Detector de desperdícios */
+.waste-detector{margin:0 0 20px}
+.waste-detector>.panel-heading{align-items:flex-start}
+.waste-detector>.panel-heading h2{margin:3px 0 4px}
+.waste-detector>.panel-heading p{margin:0;color:var(--muted);font-size:10px;line-height:1.5}
+.waste-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:14px 0}
+.waste-kpis>div{display:grid;gap:5px;padding:13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);min-width:0}
+.waste-kpis span,.waste-kpis small{font-size:10px;color:var(--muted)}
+.waste-kpis strong{font:800 clamp(18px,2.4vw,23px) Manrope,sans-serif;overflow-wrap:anywhere}
+.waste-savings{padding:13px;border:1px solid rgba(142,124,255,.28);border-radius:10px;background:var(--accent-soft)}
+.waste-savings>div>div{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.waste-savings strong{font-size:11px}
+.waste-savings b{font-size:13px;color:var(--accent)}
+.waste-savings input{width:100%;margin:12px 0 3px;accent-color:var(--accent)}
+.waste-savings p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.5}
+.waste-savings p strong{color:var(--text)}
+.waste-lists{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:14px}
+.waste-lists>div{padding:12px;border:1px solid var(--line);border-radius:10px;min-width:0}
+.waste-lists h3{display:flex;align-items:center;gap:7px;margin:0 0 7px;font-size:11px}
+.waste-lists h3 svg{color:var(--accent);flex:none}
+.waste-lists article{display:flex;justify-content:space-between;align-items:flex-start;gap:9px;padding:9px 0;border-top:1px solid var(--line)}
+.waste-lists article span{font-size:10px;min-width:0;overflow-wrap:anywhere}
+.waste-lists article small{display:block;margin-top:3px;color:var(--muted);font-size:9px}
+.waste-lists article b{font-size:10px;text-align:right;white-space:nowrap}
+.waste-empty{font-size:10px;color:var(--muted);line-height:1.5}
+.waste-detector>.insight-disclaimer{display:flex;align-items:flex-start;gap:6px}
+.waste-detector>.insight-disclaimer svg{flex:none;margin-top:1px}
+@media(max-width:650px){.waste-lists{grid-template-columns:1fr}.waste-kpis{grid-template-columns:1fr 1fr}.waste-savings>div>div{align-items:flex-start}}
