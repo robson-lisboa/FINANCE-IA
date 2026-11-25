@@ -82,3 +82,28 @@ O arquivo `render.yaml` também descreve essa configuração para Blueprint.
 4. Integrar pagamento e controle de assinatura.
 5. Substituir dados demonstrativos do gráfico por dados reais.
 6. Adicionar testes automatizados e validação de segurança.
+
+## Login e banco de dados na nuvem (Supabase)
+
+A aplicação já contém a tela de cadastro/login e a camada de acesso à API do Supabase. Para ativar a sincronização, é necessário conectar um projeto Supabase e configurar as variáveis no ambiente de publicação.
+
+### Configuração inicial
+
+1. Crie um projeto em [Supabase](https://supabase.com/dashboard).
+2. No projeto, abra **SQL Editor** e execute todo o conteúdo de `supabase/migrations/20261125000100_create_transactions.sql`.
+3. Em **Project Settings → API**, copie a URL do projeto e a chave pública **anon** (ou publishable key compatível).
+4. No Render, abra o serviço do frontend e adicione:
+   - `VITE_SUPABASE_URL`: URL do projeto Supabase.
+   - `VITE_SUPABASE_ANON_KEY`: chave pública do projeto.
+5. Salve e faça um novo deploy. As variáveis `VITE_*` são incorporadas durante o build do Vite.
+6. No Supabase, em **Authentication → URL Configuration**, configure a URL pública do site como Site URL e inclua a URL do Render nas Redirect URLs.
+
+### Segurança e migração
+
+- A tabela `public.transactions` exige autenticação e Row Level Security (RLS).
+- As políticas limitam leitura, inclusão, alteração e exclusão ao próprio `auth.uid()`.
+- A chave `service_role` nunca deve ser colocada no frontend nem nas variáveis `VITE_*`.
+- Ao entrar pela primeira vez, se houver lançamentos locais e a conta na nuvem estiver vazia, o aplicativo pede confirmação antes de importar. O backup local é mantido se a importação não for aceita.
+- Preferências visuais continuam salvas no navegador; lançamentos passam a ser lidos e gravados na nuvem após a conexão.
+
+**Importante:** o código está preparado, mas a autenticação e a sincronização só ficam ativas depois que o projeto Supabase e as variáveis do Render forem configurados.
