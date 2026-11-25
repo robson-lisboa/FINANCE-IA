@@ -1,4 +1,5 @@
-import { FormEvent, useState } from "react";
+import { useState } from "react";
+import type { FormEvent } from "react";
 import { Bot, Send, Sparkles, User, LoaderCircle } from "lucide-react";
 
 type Message = { role: "user" | "assistant"; content: string };
