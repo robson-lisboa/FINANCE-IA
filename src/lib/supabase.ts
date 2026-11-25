@@ -63,7 +63,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
 export async function signUp(email: string, password: string): Promise<{ session: AuthSession | null; needsEmailConfirmation: boolean }> {
   const result = await authRequest<AuthSession & { id?: string }>("signup", { email, password });
   if (result.access_token && result.refresh_token) {
-    const session = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + result.expires_in };
+    const session = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + (result.expires_in ?? 3600) };
     saveSession(session);
     return { session, needsEmailConfirmation: false };
   }
