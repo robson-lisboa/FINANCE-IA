@@ -6,6 +6,7 @@ import FinancialDiagnosis from "./FinancialDiagnosis";
 import PlanningCenter from "./PlanningCenter";
 import ProactiveAdvisor from "./ProactiveAdvisor";
 import { parseBrazilianMoney } from "./lib/money-core.js";
+import { DEFAULT_SETTINGS, readSettings, type AppSettings } from "./lib/preferences.js";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
@@ -29,8 +30,7 @@ type Transaction = {
 const STORAGE_KEY = "finance-ia-transactions-v1";
 const SETTINGS_KEY = "finance-ia-settings-v1";
 const LEGACY_BACKUP_KEY = "finance-ia-local-backup-before-cloud-v1";
-type AppSettings = { theme: "dark" | "light"; accent: "purple" | "blue" | "green" | "red"; currency: "BRL" | "USD" | "EUR" };
-const DEFAULT_SETTINGS: AppSettings = { theme: "dark", accent: "purple", currency: "BRL" };
+
 const ACCENT_COLORS: Record<AppSettings["accent"], string> = {
   purple: "#9a8cff", blue: "#55a6ff", green: "#35c99a", red: "#f07883"
 };
@@ -95,8 +95,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
-      const saved = localStorage.getItem(SETTINGS_KEY);
-      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+      return readSettings(localStorage.getItem(SETTINGS_KEY));
     } catch {
       return DEFAULT_SETTINGS;
     }
@@ -296,8 +295,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
   return (
     <div
-      className={`app-shell ${settings.theme === "light" ? "theme-light" : ""}`}
-      style={{ "--accent": ACCENT_COLORS[settings.accent], "--accent-soft": settings.accent === "purple" ? "#29264b" : settings.accent === "blue" ? "#1c3551" : settings.accent === "green" ? "#163c37" : "#432630" } as React.CSSProperties}
+      className={`app-shell ${settings.theme === "light" ? "theme-light" : ""} density-${settings.density} font-${settings.fontScale}`}
+      style={{ "--accent": settings.customAccent || ACCENT_COLORS[settings.accent], "--accent-soft": `color-mix(in srgb, ${settings.customAccent || ACCENT_COLORS[settings.accent]} 18%, transparent)` } as React.CSSProperties}
     >
       <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
         <div className="brand">
