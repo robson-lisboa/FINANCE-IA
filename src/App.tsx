@@ -1,4 +1,6 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import AuthScreen from "./AuthScreen";
+import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
   CircleHelp, Download, LayoutDashboard, Lightbulb, Menu, Plus, Search,
@@ -71,7 +73,7 @@ const today = (() => {
   return `${year}-${month}-${day}`;
 })();
 
-const initialTransactions: Transaction[] = [];function App() {
+const initialTransactions: Transaction[] = [];function FinanceDashboard({ session, onSignOut }: { session: AuthSession; onSignOut: () => void }) {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -98,10 +100,45 @@ const initialTransactions: Transaction[] = [];function App() {
   const [form, setForm] = useState({
     title: "", category: "Outros", date: today, amount: "", type: "expense" as Kind
   });
+  const [cloudLoaded, setCloudLoaded] = useState(false);
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudError, setCloudError] = useState("");
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-  }, [transactions]);
+    let active = true;
+    const loadCloudData = async () => {
+      setCloudBusy(true);
+      setCloudError("");
+      try {
+        const remote = await fetchTransactions(session);
+        if (!active) return;
+        if (remote.length > 0) {
+          setTransactions(remote);
+        } else {
+          const saved = localStorage.getItem(STORAGE_KEY);
+          const local = saved ? repairStoredTransactions(JSON.parse(saved) as unknown) : [];
+          const shouldImport = local.length > 0 && window.confirm("Encontrei " + local.length + " lançamento(s) neste navegador. Deseja importar para sua conta na nuvem? Os dados locais só serão substituídos depois da importação.");
+          if (shouldImport) {
+            const imported = await insertTransactions(session, local.map(({ id: _id, ...transaction }) => transaction));
+            if (active) setTransactions(imported);
+          } else {
+            setTransactions([]);
+          }
+        }
+        if (active) setCloudLoaded(true);
+      } catch (error) {
+        if (active) setCloudError(error instanceof Error ? error.message : "Não foi possível carregar seus dados da nuvem.");
+      } finally {
+        if (active) setCloudBusy(false);
+      }
+    };
+    void loadCloudData();
+    return () => { active = false; };
+  }, [session.user.id]);
+
+  useEffect(() => {
+    if (cloudLoaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+  }, [transactions, cloudLoaded]);
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -158,24 +195,29 @@ const initialTransactions: Transaction[] = [];function App() {
     return months.map(({ month, income, expenses }) => ({ month, income, expenses }));
   }, [transactions]);
 
-  const addTransaction = (event: React.FormEvent<HTMLFormElement>) => {
+  const addTransaction = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = Number(form.amount.replace(",", "."));
-    if (!form.title.trim() || !Number.isFinite(amount) || amount <= 0) return;
-    setTransactions(current => [{
-      id: crypto.randomUUID(),
-      title: form.title.trim(),
-      category: form.category,
-      date: form.date,
-      amount,
-      type: form.type
-    }, ...current]);
-    setForm({ title: "", category: "Outros", date: today, amount: "", type: "expense" });
-    setModalOpen(false);
+    if (!cloudLoaded || !form.title.trim() || !Number.isFinite(amount) || amount <= 0) return;
+    setCloudError("");
+    try {
+      const saved = await insertTransactions(session, [{ title: form.title.trim(), category: form.category, date: form.date, amount, type: form.type }]);
+      setTransactions(current => [saved[0], ...current]);
+      setForm({ title: "", category: "Outros", date: today, amount: "", type: "expense" });
+      setModalOpen(false);
+    } catch (error) {
+      setCloudError(error instanceof Error ? error.message : "Não foi possível salvar o lançamento na nuvem.");
+    }
   };
 
-  const deleteTransaction = (id: string) => {
-    setTransactions(current => current.filter(t => t.id !== id));
+  const deleteTransaction = async (id: string) => {
+    setCloudError("");
+    try {
+      await deleteTransactionFromCloud(session, id);
+      setTransactions(current => current.filter(t => t.id !== id));
+    } catch (error) {
+      setCloudError(error instanceof Error ? error.message : "Não foi possível excluir o lançamento na nuvem.");
+    }
   };
 
   const exportCsv = () => {
@@ -223,8 +265,8 @@ const initialTransactions: Transaction[] = [];function App() {
           <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => setActivePage("settings")}><Settings size={18}/> Configurações</a>
           <div className="profile">
             <div className="avatar">R</div>
-            <div className="profile-text"><strong>Minha conta</strong><small>Plano demonstração</small></div>
-            <ChevronDown size={16} className="profile-chevron"/>
+            <div className="profile-text"><strong>{session.user.email || "Minha conta"}</strong><small>Conta sincronizada</small></div>
+            <button className="profile-signout" onClick={onSignOut} title="Sair da conta">Sair</button>
           </div>
         </div>
       </aside>
@@ -232,6 +274,8 @@ const initialTransactions: Transaction[] = [];function App() {
       {menuOpen && <button className="scrim" onClick={() => setMenuOpen(false)} aria-label="Fechar menu"/>}
 
       <main className="main-content" id="dashboard">
+        {cloudError && <div className="cloud-alert" role="alert">{cloudError}</div>}
+        {cloudBusy && <div className="cloud-status">Sincronizando seus lançamentos com segurança...</div>}
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
@@ -361,7 +405,7 @@ const initialTransactions: Transaction[] = [];function App() {
           <label>Descrição<input required autoFocus placeholder="Ex.: Compra de materiais" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}/></label>
           <div className="form-two"><label>Valor ({settings.currency})<input required inputMode="decimal" placeholder="0,00" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}/></label><label>Data<input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}/></label></div>
           <label>Categoria<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{(form.type === "income" ? ["Salário", "Serviços", "Vendas", "Investimentos", "Outros"] : ["Alimentação", "Moradia", "Transporte", "Saúde", "Educação", "Lazer", "Serviços", "Outros"]).map(c => <option key={c}>{c}</option>)}</select></label>
-          <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setModalOpen(false)}>Cancelar</button><button type="submit" className="primary-btn"><Plus size={16}/> Salvar lançamento</button></div>
+          <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setModalOpen(false)}>Cancelar</button><button type="submit" className="primary-btn" disabled={!cloudLoaded || cloudBusy}><Plus size={16}/> Salvar lançamento</button></div>
         </form>
       </div>}
     </div>
@@ -370,6 +414,26 @@ const initialTransactions: Transaction[] = [];function App() {
 
 function StatCard({ title, value, icon, tone, detail }: { title: string; value: string; icon: React.ReactNode; tone: string; detail: string }) {
   return <div className="stat-card"><div className="stat-top"><span>{title}</span><div className={`stat-icon ${tone}`}>{icon}</div></div><strong className="stat-value">{value}</strong><div className="stat-detail"><span className={`detail-dot ${tone}`}/>{detail}</div></div>;
+}
+
+function App() {
+  const [session, setSession] = useState<AuthSession | null>(() => readStoredSession());
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  useEffect(() => {
+    setSession(readStoredSession());
+    setCheckingSession(false);
+  }, []);
+
+  const handleSignOut = async () => {
+    if (!session) return;
+    await signOut(session);
+    setSession(null);
+  };
+
+  if (checkingSession) return <main className="auth-screen"><div className="cloud-status">Preparando acesso seguro...</div></main>;
+  if (!session) return <AuthScreen onAuthenticated={setSession}/>;
+  return <FinanceDashboard session={session} onSignOut={() => { void handleSignOut(); }}/>;
 }
 
 export default App;
