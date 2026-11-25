@@ -6,7 +6,8 @@ import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle, Trash2, Pencil } 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
 type InvoiceRow = { title: string; date: string; amount: number; category: string };
-type Props = { onClose: () => void; onImport: (rows: InvoiceRow[]) => Promise<void> };
+type ExistingTransaction = { title: string; date: string; amount: number; type: "income" | "expense" };
+type Props = { onClose: () => void; onImport: (rows: InvoiceRow[]) => Promise<void>; transactions: ExistingTransaction[] };
 
 const CATEGORIES = ["Alimentação", "Moradia", "Transporte", "Saúde", "Educação", "Lazer", "Serviços", "Outros"];
 
@@ -131,7 +132,7 @@ async function extractFile(file: File, setProgress: (value: string) => void): Pr
   }
 }
 
-export default function InvoiceImporter({ onClose, onImport }: Props) {
+export default function InvoiceImporter({ onClose, onImport, transactions }: Props) {
   const [file, setFile] = useState<File | null>(null);
   const [rows, setRows] = useState<InvoiceRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -140,6 +141,20 @@ export default function InvoiceImporter({ onClose, onImport }: Props) {
   const [done, setDone] = useState(false);
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
+  const audit = useMemo(() => {
+    const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    const existing = transactions.filter(item => item.type === "expense");
+    const exactMatches = rows.filter(row => existing.some(item => normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
+    const duplicateMap = new Map<string, InvoiceRow[]>();
+    rows.forEach(row => {
+      const key = [normalize(row.title), row.date, row.amount.toFixed(2)].join("|");
+      duplicateMap.set(key, [...(duplicateMap.get(key) || []), row]);
+    });
+    const repeated = [...duplicateMap.values()].filter(group => group.length > 1);
+    const installmentRows = rows.filter(row => /parc|parcela|\\d{1,2}\\s*\\/\\s*\\d{1,2}/i.test(row.title));
+    const totalAlreadyRegistered = exactMatches.reduce((sum, row) => sum + row.amount, 0);
+    return { exactMatches, repeated, installmentRows, totalAlreadyRegistered };
+  }, [rows, transactions]);
 
   const updateRow = (index: number, changes: Partial<InvoiceRow>) => {
     setRows(current => current.map((row, rowIndex) => rowIndex === index ? { ...row, ...changes } : row));
@@ -190,6 +205,19 @@ export default function InvoiceImporter({ onClose, onImport }: Props) {
         {rows.length > 0 && <div className="invoice-review">
           <div className="invoice-review-head"><strong>{rows.length} compra(s) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
           <div className="invoice-total-preview"><span>Total reconhecido</span><strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>
+          <section className="invoice-audit" aria-label="Auditoria da fatura">
+            <div className="invoice-audit-heading"><span className="eyebrow">AUDITORIA AUTOMÁTICA</span><strong>O que encontrei nesta fatura</strong></div>
+            <div className="invoice-audit-grid">
+              <div><strong>{audit.exactMatches.length}</strong><span>já cadastrada(s)</span></div>
+              <div><strong>{audit.repeated.length}</strong><span>possível(is) repetição(ões)</span></div>
+              <div><strong>{audit.installmentRows.length}</strong><span>descrição(ões) com parcela</span></div>
+            </div>
+            {audit.exactMatches.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> {audit.exactMatches.length} lançamento(s) coincidem com registros existentes, somando {audit.totalAlreadyRegistered.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Eles serão ignorados na importação.</p>}
+            {audit.repeated.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> Há compras com mesma descrição, data e valor dentro do arquivo. Confira se são duplicidades reais.</p>}
+            {audit.installmentRows.length > 0 && <p className="invoice-audit-note">Encontramos indicações de parcelamento em algumas descrições. Confirme se o valor lido é o valor da parcela, não o valor total da compra.</p>}
+            {audit.exactMatches.length === 0 && audit.repeated.length === 0 && audit.installmentRows.length === 0 && <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma coincidência exata ou indicação de parcela encontrada nos critérios automáticos.</p>}
+            <p className="invoice-audit-disclaimer">A auditoria compara descrição, data e valor com seus lançamentos. Uma coincidência é um alerta para revisão, não prova de cobrança indevida.</p>
+          </section>
           <div className="invoice-rows">{rows.map((row, index) => <div className="invoice-row invoice-row-editable" key={index}>
             <div className="invoice-row-fields">
               <label>Descrição<input value={row.title} maxLength={100} onChange={e => updateRow(index, { title: e.target.value })}/></label>
