@@ -73,6 +73,19 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     </div>
     <FinancialAssistant accessToken={accessToken}/>
     <PurchaseSimulator transactions={transactions} formatMoney={formatMoney}/>
+    <div className="panel preventive-alerts">
+      <div className="panel-heading"><div><h2>Central de alertas preventivos</h2><p>Sinais identificados automaticamente nos seus lançamentos</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
+      <div className="preventive-alert-list">
+        {report.count === 0 ? <div className="preventive-alert neutral"><Activity size={17}/><div><strong>Aguardando dados</strong><p>Cadastre despesas e receitas para ativar os alertas financeiros.</p></div></div> : <>
+          {report.balance < 0 && <div className="preventive-alert danger"><TrendingDown size={17}/><div><strong>Resultado negativo no mês</strong><p>As despesas superam as receitas em {formatMoney(Math.abs(report.balance))} até agora.</p></div></div>}
+          {report.projectedBalance < 0 && <div className="preventive-alert danger"><TrendingDown size={17}/><div><strong>Projeção de fechamento negativa</strong><p>Mantido o ritmo atual, o mês pode terminar em {formatMoney(Math.abs(report.projectedBalance))} negativo.</p></div></div>}
+          {report.unusual.length > 0 && <div className="preventive-alert warning"><ShieldAlert size={17}/><div><strong>{report.unusual.length} gasto(s) fora do padrão</strong><p>Há despesas pelo menos 50% acima da média histórica da própria categoria. Confira a seção de gastos fora do padrão.</p></div></div>}
+          {report.recurring.length > 0 && <div className="preventive-alert info"><Activity size={17}/><div><strong>Possíveis cobranças recorrentes identificadas</strong><p>{report.recurring.length} descrição(ões) aparecem em meses diferentes, somando média de {formatMoney(report.recurringTotal)} por mês.</p></div></div>}
+          {report.balance >= 0 && report.projectedBalance >= 0 && report.unusual.length === 0 && report.recurring.length === 0 && <div className="preventive-alert positive"><Activity size={17}/><div><strong>Nenhum alerta crítico identificado</strong><p>Com os registros atuais, não há sinais de resultado negativo, gastos atípicos ou descrições recorrentes.</p></div></div>}
+        </>}
+      </div>
+      <p className="insight-disclaimer">Os alertas usam somente os lançamentos cadastrados. A projeção é linear e não considera contas futuras ainda não registradas; descrições repetidas não comprovam assinaturas.</p>
+    </div>
     <div className="content-grid insights-page-grid">
       <div className="panel insight-panel">
         <div className="insight-title"><div className="ai-icon"><Lightbulb size={18}/></div><div><h2>Recomendação do Finance IA</h2><p>Orientação baseada nos registros disponíveis</p></div></div>
