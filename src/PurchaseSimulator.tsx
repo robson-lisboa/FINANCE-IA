@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Calculator, ShieldCheck, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Calculator, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 type Transaction = { date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
