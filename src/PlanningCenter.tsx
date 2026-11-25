@@ -3,6 +3,7 @@ import PurchaseSimulator from "./PurchaseSimulator";
 import FinancialTimeMachine from "./FinancialTimeMachine";
 import FinancialStressTest from "./FinancialStressTest";
 import DebtNegotiator from "./DebtNegotiator";
+import WasteDetector from "./WasteDetector";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
@@ -14,5 +15,6 @@ export default function PlanningCenter({ transactions, formatMoney }: Props) {
     <FinancialTimeMachine transactions={transactions} formatMoney={formatMoney}/>
     <FinancialStressTest transactions={transactions} formatMoney={formatMoney}/>
     <DebtNegotiator formatMoney={formatMoney}/>
+    <WasteDetector transactions={transactions} formatMoney={formatMoney}/>
   </section>;
 }
