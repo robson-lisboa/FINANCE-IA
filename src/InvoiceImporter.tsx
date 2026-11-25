@@ -13,7 +13,7 @@ const CATEGORIES = ["Alimentação", "Moradia", "Transporte", "Saúde", "Educaç
 const categoryFor = (text: string) => {
   const value = text.toLowerCase();
   if (/mercado|supermercado|padaria|hortifruti|açougue|ifood|restaurante|lanchonete/.test(value)) return "Alimentação";
-  if (/uber|99\\s|posto|combust|estacionamento|pedágio|shell|ipiranga/.test(value)) return "Transporte";
+  if (/uber|99\s|posto|combust|estacionamento|pedágio|shell|ipiranga/.test(value)) return "Transporte";
   if (/farm|drog|hospital|clínica|consulta|laboratório/.test(value)) return "Saúde";
   if (/netflix|spotify|amazon prime|disney|cinema|steam/.test(value)) return "Lazer";
   if (/energia|água|sabesp|internet|telefone|aluguel|condomínio/.test(value)) return "Moradia";
@@ -22,7 +22,7 @@ const categoryFor = (text: string) => {
 };
 
 function parseBrazilianDate(value: string): string | null {
-  const match = value.match(/\\b(\\d{1,2})[/.-](\\d{1,2})(?:[/.-](\\d{2,4}))?\\b/);
+  const match = value.match(/\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b/);
   if (!match) return null;
   const day = Number(match[1]);
   const month = Number(match[2]);
@@ -36,32 +36,32 @@ function parseBrazilianDate(value: string): string | null {
 
 function parseRows(text: string): InvoiceRow[] {
   const lines = text
-    .replace(/[\\u00a0]/g, " ")
-    .split(/[\\r\\n]+/)
-    .map(line => line.replace(/\\s+/g, " ").trim())
+    .replace(/[\u00a0]/g, " ")
+    .split(/[\r\n]+/)
+    .map(line => line.replace(/\s+/g, " ").trim())
     .filter(Boolean);
   const rows: InvoiceRow[] = [];
   const seen = new Set<string>();
 
   for (const line of lines) {
     // Linhas de resumo, pagamento, encargos e créditos não são compras.
-    if (/^(total|subtotal|pagamento|vencimento|saldo anterior|limite|encargos|juros|iof|parcelamento|melhor dia|resumo da fatura|anuidade|valor mínimo)\\b/i.test(line)) continue;
-    if (/\\b(estorno|crédito|credito|pagamento recebido|pagamento efetuado)\\b/i.test(line)) continue;
+    if (/^(total|subtotal|pagamento|vencimento|saldo anterior|limite|encargos|juros|iof|parcelamento|melhor dia|resumo da fatura|anuidade|valor mínimo)\b/i.test(line)) continue;
+    if (/\b(estorno|crédito|credito|pagamento recebido|pagamento efetuado)\b/i.test(line)) continue;
 
     const date = parseBrazilianDate(line);
     if (!date) continue;
 
-    const amountMatches = [...line.matchAll(/(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+,\\d{2})\\b/g)];
+    const amountMatches = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})\b/g)];
     if (!amountMatches.length) continue;
     const amountText = amountMatches[amountMatches.length - 1][1];
-    const amount = Number(amountText.replace(/\\./g, "").replace(",", "."));
+    const amount = Number(amountText.replace(/\./g, "").replace(",", "."));
     if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) continue;
 
     const title = line
-      .replace(/\\b\\d{1,2}[/.-]\\d{1,2}(?:[/.-]\\d{2,4})?\\b/, "")
-      .replace(/(?:R\\$\\s*)?(?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2}\\b/g, "")
-      .replace(/\\s+/g, " ").trim()
-      .replace(/^[\\-–|:]+|[\\-–|:]+$/g, "");
+      .replace(/\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b/, "")
+      .replace(/(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}\b/g, "")
+      .replace(/\s+/g, " ").trim()
+      .replace(/^[\-–|:]+|[\-–|:]+$/g, "");
     if (title.length < 3 || /cartão|fatura|titular|você pagou|compras nacionais/i.test(title)) continue;
 
     const key = [title.toLowerCase(), date, amount.toFixed(2)].join("|");
@@ -106,7 +106,7 @@ async function extractFile(file: File, setProgress: (value: string) => void): Pr
     } finally {
       if (worker) await worker.terminate();
     }
-    return chunks.join("\\n");
+    return chunks.join("\n");
   }
   if (!file.type.startsWith("image/")) throw new Error("Envie uma fatura em PDF, JPG, PNG ou WEBP.");
   const worker = await createWorker("por");
@@ -148,7 +148,7 @@ export default function InvoiceImporter({ onClose, onImport }: Props) {
   };
 
   const confirmImport = async () => {
-    if (!rows.length || rows.some(row => !row.title.trim() || !/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) {
+    if (!rows.length || rows.some(row => !row.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) {
       setError("Revise os campos: descrição, data e valor precisam estar válidos.");
       return;
     }
