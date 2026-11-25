@@ -4,6 +4,7 @@ import FinancialAssistant from "./FinancialAssistant";
 import PurchaseSimulator from "./PurchaseSimulator";
 import FinancialStressTest from "./FinancialStressTest";
 import InvestigationPanel from "./InvestigationPanel";
+import CentralIntelligence from "./CentralIntelligence";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; accessToken: string };
@@ -89,6 +90,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       <div className="stat-card"><div className="stat-top"><span>Resultado do mês</span><div className="stat-icon purple"><Wallet size={19}/></div></div><strong className="stat-value">{formatMoney(report.balance)}</strong><div className="stat-detail">Receitas menos despesas</div></div>
       <div className="stat-card"><div className="stat-top"><span>Taxa de economia</span><div className="stat-icon blue"><Activity size={19}/></div></div><strong className="stat-value">{report.savings === null ? "—" : `${report.savings.toFixed(1).replace(".", ",")}%`}</strong><div className="stat-detail">Sobre as receitas deste mês</div></div>
     </div>
+    <CentralIntelligence transactions={transactions} formatMoney={formatMoney}/>
     <FinancialAssistant accessToken={accessToken}/>
     <PurchaseSimulator transactions={transactions} formatMoney={formatMoney}/>
     <FinancialStressTest transactions={transactions} formatMoney={formatMoney}/>
