@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
@@ -94,8 +94,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       return DEFAULT_SETTINGS;
     }
   });
-  const [activePage, setActivePage] = useState(() => window.location.hash === "#settings" ? "settings" : "dashboard");
+  const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "goals", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | Kind>("all");
   const [search, setSearch] = useState("");
@@ -156,7 +157,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   }, [settings]);
 
   useEffect(() => {
-    const syncPage = () => setActivePage(window.location.hash === "#settings" ? "settings" : "dashboard");
+    const syncPage = () => { const page = window.location.hash.slice(1); setActivePage(["dashboard", "transactions", "insights", "goals", "settings"].includes(page) ? page : "dashboard"); };
     window.addEventListener("hashchange", syncPage);
     return () => window.removeEventListener("hashchange", syncPage);
   }, []);
@@ -265,19 +266,19 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         </div>
         <div className="workspace-label">MENU PRINCIPAL</div>
         <nav className="nav-list">
-          <a className={`nav-item ${activePage === "dashboard" ? "active" : ""}`} href="#dashboard" onClick={() => setActivePage("dashboard")}><LayoutDashboard size={18}/> Visão geral</a>
-          <a className="nav-item" href="#transactions"><Wallet size={18}/> Lançamentos</a>
-          <a className="nav-item" href="#insights"><Sparkles size={18}/> Análise inteligente <span className="new-pill">NOVO</span></a>
-          <a className="nav-item" href="#goals"><Target size={18}/> Metas financeiras</a>
+          <a className={`nav-item ${activePage === "dashboard" ? "active" : ""}`} href="#dashboard" onClick={() => { setActivePage("dashboard"); setMenuOpen(false); }}><LayoutDashboard size={18}/> Visão geral</a>
+          <a className={`nav-item ${activePage === "transactions" ? "active" : ""}`} href="#transactions" onClick={() => { setActivePage("transactions"); setMenuOpen(false); }}><Wallet size={18}/> Lançamentos</a>
+          <a className={`nav-item ${activePage === "insights" ? "active" : ""}`} href="#insights" onClick={() => { setActivePage("insights"); setMenuOpen(false); }}><Sparkles size={18}/> Análise inteligente <span className="new-pill">NOVO</span></a>
+          <a className={`nav-item ${activePage === "goals" ? "active" : ""}`} href="#goals" onClick={() => { setActivePage("goals"); setMenuOpen(false); }}><Target size={18}/> Metas financeiras</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="help-card">
             <div className="help-icon"><CircleHelp size={18}/></div>
             <strong>Precisa de ajuda?</strong>
             <p>Organize suas finanças com mais clareza.</p>
-            <a href="#insights">Ver dicas <span>→</span></a>
+            <button type="button" className="help-link" onClick={() => setHelpOpen(true)}>Ver dicas <span>→</span></button>
           </div>
-          <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => setActivePage("settings")}><Settings size={18}/> Configurações</a>
+          <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => { setActivePage("settings"); setMenuOpen(false); }}><Settings size={18}/> Configurações</a>
           <div className="profile">
             <div className="avatar">R</div>
             <div className="profile-text"><strong>{session.user.email || "Minha conta"}</strong><small>Conta sincronizada</small></div>
@@ -294,7 +295,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
-            <div><div className="breadcrumb">Workspace <span>/</span> <b>Visão geral</b></div><div className="welcome">Bom dia! <span>Vamos cuidar do seu dinheiro.</span></div></div>
+            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", goals: "Metas financeiras", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">Bom dia! <span>Vamos cuidar do seu dinheiro.</span></div></div>
           </div>
           <div className="topbar-actions">
             <div className="date-chip"><CalendarDays size={15}/> {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</div>
@@ -338,7 +339,78 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               <div className="settings-footer"><span>Suas preferências são salvas automaticamente neste navegador. A troca de moeda altera apenas a exibição, não converte os lançamentos.</span><button className="outline-btn" onClick={() => setSettings(DEFAULT_SETTINGS)}>Restaurar padrão</button></div>
             </div>
           </section>
-        ) : <>
+        ) : activePage === "transactions" ? (
+          <section className="page-section">
+            <div className="page-heading">
+              <div><p className="eyebrow">CONTROLE DE MOVIMENTAÇÕES</p><h1>Lançamentos</h1><p className="muted-text">Consulte, pesquise e organize todas as suas receitas e despesas.</p></div>
+              <button className="primary-btn" onClick={() => setModalOpen(true)}><Plus size={16}/> Novo lançamento</button>
+            </div>
+            <div className="panel transactions-panel full-page-panel">
+              <div className="table-tools">
+                <div className="search-box"><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por descrição ou categoria..."/></div>
+                <div className="filter-tabs"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "income" ? "selected" : ""} onClick={() => setFilter("income")}>Receitas</button><button className={filter === "expense" ? "selected" : ""} onClick={() => setFilter("expense")}>Despesas</button></div>
+              </div>
+              <div className="transaction-list">
+                {filtered.length === 0 ? <div className="empty-state"><FileText size={24}/><strong>Nenhum lançamento encontrado</strong><span>Cadastre uma movimentação ou altere sua busca.</span></div> : filtered.map(t => (
+                  <div className="transaction-row" key={t.id}>
+                    <div className={`transaction-icon ${t.type}`}>{t.type === "income" ? <ArrowDownLeft size={17}/> : <ArrowUpRight size={17}/>}</div>
+                    <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}</span></div>
+                    <strong className={`transaction-amount ${t.type}`}>{t.type === "income" ? "+" : "−"} {formatMoney(t.amount)}</strong>
+                    <button className="delete-btn" onClick={() => deleteTransaction(t.id)} title="Excluir lançamento" aria-label={`Excluir ${t.title}`}><Trash2 size={15}/></button>
+                  </div>
+                ))}
+              </div>
+              <div className="category-footer"><span>{filtered.length} lançamento(s) encontrado(s)</span><strong>{formatMoney(filtered.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
+            </div>
+          </section>
+        ) : activePage === "insights" ? (
+          <section className="page-section">
+            <div className="page-heading">
+              <div><p className="eyebrow">LEITURA DOS SEUS DADOS</p><h1>Relatório inteligente</h1><p className="muted-text">Indicadores e observações calculados a partir dos seus lançamentos.</p></div>
+              <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
+            </div>
+            <section className="stats-grid">
+              <StatCard title="Saldo atual" value={formatMoney(totals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas"/>
+              <StatCard title="Total de receitas" value={formatMoney(totals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas"/>
+              <StatCard title="Total de despesas" value={formatMoney(totals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas"/>
+              <StatCard title="Taxa de economia" value={`${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Saldo sobre receitas"/>
+            </section>
+            <section className="content-grid insights-page-grid">
+              <div className="panel insight-panel">
+                <div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Análise dos seus resultados</h2><p>Resumo automático dos seus dados</p></div></div>
+                <div className="insight-highlight"><span className="insight-label">SITUAÇÃO FINANCEIRA</span><strong>{totals.balance >= 0 ? "Seu saldo está positivo." : "Atenção ao seu saldo."}</strong><p>{totals.balance >= 0 ? `Você tem ${formatMoney(totals.balance)} de saldo considerando os lançamentos registrados.` : `Suas despesas superam as receitas em ${formatMoney(Math.abs(totals.balance))}. Revise seus gastos.`}</p></div>
+                <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} · ${formatMoney(topCategory[1])}` : "Ainda não há despesas para analisar."}</p></div></div>
+                <div className="insight-row"><div className="mini-icon green"><TrendingUp size={16}/></div><div><strong>Taxa de economia</strong><p>{savingsRate.toFixed(1).replace(".", ",")}% das receitas permanecem no saldo.</p></div></div>
+                <div className="insight-disclaimer">Análise automática e informativa. Não é recomendação de investimento.</div>
+              </div>
+              <div className="panel goals-panel">
+                <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Onde seus gastos estão concentrados</p></div><Activity size={18} className="subtle-icon"/></div>
+                {expenseByCategory.length === 0 ? <div className="empty-state compact">Cadastre despesas para gerar este relatório.</div> : <div className="category-list">{expenseByCategory.map(([category, amount], index) => {
+                  const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
+                  const percent = totals.expenses ? amount / totals.expenses * 100 : 0;
+                  return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{formatMoney(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
+                })}</div>}
+              </div>
+            </section>
+          </section>
+        ) : activePage === "goals" ? (
+          <section className="page-section">
+            <div className="page-heading">
+              <div><p className="eyebrow">PLANEJAMENTO FINANCEIRO</p><h1>Metas financeiras</h1><p className="muted-text">Acompanhe objetivos e planeje o uso do seu dinheiro.</p></div>
+            </div>
+            <div className="panel goals-page-panel">
+              <div className="goals-empty-icon"><Target size={28}/></div>
+              <h2>Organize seus próximos objetivos</h2>
+              <p>Esta área agora tem uma página própria. A criação e o acompanhamento de metas serão implementados na próxima etapa, com armazenamento seguro vinculado à sua conta.</p>
+              <div className="goals-summary">
+                <div><span>Saldo atual</span><strong>{formatMoney(totals.balance)}</strong></div>
+                <div><span>Receitas registradas</span><strong>{formatMoney(totals.income)}</strong></div>
+                <div><span>Despesas registradas</span><strong>{formatMoney(totals.expenses)}</strong></div>
+              </div>
+            </div>
+          </section>
+        ) : (
+        <section className="page-section">
         <section className="page-heading">
           <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>Visão geral</h1><p className="muted-text">Acompanhe sua vida financeira em um só lugar.</p></div>
           <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
@@ -409,10 +481,25 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <div className="category-footer"><span>Total de despesas</span><strong>{formatMoney(totals.expenses)}</strong></div>
           </div>
         </section>
+        </section>
         <footer className="footer"><span>© 2026 FINANCE IA</span><span>Organização financeira com clareza.</span><span>Versão 1.0 · Demonstração</span></footer>
-        </>}
+        )}
       </main>
 
+      {helpOpen && <div className="modal-backdrop help-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setHelpOpen(false); }}>
+        <section className="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
+          <div className="modal-heading">
+            <div><span className="eyebrow">CENTRAL DE AJUDA</span><h2 id="help-title">Como podemos ajudar?</h2></div>
+            <button type="button" className="icon-btn" onClick={() => setHelpOpen(false)} aria-label="Fechar ajuda"><X size={19}/></button>
+          </div>
+          <p className="help-intro">Veja orientações rápidas para começar a usar o Finance IA.</p>
+          <div className="help-topic"><strong>1. Cadastrar receitas e despesas</strong><p>Clique em “Novo lançamento”, escolha Receita ou Despesa, informe descrição, valor, data e categoria e depois selecione “Salvar lançamento”.</p></div>
+          <div className="help-topic"><strong>2. Acompanhar seu saldo</strong><p>Na Visão geral, o saldo é calculado pelas receitas menos as despesas que você cadastrou. Os gráficos são atualizados com esses lançamentos.</p></div>
+          <div className="help-topic"><strong>3. Consultar e filtrar lançamentos</strong><p>Use a busca para localizar uma movimentação e os filtros Todos, Receitas e Despesas para organizar a lista.</p></div>
+          <div className="help-topic"><strong>4. Personalizar o sistema</strong><p>Em Configurações, você pode alterar tema, cor principal e a forma de exibição da moeda. A moeda não converte os valores cadastrados.</p></div>
+          <div className="help-note">Dica: seus lançamentos são sincronizados com sua conta na nuvem. Se aparecer uma mensagem de erro, confira sua conexão e tente novamente.</div>
+        </section>
+      </div>}
       {modalOpen && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModalOpen(false); }}>
         <form className="modal" onSubmit={addTransaction}>
           <div className="modal-heading"><div><span className="eyebrow">MOVIMENTAÇÃO FINANCEIRA</span><h2>Novo lançamento</h2></div><button type="button" className="icon-btn" onClick={() => setModalOpen(false)} aria-label="Fechar"><X size={19}/></button></div>
