@@ -3,6 +3,7 @@ import AuthScreen from "./AuthScreen";
 import InvoiceImporter from "./InvoiceImporter";
 import GoalsManager from "./GoalsManager";
 import FinancialDiagnosis from "./FinancialDiagnosis";
+import PlanningCenter from "./PlanningCenter";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
@@ -98,7 +99,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       return DEFAULT_SETTINGS;
     }
   });
-  const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "goals", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
+  const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "planning", "goals", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
@@ -298,7 +299,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <nav className="nav-list">
           <a className={`nav-item ${activePage === "dashboard" ? "active" : ""}`} href="#dashboard" onClick={() => { setActivePage("dashboard"); setMenuOpen(false); }}><LayoutDashboard size={18}/> Visão geral</a>
           <a className={`nav-item ${activePage === "transactions" ? "active" : ""}`} href="#transactions" onClick={() => { setActivePage("transactions"); setMenuOpen(false); }}><Wallet size={18}/> Lançamentos</a>
-          <a className={`nav-item ${activePage === "insights" ? "active" : ""}`} href="#insights" onClick={() => { setActivePage("insights"); setMenuOpen(false); }}><Sparkles size={18}/> Análise inteligente <span className="new-pill">NOVO</span></a>
+          <a className={`nav-item ${activePage === "insights" ? "active" : ""}`} href="#insights" onClick={() => { setActivePage("insights"); setMenuOpen(false); }}><Sparkles size={18}/> Análise inteligente</a>
+          <a className={`nav-item ${activePage === "planning" ? "active" : ""}`} href="#planning" onClick={() => { setActivePage("planning"); setMenuOpen(false); }}><TrendingUp size={18}/> Planejamento</a>
           <a className={`nav-item ${activePage === "goals" ? "active" : ""}`} href="#goals" onClick={() => { setActivePage("goals"); setMenuOpen(false); }}><Target size={18}/> Metas financeiras</a>
         </nav>
         <div className="sidebar-bottom">
@@ -325,7 +327,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
-            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", goals: "Metas financeiras", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span></div></div>
+            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span></div></div>
           </div>
           <div className="topbar-actions">
             <div className="date-chip"><CalendarDays size={15}/> {currentTime.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</div>
@@ -396,6 +398,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </section>
         ) : activePage === "insights" ? (
           <FinancialDiagnosis transactions={transactions} formatMoney={formatMoney} accessToken={session.access_token}/>
+        ) : activePage === "planning" ? (
+          <PlanningCenter transactions={transactions} formatMoney={formatMoney}/>
         ) : activePage === "goals" ? (
           <GoalsManager session={session} balance={totals.balance} formatMoney={formatMoney}/>
         ) : (
