@@ -169,7 +169,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   }, [settings]);
 
   useEffect(() => {
-    const syncPage = () => { const page = window.location.hash.slice(1); setActivePage(["dashboard", "transactions", "insights", "goals", "settings"].includes(page) ? page : "dashboard"); };
+    const syncPage = () => { const page = window.location.hash.slice(1); setActivePage(["dashboard", "transactions", "insights", "planning", "goals", "settings"].includes(page) ? page : "dashboard"); };
     window.addEventListener("hashchange", syncPage);
     return () => window.removeEventListener("hashchange", syncPage);
   }, []);
