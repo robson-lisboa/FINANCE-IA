@@ -158,10 +158,19 @@ export async function refreshSession(session: AuthSession): Promise<AuthSession>
     ? stored
     : session;
   if (current.expires_at > Math.floor(Date.now() / 1000) + 60) return current;
-  const result = await authRequest<AuthSession>("token?grant_type=refresh_token", { refresh_token: current.refresh_token });
-  const refreshed = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + (result.expires_in ?? 3600) };
-  saveSession(refreshed);
-  return refreshed;
+  try {
+    const result = await authRequest<AuthSession>("token?grant_type=refresh_token", { refresh_token: current.refresh_token });
+    const refreshed = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + (result.expires_in ?? 3600) };
+    saveSession(refreshed);
+    return refreshed;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (/refresh.?token/i.test(message) && /(invalid|not found|missing|already used|expired)/i.test(message)) {
+      saveSession(null);
+      throw new Error("Sua sessão expirou ou não é mais válida. Entre novamente para continuar. Seus lançamentos salvos neste navegador foram preservados.");
+    }
+    throw error;
+  }
 }
 
 async function dataRequest<T>(session: AuthSession, path: string, init: RequestInit = {}): Promise<T> {
