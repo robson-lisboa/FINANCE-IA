@@ -27,7 +27,9 @@ export default function FinancialAssistant({ accessToken }: { accessToken: strin
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Não foi possível consultar a inteligência artificial.");
-      setMessages(current => [...current, { role: "assistant", content: result.answer }]);
+      const answer = typeof result.answer === "string" ? result.answer.trim() : "";
+      if (!answer) throw new Error("A IA não retornou texto. Tente novamente; a solicitação não gerou uma resposta visível.");
+      setMessages(current => [...current, { role: "assistant", content: answer }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao conversar com a IA.");
     } finally {
