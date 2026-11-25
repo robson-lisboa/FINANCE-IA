@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, Lightbulb, ShieldAlert, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import FinancialAssistant from "./FinancialAssistant";
 import PurchaseSimulator from "./PurchaseSimulator";
+import FinancialTimeMachine from "./FinancialTimeMachine";
 import FinancialStressTest from "./FinancialStressTest";
 import InvestigationPanel from "./InvestigationPanel";
 import CentralIntelligence from "./CentralIntelligence";
@@ -93,6 +94,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     <CentralIntelligence transactions={transactions} formatMoney={formatMoney}/>
     <FinancialAssistant accessToken={accessToken}/>
     <PurchaseSimulator transactions={transactions} formatMoney={formatMoney}/>
+    <FinancialTimeMachine transactions={transactions} formatMoney={formatMoney}/>
     <FinancialStressTest transactions={transactions} formatMoney={formatMoney}/>
     <InvestigationPanel transactions={transactions} formatMoney={formatMoney}/>
     <div className="panel predictive-panel">
