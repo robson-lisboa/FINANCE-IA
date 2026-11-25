@@ -448,6 +448,20 @@ function App() {
 
   if (checkingSession) return <main className="auth-screen"><div className="cloud-status">Preparando acesso seguro...</div></main>;
   if (!session) return <AuthScreen onAuthenticated={setSession}/>;
+  if (!session.user || typeof session.user.id !== "string" || !session.user.id) {
+    return (
+      <main className="auth-screen">
+        <section className="auth-card">
+          <h1 className="auth-heading">Sessão incompleta</h1>
+          <p className="auth-footnote">Não foi possível validar os dados da sua conta. Entre novamente para continuar.</p>
+          <button className="primary-btn auth-submit" onClick={() => {
+            localStorage.removeItem("finance-ia-auth-session-v1");
+            setSession(null);
+          }}>Voltar ao login</button>
+        </section>
+      </main>
+    );
+  }
   return <FinanceDashboard key={session.user.id} session={session} onSignOut={() => { void handleSignOut(); }}/>;
 }
 
