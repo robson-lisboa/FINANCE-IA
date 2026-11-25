@@ -16,7 +16,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     const valid = transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)));
     const sum = (items: Transaction[], type: "income" | "expense") => items.filter(t => t.type === type).reduce((total, t) => total + Number(t.amount), 0);
     const current = valid.filter(t => t.date.startsWith(currentKey));
-    const previous = valid.filter(t => t.date.startsWith(previousKey));
+    const previous = valid.filter(t => t.date.startsWith(previousKey) && Number(t.date.slice(8, 10)) <= now.getDate());
     const currentIncome = sum(current, "income");
     const currentExpenses = sum(current, "expense");
     const previousExpenses = sum(previous, "expense");
@@ -50,23 +50,26 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const daysRemaining = Math.max(0, daysInMonth - days);
     const balance = currentIncome - currentExpenses;
-    const projectedExpenses = currentExpenses / days * daysInMonth;
-    const projectedBalance = currentIncome - projectedExpenses;
-    const dailySafeLimit = currentIncome > 0 && daysRemaining > 0 && balance > 0 ? balance / daysRemaining : null;
+    const expenseEntries = current.filter(t => t.type === "expense");
+    const distinctExpenseDays = new Set(expenseEntries.map(t => t.date)).size;
+    const projectionAvailable = expenseEntries.length >= 5 && distinctExpenseDays >= 3;
+    const projectedExpenses = projectionAvailable ? currentExpenses / days * daysInMonth : null;
+    const projectedBalance = projectedExpenses === null ? null : currentIncome - projectedExpenses;
+    const dailySafeLimit = projectionAvailable && currentIncome > 0 && daysRemaining > 0 && balance > 0 ? balance / daysRemaining : null;
     const duplicateMap = current.filter(t => t.type === "expense").reduce<Record<string, Transaction[]>>((acc, t) => {
       const key = [t.date, t.title.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " "), Number(t.amount).toFixed(2)].join("|");
       (acc[key] ||= []).push(t);
       return acc;
     }, {});
     const possibleDuplicates = Object.values(duplicateMap).filter(group => group.length > 1).map(group => ({ title: group[0].title, date: group[0].date, amount: Number(group[0].amount), count: group.length })).slice(0, 5);
-    const categoryForecast = ranked.map(([category, amount]) => {
+    const categoryForecast = projectionAvailable ? ranked.map(([category, amount]) => {
       const history = priorExpenses.filter(t => t.category.trim().toLocaleLowerCase("pt-BR") === category.trim().toLocaleLowerCase("pt-BR"));
       const months = new Set(history.map(t => t.date.slice(0, 7)));
       const historicalAverage = months.size >= 2 ? history.reduce((total, t) => total + Number(t.amount), 0) / months.size : null;
       const projected = amount / days * daysInMonth;
       return { category, projected, historicalAverage, difference: historicalAverage && historicalAverage > 0 ? (projected / historicalAverage - 1) * 100 : null };
-    }).filter(item => item.difference !== null && item.difference > 20).sort((a, b) => (b.difference || 0) - (a.difference || 0)).slice(0, 3);
-    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance, ranked, recurring, recurringTotal, unusual, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, daysInMonth, daysElapsed: days, daysRemaining, dailySafeLimit, possibleDuplicates, categoryForecast, count: current.length };
+    }).filter(item => item.difference !== null && item.difference > 20).sort((a, b) => (b.difference || 0) - (a.difference || 0)).slice(0, 3) : [];
+    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance, ranked, recurring, recurringTotal, unusual, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, projectionAvailable, daysInMonth, daysElapsed: days, daysRemaining, dailySafeLimit, possibleDuplicates, categoryForecast, count: current.length };
   }, [transactions]);
 
   const monthName = (key: string) => { const [year, month] = key.split("-").map(Number); return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); };
@@ -95,10 +98,10 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       <div className="panel-heading"><div><h2>Plano inteligente até o fim do mês</h2><p>Limite diário calculado com o saldo dos lançamentos registrados</p></div><TrendingUp size={18} className="subtle-icon"/></div>
       <div className="predictive-kpis">
         <div><span>Dias restantes</span><strong>{report.daysRemaining}</strong></div>
-        <div><span>Limite diário sugerido</span><strong className={report.dailySafeLimit === null ? "predictive-muted" : "predictive-good"}>{report.dailySafeLimit === null ? "Indisponível" : formatMoney(report.dailySafeLimit)}</strong></div>
-        <div><span>Resultado projetado</span><strong className={report.projectedBalance === null ? "predictive-muted" : report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{formatMoney(report.projectedBalance)}</strong></div>
+        <div><span>Limite diário indicativo</span><strong className={report.dailySafeLimit === null ? "predictive-muted" : "predictive-good"}>{report.dailySafeLimit === null ? "Indisponível" : formatMoney(report.dailySafeLimit)}</strong></div>
+        <div><span>Resultado projetado</span><strong className={report.projectedBalance === null ? "predictive-muted" : report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{report.projectedBalance === null ? "Indisponível" : formatMoney(report.projectedBalance)}</strong></div>
       </div>
-      {report.dailySafeLimit === null && <p className="insight-disclaimer">O limite diário só é calculado quando há receita registrada, saldo positivo e dias restantes. Ele não representa o saldo bancário disponível.</p>}
+      {report.dailySafeLimit === null && <p className="insight-disclaimer">O limite diário só aparece com ao menos 5 despesas em 3 dias diferentes, receita registrada, resultado positivo e dias restantes. É indicativo e não representa saldo bancário.</p>}
       {report.categoryForecast.length > 0 && <div className="predictive-watch"><strong>Categorias que merecem atenção</strong>{report.categoryForecast.map(item => <div key={item.category}><span>{item.category}</span><b>Projeção {formatMoney(item.projected)} · {item.difference !== null ? `+${item.difference.toFixed(0)}%` : ""} vs. histórico</b></div>)}</div>}
       {report.possibleDuplicates.length > 0 && <div className="predictive-watch duplicate-watch"><strong>Possíveis lançamentos duplicados — confira antes de excluir</strong>{report.possibleDuplicates.map(item => <div key={item.date + item.title + item.amount}><span>{item.title} · {item.date.split("-").reverse().join("/")}</span><b>{item.count} × {formatMoney(item.amount)}</b></div>)}</div>}
       <p className="insight-disclaimer">As tendências por categoria comparam a projeção atual à média mensal dos meses anteriores disponíveis (mínimo de dois meses). Duplicidades são suspeitas por coincidência de data, descrição e valor; não são excluídas automaticamente.</p>
@@ -108,13 +111,14 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       <div className="preventive-alert-list">
         {report.count === 0 ? <div className="preventive-alert neutral"><Activity size={17}/><div><strong>Aguardando dados</strong><p>Cadastre despesas e receitas para ativar os alertas financeiros.</p></div></div> : <>
           {report.balance < 0 && <div className="preventive-alert danger"><TrendingDown size={17}/><div><strong>Resultado negativo no mês</strong><p>As despesas superam as receitas em {formatMoney(Math.abs(report.balance))} até agora.</p></div></div>}
-          {report.projectedBalance < 0 && <div className="preventive-alert danger"><TrendingDown size={17}/><div><strong>Projeção de fechamento negativa</strong><p>Mantido o ritmo atual, o mês pode terminar em {formatMoney(Math.abs(report.projectedBalance))} negativo.</p></div></div>}
+          {report.projectedBalance !== null && report.projectedBalance < 0 && <div className="preventive-alert danger"><TrendingDown size={17}/><div><strong>Projeção de fechamento negativa</strong><p>Mantido o ritmo atual, o mês pode terminar em {formatMoney(Math.abs(report.projectedBalance))} negativo.</p></div></div>}
           {report.unusual.length > 0 && <div className="preventive-alert warning"><ShieldAlert size={17}/><div><strong>{report.unusual.length} gasto(s) fora do padrão</strong><p>Há despesas pelo menos 50% acima da média histórica da própria categoria. Confira a seção de gastos fora do padrão.</p></div></div>}
           {report.recurring.length > 0 && <div className="preventive-alert info"><Activity size={17}/><div><strong>Possíveis cobranças recorrentes identificadas</strong><p>{report.recurring.length} descrição(ões) aparecem em meses diferentes, somando média de {formatMoney(report.recurringTotal)} por mês.</p></div></div>}
-          {report.balance >= 0 && report.projectedBalance >= 0 && report.unusual.length === 0 && report.recurring.length === 0 && <div className="preventive-alert positive"><Activity size={17}/><div><strong>Nenhum alerta crítico identificado</strong><p>Com os registros atuais, não há sinais de resultado negativo, gastos atípicos ou descrições recorrentes.</p></div></div>}
+          {report.balance >= 0 && report.projectedBalance !== null && report.projectedBalance >= 0 && report.unusual.length === 0 && report.recurring.length === 0 && <div className="preventive-alert positive"><Activity size={17}/><div><strong>Nenhum alerta crítico identificado</strong><p>Com os registros atuais, não há sinais de resultado negativo, gastos atípicos ou descrições recorrentes.</p></div></div>}
+          {report.projectedBalance === null && report.balance >= 0 && <div className="preventive-alert neutral"><Activity size={17}/><div><strong>Projeção ainda indisponível</strong><p>São necessárias ao menos 5 despesas em 3 dias diferentes para estimar o fechamento sem depender de poucos registros.</p></div></div>}
         </>}
       </div>
-      <p className="insight-disclaimer">Os alertas usam somente os lançamentos cadastrados. A projeção é linear e não considera contas futuras ainda não registradas; descrições repetidas não comprovam assinaturas.</p>
+      <p className="insight-disclaimer">Os alertas usam somente os lançamentos cadastrados. A projeção linear só aparece com ao menos 5 despesas distribuídas em 3 dias diferentes e não considera contas futuras não cadastradas; descrições repetidas não comprovam assinaturas.</p>
     </div>
     <div className="content-grid insights-page-grid">
       <div className="panel insight-panel">
@@ -125,8 +129,8 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       </div>
       <div className="panel diagnosis-forecast">
         <div className="insight-title"><div className="ai-icon"><TrendingUp size={18}/></div><div><h2>Projeção de fechamento</h2><p>Estimativa pelo ritmo de gastos atual</p></div></div>
-        <div className="diagnosis-forecast-grid"><div><span>Despesas estimadas no fim do mês</span><strong>{formatMoney(report.projectedExpenses)}</strong></div><div><span>Saldo estimado no fim do mês</span><strong className={report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{formatMoney(report.projectedBalance)}</strong></div></div>
-        <p className="insight-disclaimer">Projeção linear baseada em {report.daysElapsed} de {report.daysInMonth} dias. Não considera contas futuras ainda não cadastradas nem mudanças no padrão de consumo.</p>
+        <div className="diagnosis-forecast-grid"><div><span>Despesas estimadas no fim do mês</span><strong>{report.projectedExpenses === null ? "Indisponível" : formatMoney(report.projectedExpenses)}</strong></div><div><span>Saldo estimado no fim do mês</span><strong className={report.projectedBalance === null ? "predictive-muted" : report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{report.projectedBalance === null ? "Indisponível" : formatMoney(report.projectedBalance)}</strong></div></div>
+        <p className="insight-disclaimer">{report.projectionAvailable ? `Projeção linear baseada em ${report.daysElapsed} de ${report.daysInMonth} dias e em pelo menos 5 despesas distribuídas em 3 dias. Não considera contas futuras ainda não cadastradas nem mudanças no padrão de consumo.` : "Projeção indisponível: faltam despesas distribuídas em pelo menos 3 dias diferentes."}</p>
       </div>
       <div className="panel recurring-panel">
         <div className="panel-heading"><div><h2>Possíveis gastos recorrentes</h2><p>Identificados pelo mesmo nome em meses diferentes</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
