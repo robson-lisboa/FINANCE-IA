@@ -21,6 +21,6 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install dependencies
-        run: npm install
+        run: npm ci
       - name: Check TypeScript and build Vite
         run: npm run build
