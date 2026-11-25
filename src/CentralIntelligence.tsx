@@ -26,10 +26,13 @@ export default function CentralIntelligence({ transactions, formatMoney }: { tra
     if (income > 0 && expenses > income) {
       findings.push({ id: "deficit", level: "critical", title: "Despesas já ultrapassaram as receitas", summary: `O resultado registrado está negativo em ${formatMoney(expenses - income)} neste mês.`, evidence: `${formatMoney(expenses)} em despesas contra ${formatMoney(income)} em receitas registradas.` });
     } else if (income > 0) {
+      const expenseEntries = current.filter(t => t.type === "expense");
+      const distinctExpenseDays = new Set(expenseEntries.map(t => t.date)).size;
+      const hasProjectionEvidence = expenseEntries.length >= 5 && distinctExpenseDays >= 3;
       const elapsed = Math.max(1, now.getDate());
       const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
       const projected = (expenses / elapsed) * days;
-      if (projected > income && expenses > 0) {
+      if (hasProjectionEvidence && projected > income && expenses > 0) {
         findings.push({ id: "pace", level: "warning", title: "Ritmo de gastos pode pressionar o fechamento", summary: "Se o ritmo atual continuar, as despesas projetadas podem superar as receitas registradas.", evidence: `Projeção linear de despesas: ${formatMoney(projected)} para ${formatMoney(income)} em receitas. Não inclui contas futuras ainda não cadastradas.` });
       }
     }
