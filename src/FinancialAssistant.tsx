@@ -8,7 +8,7 @@ type Message = { role: "user" | "assistant"; content: string };
 
 // Alguns modelos escapam caracteres Markdown mesmo quando o chat espera texto formatado.
 function normalizeMarkdown(value: string): string {
-  return value.replace(/\\\\([#|*_~>])/g, "$1");
+  return value.replace(/\\([#|*_~>])/g, "$1");
 }
 
 export default function FinancialAssistant({ accessToken }: { accessToken: string }) {
