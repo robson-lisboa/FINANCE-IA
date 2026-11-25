@@ -44,7 +44,7 @@ function repairMojibake(value: string): string {
 }
 
 function repairStoredTransactions(value: unknown): Transaction[] {
-  if (!Array.isArray(value)) return initialTransactions;
+  if (!Array.isArray(value)) return [];
 
   return value.map((item) => {
     if (!item || typeof item !== "object") return item;
@@ -63,26 +63,15 @@ function repairStoredTransactions(value: unknown): Transaction[] {
 }
 
 const money = (value: number, currency: AppSettings["currency"] = "BRL") => value.toLocaleString("pt-BR", { style: "currency", currency });
-const today = new Date().toISOString().slice(0, 10);
+const today = (() => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+})();
 
-const initialTransactions: Transaction[] = [
-  { id: "1", title: "Salário", category: "Salário", date: today, amount: 4200, type: "income" },
-  { id: "2", title: "Supermercado", category: "Alimentação", date: today, amount: 386.5, type: "expense" },
-  { id: "3", title: "Conta de energia", category: "Moradia", date: today, amount: 142.8, type: "expense" },
-  { id: "4", title: "Projeto freelance", category: "Serviços", date: today, amount: 650, type: "income" },
-  { id: "5", title: "Internet", category: "Moradia", date: today, amount: 99.9, type: "expense" },
-];
-
-const chartData = [
-  { month: "Jun", income: 3900, expenses: 2700 },
-  { month: "Jul", income: 4200, expenses: 3100 },
-  { month: "Ago", income: 4050, expenses: 2850 },
-  { month: "Set", income: 4600, expenses: 3300 },
-  { month: "Out", income: 4350, expenses: 2950 },
-  { month: "Nov", income: 4850, expenses: 3150 },
-];
-
-function App() {
+const initialTransactions: Transaction[] = [];function App() {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -141,6 +130,32 @@ function App() {
       return acc;
     }, {});
     return Object.entries(totalsByCategory).sort((a, b) => b[1] - a[1]);
+  }, [transactions]);
+
+  // Agrupa os lançamentos reais nos últimos seis meses, incluindo o mês atual.
+  const chartData = useMemo(() => {
+    const currentDate = new Date();
+    const months = Array.from({ length: 6 }, (_, index) => {
+      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 5 + index, 1);
+      const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
+      return {
+        key,
+        month: monthDate.toLocaleDateString("pt-BR", { month: "short" }).replace(".", ""),
+        income: 0,
+        expenses: 0,
+      };
+    });
+
+    const totalsByMonth = new Map(months.map(month => [month.key, month]));
+    transactions.forEach(transaction => {
+      if (!transaction.date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(transaction.date)) return;
+      const month = totalsByMonth.get(transaction.date.slice(0, 7));
+      if (!month || !Number.isFinite(transaction.amount)) return;
+      if (transaction.type === "income") month.income += transaction.amount;
+      if (transaction.type === "expense") month.expenses += transaction.amount;
+    });
+
+    return months.map(({ month, income, expenses }) => ({ month, income, expenses }));
   }, [transactions]);
 
   const addTransaction = (event: React.FormEvent<HTMLFormElement>) => {
@@ -279,7 +294,7 @@ function App() {
 
         <section className="content-grid">
           <div className="panel chart-panel">
-            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Visão demonstrativa dos últimos 6 meses</p></div><button className="select-chip">Últimos 6 meses <ChevronDown size={14}/></button></div>
+            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Receitas e despesas dos últimos 6 meses, calculadas pelos seus lançamentos</p></div><button className="select-chip">Últimos 6 meses <ChevronDown size={14}/></button></div>
             <div className="chart-legend"><span><i className="legend-income"/> Receitas</span><span><i className="legend-expense"/> Despesas</span></div>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height="100%">
@@ -297,7 +312,7 @@ function App() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="chart-note"><span className="note-dot"/> <span>O gráfico acima usa dados ilustrativos. Seus lançamentos aparecem nos indicadores e na lista abaixo.</span></div>
+            <div className="chart-note"><span className="note-dot"/> <span>{transactions.length === 0 ? "Ainda não há lançamentos. Adicione receitas e despesas para construir seu histórico." : "Este gráfico é atualizado automaticamente com os lançamentos cadastrados."}</span></div>
           </div>
 
           <div className="panel insight-panel" id="insights">
