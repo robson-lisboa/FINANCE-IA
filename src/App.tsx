@@ -75,9 +75,10 @@ const today = (() => {
 })();
 
 const initialTransactions: Transaction[] = [];function FinanceDashboard({ session, onSignOut }: { session: AuthSession; onSignOut: () => void }) {
+  const accountStorageKey = STORAGE_KEY + "-" + session.user.id;
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = localStorage.getItem(accountStorageKey);
       return saved
         ? repairStoredTransactions(JSON.parse(saved) as unknown)
         : initialTransactions;
@@ -111,7 +112,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       setCloudBusy(true);
       setCloudError("");
       try {
-        const savedLocal = localStorage.getItem(STORAGE_KEY);
+        const savedLocal = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(accountStorageKey);
         if (savedLocal && !localStorage.getItem(LEGACY_BACKUP_KEY)) {
           localStorage.setItem(LEGACY_BACKUP_KEY, savedLocal);
         }
@@ -132,7 +133,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             setTransactions([]);
           }
         }
-        if (active) setCloudLoaded(true);
+        if (active) {
+          setCloudLoaded(true);
+          if (localStorage.getItem(STORAGE_KEY)) localStorage.removeItem(STORAGE_KEY);
+        }
       } catch (error) {
         if (active) setCloudError(error instanceof Error ? error.message : "Não foi possível carregar seus dados da nuvem.");
       } finally {
@@ -141,11 +145,11 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     };
     void loadCloudData();
     return () => { active = false; };
-  }, [session.user.id]);
+  }, [session.user.id, accountStorageKey]);
 
   useEffect(() => {
-    if (cloudLoaded) localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
-  }, [transactions, cloudLoaded]);
+    if (cloudLoaded) localStorage.setItem(accountStorageKey, JSON.stringify(transactions));
+  }, [transactions, cloudLoaded, accountStorageKey]);
 
   useEffect(() => {
     localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
@@ -243,6 +247,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const formatMoney = (value: number) => money(value, settings.currency);
   const topCategory = expenseByCategory[0];
   const savingsRate = totals.income > 0 ? Math.max(0, (totals.balance / totals.income) * 100) : 0;
+
+  if (!cloudLoaded) {
+    return <main className="auth-screen"><section className="auth-card"><div className="auth-brand"><span><Activity size={23}/></span><div><strong>FINANCE <b>IA</b></strong><small>CONTROLE FINANCEIRO PESSOAL</small></div></div><h1 className="auth-heading">Conectando sua conta</h1><p className="auth-footnote">{cloudBusy ? "Carregando seus dados protegidos..." : cloudError || "Aguardando sincronização."}</p>{cloudError && <button className="primary-btn auth-submit" onClick={() => window.location.reload()}>Tentar novamente</button>}</section></main>;
+  }
 
   return (
     <div
