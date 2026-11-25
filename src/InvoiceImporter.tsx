@@ -147,7 +147,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     const exactMatches = rows.filter(row => existing.some(item => normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
     const duplicateMap = new Map<string, InvoiceRow[]>();
     rows.forEach(row => {
-      const key = [normalize(row.title), row.date, row.amount.toFixed(2)].join("|");
+      const key = [normalize(row.title), row.amount.toFixed(2)].join("|");
       duplicateMap.set(key, [...(duplicateMap.get(key) || []), row]);
     });
     const repeated = [...duplicateMap.values()].filter(group => group.length > 1);
@@ -213,7 +213,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
               <div><strong>{audit.installmentRows.length}</strong><span>descrição(ões) com parcela</span></div>
             </div>
             {audit.exactMatches.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> {audit.exactMatches.length} lançamento(s) coincidem com registros existentes, somando {audit.totalAlreadyRegistered.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Eles serão ignorados na importação.</p>}
-            {audit.repeated.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> Há compras com mesma descrição, data e valor dentro do arquivo. Confira se são duplicidades reais.</p>}
+            {audit.repeated.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> Uma descrição com o mesmo valor aparece mais de uma vez em datas diferentes. Pode ser recorrência normal; confira o histórico.</p>}
             {audit.installmentRows.length > 0 && <p className="invoice-audit-note">Encontramos indicações de parcelamento em algumas descrições. Confirme se o valor lido é o valor da parcela, não o valor total da compra.</p>}
             {audit.exactMatches.length === 0 && audit.repeated.length === 0 && audit.installmentRows.length === 0 && <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma coincidência exata ou indicação de parcela encontrada nos critérios automáticos.</p>}
             <p className="invoice-audit-disclaimer">A auditoria compara descrição, data e valor com seus lançamentos. Uma coincidência é um alerta para revisão, não prova de cobrança indevida.</p>
