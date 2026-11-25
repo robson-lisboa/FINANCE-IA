@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Clock3, TrendingUp, TrendingDown, Sparkles, AlertTriangle } from "lucide-react";
-import { parseBrazilianMoney } from "./lib/money";
+import { parseBrazilianMoney } from "./lib/money-core.js";
 
 type Transaction = { date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
