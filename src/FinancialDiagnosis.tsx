@@ -32,13 +32,22 @@ export default function FinancialDiagnosis({ transactions, formatMoney }: Props)
       .map(item => ({ ...item, monthlyAverage: item.total / item.months.size }))
       .sort((a, b) => b.monthlyAverage - a.monthlyAverage).slice(0, 5);
     const recurringTotal = recurring.reduce((total, item) => total + item.monthlyAverage, 0);
+    const historyStart = new Date(now.getFullYear(), now.getMonth() - 3, 1);
+    const historyKey = `${historyStart.getFullYear()}-${String(historyStart.getMonth() + 1).padStart(2, "0")}`;
+    const priorExpenses = valid.filter(t => t.type === "expense" && t.date.slice(0, 7) >= historyKey && t.date.slice(0, 7) < currentKey);
+    const unusual = current.filter(t => t.type === "expense").map(t => {
+      const categoryHistory = priorExpenses.filter(item => item.category.trim().toLocaleLowerCase("pt-BR") === t.category.trim().toLocaleLowerCase("pt-BR"));
+      const average = categoryHistory.length ? categoryHistory.reduce((total, item) => total + Number(item.amount), 0) / categoryHistory.length : 0;
+      return { ...t, categoryAverage: average, referenceCount: categoryHistory.length, difference: average > 0 ? (Number(t.amount) / average - 1) * 100 : 0 };
+    }).filter(t => t.referenceCount >= 3 && t.amount >= t.categoryAverage * 1.5)
+      .sort((a, b) => b.difference - a.difference).slice(0, 5);
     const change = previousExpenses > 0 ? ((currentExpenses - previousExpenses) / previousExpenses) * 100 : null;
     const savings = currentIncome > 0 ? ((currentIncome - currentExpenses) / currentIncome) * 100 : null;
     const days = Math.max(1, now.getDate());
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const projectedExpenses = currentExpenses / days * daysInMonth;
     const projectedBalance = currentIncome - projectedExpenses;
-    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance: currentIncome - currentExpenses, ranked, recurring, recurringTotal, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, daysInMonth, daysElapsed: days, count: current.length };
+    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance: currentIncome - currentExpenses, ranked, recurring, recurringTotal, unusual, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, daysInMonth, daysElapsed: days, count: current.length };
   }, [transactions]);
 
   const monthName = (key: string) => { const [year, month] = key.split("-").map(Number); return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); };
@@ -79,6 +88,11 @@ export default function FinancialDiagnosis({ transactions, formatMoney }: Props)
           <div className="recurring-list">{report.recurring.map(item => <div className="recurring-item" key={item.title}><div><strong>{item.title}</strong><small>{item.count} lançamento(s) em {item.months.size} mês(es)</small></div><b>{formatMoney(item.monthlyAverage)}/mês</b></div>)}</div>
         </>}
         <p className="insight-disclaimer">Detecção aproximada por descrição repetida; não confirma que seja assinatura ou cobrança automática. Valores são médias dos meses encontrados.</p>
+      </div>
+      <div className="panel unusual-panel">
+        <div className="panel-heading"><div><h2>Gastos fora do padrão</h2><p>Compras pelo menos 50% acima da média da categoria</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
+        {report.unusual.length === 0 ? <div className="empty-state compact">Nenhum gasto fora do padrão foi identificado com os dados disponíveis.</div> : <div className="unusual-list">{report.unusual.map(item => <div className="unusual-item" key={item.id}><div><strong>{item.title}</strong><small>{item.category} · média histórica: {formatMoney(item.categoryAverage)}</small></div><div><b>{formatMoney(item.amount)}</b><small className="unusual-difference">+{item.difference.toFixed(0)}% acima da média</small></div></div>)}</div>}
+        <p className="insight-disclaimer">Compara cada despesa atual com pelo menos três lançamentos da mesma categoria nos três meses anteriores. É um alerta estatístico, não significa necessariamente erro ou desperdício.</p>
       </div>
       <div className="panel goals-panel">
         <div className="panel-heading"><div><h2>Onde você mais gasta</h2><p>Despesas por categoria neste mês</p></div><Activity size={18} className="subtle-icon"/></div>
