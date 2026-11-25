@@ -185,13 +185,21 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     .filter(t => `${t.title} ${t.category}`.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => b.date.localeCompare(a.date)), [transactions, filter, search]);
 
+  const currentMonthKey = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}`;
+  const monthlyTotals = useMemo(() => {
+    const current = transactions.filter(t => t.date.startsWith(currentMonthKey));
+    const income = current.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenses = current.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
+    return { income, expenses, balance: income - expenses, count: current.length };
+  }, [transactions, currentMonthKey]);
+
   const expenseByCategory = useMemo(() => {
-    const totalsByCategory = transactions.filter(t => t.type === "expense").reduce<Record<string, number>>((acc, t) => {
-      acc[t.category] = (acc[t.category] || 0) + t.amount;
+    const totalsByCategory = transactions.filter(t => t.type === "expense" && t.date.startsWith(currentMonthKey)).reduce<Record<string, number>>((acc, t) => {
+      acc[t.category || "Sem categoria"] = (acc[t.category || "Sem categoria"] || 0) + Number(t.amount);
       return acc;
     }, {});
     return Object.entries(totalsByCategory).sort((a, b) => b[1] - a[1]);
-  }, [transactions]);
+  }, [transactions, currentMonthKey]);
 
   // Agrupa os lançamentos reais nos últimos seis meses, incluindo o mês atual.
   const chartData = useMemo(() => {
@@ -278,7 +286,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
   const formatMoney = (value: number) => money(value, settings.currency);
   const topCategory = expenseByCategory[0];
-  const savingsRate = totals.income > 0 ? Math.max(0, (totals.balance / totals.income) * 100) : 0;
+  const savingsRate = monthlyTotals.income > 0 ? (monthlyTotals.balance / monthlyTotals.income) * 100 : 0;
 
   if (!cloudLoaded) {
     return <main className="auth-screen"><section className="auth-card"><div className="auth-brand"><span><Activity size={23}/></span><div><strong>FINANCE <b>IA</b></strong><small>CONTROLE FINANCEIRO PESSOAL</small></div></div><h1 className="auth-heading">Conectando sua conta</h1><p className="auth-footnote">{cloudBusy ? "Carregando seus dados protegidos..." : cloudError || "Aguardando sincronização."}</p>{cloudError && <button className="primary-btn auth-submit" onClick={() => window.location.reload()}>Tentar novamente</button>}</section></main>;
@@ -411,10 +419,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         </section>
 
         <section className="stats-grid">
-          <StatCard title="Saldo disponível" value={formatMoney(totals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas" />
-          <StatCard title="Receitas" value={formatMoney(totals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas" />
-          <StatCard title="Despesas" value={formatMoney(totals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas" />
-          <StatCard title="Taxa de economia" value={`${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Saldo sobre receitas" />
+          <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas registradas" />
+          <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas neste mês" />
+          <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas neste mês" />
+          <StatCard title="Taxa de economia" value={`${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Resultado sobre receitas do mês" />
         </section>
 
         <section className="content-grid">
@@ -442,10 +450,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
           <div className="panel insight-panel" id="insights">
             <div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Análise inteligente</h2><p>Resumo automático dos seus dados</p></div></div>
-            <div className="insight-highlight"><span className="insight-label">VISÃO DO SEU DINHEIRO</span><strong>{totals.balance >= 0 ? "Seu saldo está positivo." : "Atenção ao seu saldo."}</strong><p>{totals.balance >= 0 ? `Você tem ${formatMoney(totals.balance)} de saldo considerando os lançamentos registrados.` : `Suas despesas superam as receitas em ${formatMoney(Math.abs(totals.balance))}. Revise seus gastos.`}</p></div>
+            <div className="insight-highlight"><span className="insight-label">VISÃO DO SEU DINHEIRO</span><strong>{monthlyTotals.balance >= 0 ? "Seu resultado do mês está positivo." : "Atenção: resultado mensal negativo."}</strong><p>{monthlyTotals.balance >= 0 ? `As receitas registradas superam as despesas em ${formatMoney(monthlyTotals.balance)} neste mês.` : `As despesas registradas superam as receitas em ${formatMoney(Math.abs(monthlyTotals.balance))} neste mês. Revise seus gastos.`}</p></div>
             <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} · ${formatMoney(topCategory[1])}` : "Adicione despesas para visualizar."}</p></div></div>
             <div className="insight-row"><div className="mini-icon green"><TrendingUp size={16}/></div><div><strong>Taxa de economia</strong><p>{savingsRate.toFixed(1).replace(".", ",")}% das receitas permanecem no saldo.</p></div></div>
-            <div className="insight-disclaimer">Esta análise é automática e informativa. Não é recomendação de investimento.</div>
+            <div className="insight-disclaimer">Considera {monthlyTotals.count} lançamento(s) de {currentTime.toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}. Resultado contábil dos registros, não saldo bancário nem dinheiro disponível. Análise informativa.</div>
           </div>
         </section>
 
@@ -467,13 +475,13 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </div>
 
           <div className="panel goals-panel" id="goals">
-            <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição dos seus gastos</p></div><Activity size={18} className="subtle-icon"/></div>
+            <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição dos gastos neste mês</p></div><Activity size={18} className="subtle-icon"/></div>
             {expenseByCategory.length === 0 ? <div className="empty-state compact">Adicione despesas para ver as categorias.</div> : <div className="category-list">{expenseByCategory.slice(0, 5).map(([category, amount], index) => {
               const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
               const percent = totals.expenses ? amount / totals.expenses * 100 : 0;
               return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{formatMoney(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
             })}</div>}
-            <div className="category-footer"><span>Total de despesas</span><strong>{formatMoney(totals.expenses)}</strong></div>
+            <div className="category-footer"><span>Total de despesas</span><strong>{formatMoney(monthlyTotals.expenses)}</strong></div>
           </div>
         </section>
         </section>
