@@ -19,6 +19,43 @@ type Transaction = {
 };
 
 const STORAGE_KEY = "finance-ia-transactions-v1";
+
+// Corrige textos antigos gravados no navegador com UTF-8 interpretado como Latin-1.
+// A conversão só é aplicada quando o resultado remove os sinais típicos de corrupção.
+function repairMojibake(value: string): string {
+  if (!/[ÃÂ]/.test(value)) return value;
+
+  const characters = Array.from(value);
+  if (characters.some(character => character.codePointAt(0)! > 255)) return value;
+
+  try {
+    const bytes = Uint8Array.from(characters, character => character.charCodeAt(0));
+    const repaired = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    return /[ÃÂ]/.test(repaired) ? value : repaired;
+  } catch {
+    return value;
+  }
+}
+
+function repairStoredTransactions(value: unknown): Transaction[] {
+  if (!Array.isArray(value)) return initialTransactions;
+
+  return value.map((item) => {
+    if (!item || typeof item !== "object") return item;
+    const transaction = item as Transaction;
+
+    return {
+      ...transaction,
+      title: typeof transaction.title === "string"
+        ? repairMojibake(transaction.title)
+        : transaction.title,
+      category: typeof transaction.category === "string"
+        ? repairMojibake(transaction.category)
+        : transaction.category,
+    };
+  }) as Transaction[];
+}
+
 const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const today = new Date().toISOString().slice(0, 10);
 
@@ -43,7 +80,9 @@ function App() {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) as Transaction[] : initialTransactions;
+      return saved
+        ? repairStoredTransactions(JSON.parse(saved) as unknown)
+        : initialTransactions;
     } catch {
       return initialTransactions;
     }
