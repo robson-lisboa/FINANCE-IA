@@ -1,17 +1,19 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
+import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle, Trash2, Pencil } from "lucide-react";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
-import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle } from "lucide-react";
 
 type InvoiceRow = { title: string; date: string; amount: number; category: string };
 type Props = { onClose: () => void; onImport: (rows: InvoiceRow[]) => Promise<void> };
 
+const CATEGORIES = ["Alimentação", "Moradia", "Transporte", "Saúde", "Educação", "Lazer", "Serviços", "Outros"];
+
 const categoryFor = (text: string) => {
   const value = text.toLowerCase();
   if (/mercado|supermercado|padaria|hortifruti|açougue|ifood|restaurante|lanchonete/.test(value)) return "Alimentação";
-  if (/uber|99\s|posto|combust|estacionamento|pedágio|shell|ipiranga/.test(value)) return "Transporte";
+  if (/uber|99\\s|posto|combust|estacionamento|pedágio|shell|ipiranga/.test(value)) return "Transporte";
   if (/farm|drog|hospital|clínica|consulta|laboratório/.test(value)) return "Saúde";
   if (/netflix|spotify|amazon prime|disney|cinema|steam/.test(value)) return "Lazer";
   if (/energia|água|sabesp|internet|telefone|aluguel|condomínio/.test(value)) return "Moradia";
@@ -20,31 +22,48 @@ const categoryFor = (text: string) => {
 };
 
 function parseBrazilianDate(value: string): string | null {
-  const match = value.match(/\b(\d{2})[/.\-](\d{2})(?:[/.\-](\d{2,4}))?\b/);
+  const match = value.match(/\\b(\\d{1,2})[/.-](\\d{1,2})(?:[/.-](\\d{2,4}))?\\b/);
   if (!match) return null;
-  const year = match[3] ? (match[3].length === 2 ? "20" + match[3] : match[3]) : String(new Date().getFullYear());
-  return year + "-" + match[2] + "-" + match[1];
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  if (day < 1 || day > 31 || month < 1 || month > 12) return null;
+  const currentYear = new Date().getFullYear();
+  const year = match[3] ? (match[3].length === 2 ? 2000 + Number(match[3]) : Number(match[3])) : currentYear;
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return null;
+  return year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
 }
 
 function parseRows(text: string): InvoiceRow[] {
-  const lines = text.split(/[\r\n]+/).map(line => line.replace(/\s+/g, " ").trim()).filter(Boolean);
+  const lines = text
+    .replace(/[\\u00a0]/g, " ")
+    .split(/[\\r\\n]+/)
+    .map(line => line.replace(/\\s+/g, " ").trim())
+    .filter(Boolean);
   const rows: InvoiceRow[] = [];
   const seen = new Set<string>();
+
   for (const line of lines) {
-    if (/total|pagamento|vencimento|saldo anterior|limite|encargos|juros|iof|parcelamento|melhor dia|resumo da fatura|anuidade|valor mínimo/i.test(line)) continue;
-    const amountMatches = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})\b/g)];
-    if (!amountMatches.length) continue;
-    const amountText = amountMatches[amountMatches.length - 1][1];
-    const amount = Number(amountText.replace(/\./g, "").replace(",", "."));
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) continue;
+    // Linhas de resumo, pagamento, encargos e créditos não são compras.
+    if (/^(total|subtotal|pagamento|vencimento|saldo anterior|limite|encargos|juros|iof|parcelamento|melhor dia|resumo da fatura|anuidade|valor mínimo)\\b/i.test(line)) continue;
+    if (/\\b(estorno|crédito|credito|pagamento recebido|pagamento efetuado)\\b/i.test(line)) continue;
+
     const date = parseBrazilianDate(line);
     if (!date) continue;
+
+    const amountMatches = [...line.matchAll(/(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+,\\d{2})\\b/g)];
+    if (!amountMatches.length) continue;
+    const amountText = amountMatches[amountMatches.length - 1][1];
+    const amount = Number(amountText.replace(/\\./g, "").replace(",", "."));
+    if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) continue;
+
     const title = line
-      .replace(/\b\d{2}[/.\-]\d{2}(?:[/.\-]\d{2,4})?\b/, "")
-      .replace(/(?:R\$\s*)?\d{1,3}(?:\.\d{3})*,\d{2}\b|\d+,\d{2}\b/g, "")
-      .replace(/\s+/g, " ").trim()
-      .replace(/^[\-–|:]+|[\-–|:]+$/g, "");
-    if (title.length < 3 || /cartão|fatura|titular|você pagou/i.test(title)) continue;
+      .replace(/\\b\\d{1,2}[/.-]\\d{1,2}(?:[/.-]\\d{2,4})?\\b/, "")
+      .replace(/(?:R\\$\\s*)?(?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2}\\b/g, "")
+      .replace(/\\s+/g, " ").trim()
+      .replace(/^[\\-–|:]+|[\\-–|:]+$/g, "");
+    if (title.length < 3 || /cartão|fatura|titular|você pagou|compras nacionais/i.test(title)) continue;
+
     const key = [title.toLowerCase(), date, amount.toFixed(2)].join("|");
     if (seen.has(key)) continue;
     seen.add(key);
@@ -60,8 +79,9 @@ async function extractFile(file: File, setProgress: (value: string) => void): Pr
     const chunks: string[] = [];
     let worker: Awaited<ReturnType<typeof createWorker>> | null = null;
     try {
-      for (let pageNumber = 1; pageNumber <= Math.min(pdf.numPages, 12); pageNumber++) {
-        setProgress("Lendo página " + pageNumber + " de " + Math.min(pdf.numPages, 12) + "...");
+      const pageLimit = Math.min(pdf.numPages, 20);
+      for (let pageNumber = 1; pageNumber <= pageLimit; pageNumber++) {
+        setProgress("Lendo página " + pageNumber + " de " + pageLimit + "...");
         const page = await pdf.getPage(pageNumber);
         const content = await page.getTextContent();
         const pageText = content.items.map(item => "str" in item ? item.str : "").join(" ");
@@ -82,12 +102,13 @@ async function extractFile(file: File, setProgress: (value: string) => void): Pr
         canvas.width = 0;
         canvas.height = 0;
       }
+      if (pdf.numPages > pageLimit) setProgress("Foram analisadas as primeiras 20 páginas do arquivo.");
     } finally {
       if (worker) await worker.terminate();
     }
-    return chunks.join("\n");
+    return chunks.join("\\n");
   }
-  if (!file.type.startsWith("image/")) throw new Error("Envie uma fatura em PDF, JPG ou PNG.");
+  if (!file.type.startsWith("image/")) throw new Error("Envie uma fatura em PDF, JPG, PNG ou WEBP.");
   const worker = await createWorker("por");
   try {
     setProgress("Reconhecendo texto da imagem...");
@@ -106,13 +127,19 @@ export default function InvoiceImporter({ onClose, onImport }: Props) {
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
+  const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
+
+  const updateRow = (index: number, changes: Partial<InvoiceRow>) => {
+    setRows(current => current.map((row, rowIndex) => rowIndex === index ? { ...row, ...changes } : row));
+  };
+
   const analyze = async () => {
     if (!file) return;
     setBusy(true); setError(""); setRows([]); setProgress("Preparando leitura...");
     try {
       const text = await extractFile(file, setProgress);
       const parsed = parseRows(text);
-      if (!parsed.length) throw new Error("Não encontrei compras com data e valor reconhecíveis. Tente um PDF original ou uma foto mais nítida da tabela de compras.");
+      if (!parsed.length) throw new Error("Não encontrei compras com data e valor reconhecíveis. Tente o PDF original ou uma foto mais nítida da tabela de compras.");
       setRows(parsed);
       setProgress("");
     } catch (e) {
@@ -121,6 +148,10 @@ export default function InvoiceImporter({ onClose, onImport }: Props) {
   };
 
   const confirmImport = async () => {
+    if (!rows.length || rows.some(row => !row.title.trim() || !/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) {
+      setError("Revise os campos: descrição, data e valor precisam estar válidos.");
+      return;
+    }
     setBusy(true); setError("");
     try { await onImport(rows); setDone(true); }
     catch (e) { setError(e instanceof Error ? e.message : "Falha ao importar os lançamentos."); }
@@ -133,23 +164,35 @@ export default function InvoiceImporter({ onClose, onImport }: Props) {
         <div><span className="eyebrow">IMPORTAÇÃO INTELIGENTE</span><h2 id="invoice-title">Ler fatura do cartão</h2></div>
         <button type="button" className="icon-btn" onClick={onClose} disabled={busy} aria-label="Fechar"><X size={19}/></button>
       </div>
-      {done ? <div className="invoice-success"><CheckCircle2 size={32}/><strong>Fatura importada!</strong><p>Os lançamentos reconhecidos foram adicionados à sua conta.</p><button className="primary-btn" onClick={onClose}>Concluir</button></div> : <>
-        <p className="muted-text">Envie o PDF ou uma foto da fatura. A leitura acontece no seu navegador; o arquivo não é enviado para um serviço externo de OCR.</p>
+      {done ? <div className="invoice-success"><CheckCircle2 size={32}/><strong>Fatura importada!</strong><p>Os lançamentos revisados foram adicionados à sua conta.</p><button className="primary-btn" onClick={onClose}>Concluir</button></div> : <>
+        <p className="muted-text">Envie o PDF ou uma foto da fatura. A leitura é feita no seu navegador; o arquivo não é enviado para um serviço externo de OCR.</p>
         <label className="invoice-drop">
           <FileUp size={28}/>
           <strong>{file ? file.name : "Selecionar fatura"}</strong>
-          <span>PDF, JPG ou PNG · até 15 MB</span>
-          <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { setFile(e.target.files?.[0] || null); setRows([]); setError(""); }} />
+          <span>PDF, JPG, PNG ou WEBP · até 15 MB</span>
+          <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { setFile(e.target.files?.[0] || null); setRows([]); setError(""); setProgress(""); }} />
         </label>
         {!rows.length && <button className="primary-btn invoice-action" disabled={!file || busy || (file?.size || 0) > 15 * 1024 * 1024} onClick={() => void analyze()}>{busy ? <><LoaderCircle className="spin" size={16}/> {progress || "Analisando..."}</> : "Analisar fatura"}</button>}
         {file && file.size > 15 * 1024 * 1024 && <p className="invoice-error">O arquivo ultrapassa o limite de 15 MB.</p>}
         {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}
         {rows.length > 0 && <div className="invoice-review">
-          <div className="invoice-review-head"><strong>{rows.length} compra(s) reconhecida(s)</strong><span>Confira antes de importar</span></div>
-          <div className="invoice-rows">{rows.map((row, index) => <div className="invoice-row" key={index}><div><strong>{row.title}</strong><small>{row.category} · {row.date.split("-").reverse().join("/")}</small></div><b>{row.amount.toLocaleString("pt-BR",{style:"currency",currency:"BRL"})}</b></div>)}</div>
-          <button className="primary-btn invoice-action" disabled={busy} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar"}</button>
+          <div className="invoice-review-head"><strong>{rows.length} compra(s) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
+          <div className="invoice-total-preview"><span>Total reconhecido</span><strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>
+          <div className="invoice-rows">{rows.map((row, index) => <div className="invoice-row invoice-row-editable" key={index}>
+            <div className="invoice-row-fields">
+              <label>Descrição<input value={row.title} maxLength={100} onChange={e => updateRow(index, { title: e.target.value })}/></label>
+              <div className="invoice-row-subfields">
+                <label>Data<input type="date" value={row.date} onChange={e => updateRow(index, { date: e.target.value })}/></label>
+                <label>Valor (R$)<input inputMode="decimal" value={String(row.amount).replace(".", ",")} onChange={e => { const parsed = Number(e.target.value.replace(",", ".")); updateRow(index, { amount: e.target.value.trim() === "" ? 0 : parsed }); }}/></label>
+                <label>Categoria<select value={row.category} onChange={e => updateRow(index, { category: e.target.value })}>{CATEGORIES.map(category => <option key={category}>{category}</option>)}</select></label>
+              </div>
+            </div>
+            <button type="button" className="icon-btn invoice-remove" title="Remover compra" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
+          </div>)}</div>
+          <button className="primary-btn invoice-action" disabled={busy || !rows.length} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
+          <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); }}>Descartar leitura e tentar novamente</button>
         </div>}
-        <p className="invoice-footnote">A leitura automática pode errar. Confira datas, descrições e valores antes de confirmar. Compras parceladas e formatos diferentes podem exigir ajuste manual.</p>
+        <p className="invoice-footnote">A leitura automática pode errar. Confira todos os lançamentos antes de confirmar. Compras parceladas são registradas pelo valor identificado na fatura; confira se esse valor corresponde à parcela, não ao total da compra.</p>
       </>}
     </section>
   </div>;
