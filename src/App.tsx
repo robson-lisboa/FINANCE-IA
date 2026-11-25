@@ -148,7 +148,7 @@ const initialTransactions: Transaction[] = [];function App() {
 
     const totalsByMonth = new Map(months.map(month => [month.key, month]));
     transactions.forEach(transaction => {
-      if (!transaction.date || !/^\\d{4}-\\d{2}-\\d{2}$/.test(transaction.date)) return;
+      if (!transaction.date || !/^\d{4}-\d{2}-\d{2}$/.test(transaction.date)) return;
       const month = totalsByMonth.get(transaction.date.slice(0, 7));
       if (!month || !Number.isFinite(transaction.amount)) return;
       if (transaction.type === "income") month.income += transaction.amount;
