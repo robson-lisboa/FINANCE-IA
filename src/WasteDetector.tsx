@@ -7,7 +7,7 @@ type Props = { transactions: Transaction[]; formatMoney: (value: number) => stri
 export default function WasteDetector({ transactions, formatMoney }: Props) {
   const [target, setTarget] = useState(20);
   const report = useMemo(() => {
-    const valid = transactions.filter(t => t.type === "expense" && /^\\d{4}-\\d{2}-\\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)) && Number(t.amount) > 0);
+    const valid = transactions.filter(t => t.type === "expense" && /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)) && Number(t.amount) > 0);
     const now = new Date();
     const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const current = valid.filter(t => t.date.startsWith(monthKey));
@@ -16,7 +16,7 @@ export default function WasteDetector({ transactions, formatMoney }: Props) {
     const smallTotal = small.reduce((sum, t) => sum + Number(t.amount), 0);
     const groups = new Map<string, Transaction[]>();
     valid.forEach(t => {
-      const key = t.title.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, " ").trim();
+      const key = t.title.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("pt-BR").replace(/[^a-z0-9]+/g, " ").trim();
       if (key.length > 2) groups.set(key, [...(groups.get(key) || []), t]);
     });
     const recurring = [...groups.values()].map(items => {
