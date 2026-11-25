@@ -70,8 +70,24 @@ async function authRequest<T>(path: string, body?: unknown): Promise<T> {
     headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY! },
     body: JSON.stringify(body ?? {}),
   });
-  const result = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(result.msg || result.message || result.error_description || "Não foi possível autenticar.");
+  const responseText = await response.text();
+  const contentType = response.headers.get("content-type") || "não informado";
+  let result: Record<string, unknown> = {};
+  if (responseText.trim()) {
+    try {
+      const parsed: unknown = JSON.parse(responseText);
+      if (parsed && typeof parsed === "object") result = parsed as Record<string, unknown>;
+      else throw new Error("A resposta não contém um objeto JSON.");
+    } catch {
+      const preview = responseText.replace(/\s+/g, " ").slice(0, 240);
+      throw new Error(`Resposta inválida do serviço de autenticação (HTTP ${response.status}; Content-Type: ${contentType}). Conteúdo recebido: ${preview || "vazio"}.`);
+    }
+  } else if (response.ok) {
+    throw new Error(`O Supabase respondeu sem conteúdo (HTTP ${response.status}; Content-Type: ${contentType}). Confira se VITE_SUPABASE_URL aponta para o projeto correto no Render.`);
+  }
+  if (!response.ok) {
+    throw new Error(String(result.msg || result.message || result.error_description || `Falha na autenticação (HTTP ${response.status}; Content-Type: ${contentType}).`));
+  }
   return result as T;
 }
 
