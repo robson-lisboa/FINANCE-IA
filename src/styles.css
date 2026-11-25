@@ -285,3 +285,22 @@
 .ai-chat-message.assistant .ai-message-content{width:min(100%,760px)}
 .ai-chat-message.assistant{max-width:100%;width:100%}
 .ai-chat-message.user{max-width:92%}
+
+
+/* Revisão editável da fatura */
+.invoice-total-preview { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:12px 14px; margin:10px 0; border:1px solid var(--border,#303950); border-radius:10px; background:rgba(154,140,255,.06); }
+.invoice-total-preview span { color:var(--muted,#929bb0); font-size:12px; }
+.invoice-total-preview strong { font-size:16px; }
+.invoice-row-editable { align-items:flex-start; }
+.invoice-row-fields { flex:1; display:flex; flex-direction:column; gap:10px; min-width:0; }
+.invoice-row-fields label, .invoice-row-subfields label { display:flex; flex-direction:column; gap:5px; color:var(--muted,#929bb0); font-size:11px; }
+.invoice-row-fields input, .invoice-row-subfields input, .invoice-row-subfields select { width:100%; min-width:0; box-sizing:border-box; padding:8px 9px; border:1px solid var(--border,#303950); border-radius:7px; background:var(--surface,#171d2b); color:var(--text,#f4f5fa); font:inherit; font-size:12px; }
+.invoice-row-subfields { display:grid !important; grid-template-columns:1fr 1fr 1fr; gap:8px !important; }
+.invoice-remove { flex:0 0 auto; color:#f07883; margin-top:20px; }
+.invoice-remove:hover { background:rgba(240,120,131,.1); }
+@media (max-width:560px) {
+  .invoice-row-subfields { grid-template-columns:1fr 1fr !important; }
+  .invoice-row-subfields label:last-child { grid-column:1 / -1; }
+  .invoice-row-editable { gap:8px; padding:10px; }
+  .invoice-review-head { align-items:flex-start; flex-direction:column; }
+}
