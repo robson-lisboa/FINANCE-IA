@@ -23,10 +23,10 @@ const money = (value: number) => value.toLocaleString("pt-BR", { style: "currenc
 const today = new Date().toISOString().slice(0, 10);
 
 const initialTransactions: Transaction[] = [
-  { id: "1", title: "SalÃ¡rio", category: "SalÃ¡rio", date: today, amount: 4200, type: "income" },
-  { id: "2", title: "Supermercado", category: "AlimentaÃ§Ã£o", date: today, amount: 386.5, type: "expense" },
+  { id: "1", title: "Salário", category: "Salário", date: today, amount: 4200, type: "income" },
+  { id: "2", title: "Supermercado", category: "Alimentação", date: today, amount: 386.5, type: "expense" },
   { id: "3", title: "Conta de energia", category: "Moradia", date: today, amount: 142.8, type: "expense" },
-  { id: "4", title: "Projeto freelance", category: "ServiÃ§os", date: today, amount: 650, type: "income" },
+  { id: "4", title: "Projeto freelance", category: "Serviços", date: today, amount: 650, type: "income" },
   { id: "5", title: "Internet", category: "Moradia", date: today, amount: 99.9, type: "expense" },
 ];
 
@@ -100,7 +100,7 @@ function App() {
   };
 
   const exportCsv = () => {
-    const rows = [["DescriÃ§Ã£o", "Categoria", "Data", "Tipo", "Valor"], ...transactions.map(t => [
+    const rows = [["Descrição", "Categoria", "Data", "Tipo", "Valor"], ...transactions.map(t => [
       t.title, t.category, t.date, t.type === "income" ? "Receita" : "Despesa", t.amount.toFixed(2).replace(".", ",")
     ])];
     const csv = "\uFEFF" + rows.map(row => row.map(value => `"${String(value).replace(/"/g, '""')}"`).join(";")).join("\n");
@@ -125,22 +125,22 @@ function App() {
         </div>
         <div className="workspace-label">MENU PRINCIPAL</div>
         <nav className="nav-list">
-          <a className="nav-item active" href="#dashboard"><LayoutDashboard size={18}/> VisÃ£o geral</a>
-          <a className="nav-item" href="#transactions"><Wallet size={18}/> LanÃ§amentos</a>
-          <a className="nav-item" href="#insights"><Sparkles size={18}/> AnÃ¡lise inteligente <span className="new-pill">NOVO</span></a>
+          <a className="nav-item active" href="#dashboard"><LayoutDashboard size={18}/> Visão geral</a>
+          <a className="nav-item" href="#transactions"><Wallet size={18}/> Lançamentos</a>
+          <a className="nav-item" href="#insights"><Sparkles size={18}/> Análise inteligente <span className="new-pill">NOVO</span></a>
           <a className="nav-item" href="#goals"><Target size={18}/> Metas financeiras</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="help-card">
             <div className="help-icon"><CircleHelp size={18}/></div>
             <strong>Precisa de ajuda?</strong>
-            <p>Organize suas finanÃ§as com mais clareza.</p>
-            <a href="#insights">Ver dicas <span>â†’</span></a>
+            <p>Organize suas finanças com mais clareza.</p>
+            <a href="#insights">Ver dicas <span>→</span></a>
           </div>
-          <a className="nav-item muted" href="#settings"><Settings size={18}/> ConfiguraÃ§Ãµes</a>
+          <a className="nav-item muted" href="#settings"><Settings size={18}/> Configurações</a>
           <div className="profile">
             <div className="avatar">R</div>
-            <div className="profile-text"><strong>Minha conta</strong><small>Plano demonstraÃ§Ã£o</small></div>
+            <div className="profile-text"><strong>Minha conta</strong><small>Plano demonstração</small></div>
             <ChevronDown size={16} className="profile-chevron"/>
           </div>
         </div>
@@ -152,30 +152,30 @@ function App() {
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
-            <div><div className="breadcrumb">Workspace <span>/</span> <b>VisÃ£o geral</b></div><div className="welcome">Bom dia! <span>Vamos cuidar do seu dinheiro.</span></div></div>
+            <div><div className="breadcrumb">Workspace <span>/</span> <b>Visão geral</b></div><div className="welcome">Bom dia! <span>Vamos cuidar do seu dinheiro.</span></div></div>
           </div>
           <div className="topbar-actions">
             <div className="date-chip"><CalendarDays size={15}/> {new Date().toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</div>
-            <button className="icon-btn notification-btn" aria-label="NotificaÃ§Ãµes"><Bell size={18}/><i/></button>
-            <button className="primary-btn top-add" onClick={() => setModalOpen(true)}><Plus size={17}/> Novo lanÃ§amento</button>
+            <button className="icon-btn notification-btn" aria-label="Notificações"><Bell size={18}/><i/></button>
+            <button className="primary-btn top-add" onClick={() => setModalOpen(true)}><Plus size={17}/> Novo lançamento</button>
           </div>
         </header>
 
         <section className="page-heading">
-          <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>VisÃ£o geral</h1><p className="muted-text">Acompanhe sua vida financeira em um sÃ³ lugar.</p></div>
+          <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>Visão geral</h1><p className="muted-text">Acompanhe sua vida financeira em um só lugar.</p></div>
           <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
         </section>
 
         <section className="stats-grid">
-          <StatCard title="Saldo disponÃ­vel" value={money(totals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas" />
+          <StatCard title="Saldo disponível" value={money(totals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas" />
           <StatCard title="Receitas" value={money(totals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas" />
-          <StatCard title="Despesas" value={money(totals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="SaÃ­das registradas" />
+          <StatCard title="Despesas" value={money(totals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas" />
           <StatCard title="Taxa de economia" value={`${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Saldo sobre receitas" />
         </section>
 
         <section className="content-grid">
           <div className="panel chart-panel">
-            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>VisÃ£o demonstrativa dos Ãºltimos 6 meses</p></div><button className="select-chip">Ãšltimos 6 meses <ChevronDown size={14}/></button></div>
+            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Visão demonstrativa dos últimos 6 meses</p></div><button className="select-chip">Últimos 6 meses <ChevronDown size={14}/></button></div>
             <div className="chart-legend"><span><i className="legend-income"/> Receitas</span><span><i className="legend-expense"/> Despesas</span></div>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height="100%">
@@ -193,36 +193,36 @@ function App() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
-            <div className="chart-note"><span className="note-dot"/> <span>O grÃ¡fico acima usa dados ilustrativos. Seus lanÃ§amentos aparecem nos indicadores e na lista abaixo.</span></div>
+            <div className="chart-note"><span className="note-dot"/> <span>O gráfico acima usa dados ilustrativos. Seus lançamentos aparecem nos indicadores e na lista abaixo.</span></div>
           </div>
 
           <div className="panel insight-panel" id="insights">
-            <div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>AnÃ¡lise inteligente</h2><p>Resumo automÃ¡tico dos seus dados</p></div></div>
-            <div className="insight-highlight"><span className="insight-label">VISÃƒO DO SEU DINHEIRO</span><strong>{totals.balance >= 0 ? "Seu saldo estÃ¡ positivo." : "AtenÃ§Ã£o ao seu saldo."}</strong><p>{totals.balance >= 0 ? `VocÃª tem ${money(totals.balance)} de saldo considerando os lanÃ§amentos registrados.` : `Suas despesas superam as receitas em ${money(Math.abs(totals.balance))}. Revise seus gastos.`}</p></div>
-            <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} Â· ${money(topCategory[1])}` : "Adicione despesas para visualizar."}</p></div></div>
+            <div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Análise inteligente</h2><p>Resumo automático dos seus dados</p></div></div>
+            <div className="insight-highlight"><span className="insight-label">VISÃO DO SEU DINHEIRO</span><strong>{totals.balance >= 0 ? "Seu saldo está positivo." : "Atenção ao seu saldo."}</strong><p>{totals.balance >= 0 ? `Você tem ${money(totals.balance)} de saldo considerando os lançamentos registrados.` : `Suas despesas superam as receitas em ${money(Math.abs(totals.balance))}. Revise seus gastos.`}</p></div>
+            <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} · ${money(topCategory[1])}` : "Adicione despesas para visualizar."}</p></div></div>
             <div className="insight-row"><div className="mini-icon green"><TrendingUp size={16}/></div><div><strong>Taxa de economia</strong><p>{savingsRate.toFixed(1).replace(".", ",")}% das receitas permanecem no saldo.</p></div></div>
-            <div className="insight-disclaimer">Esta anÃ¡lise Ã© automÃ¡tica e informativa. NÃ£o Ã© recomendaÃ§Ã£o de investimento.</div>
+            <div className="insight-disclaimer">Esta análise é automática e informativa. Não é recomendação de investimento.</div>
           </div>
         </section>
 
         <section className="lower-grid">
           <div className="panel transactions-panel" id="transactions">
-            <div className="panel-heading transactions-heading"><div><h2>Ãšltimos lanÃ§amentos</h2><p>Consulte e organize suas movimentaÃ§Ãµes.</p></div><button className="text-btn" onClick={() => setModalOpen(true)}>Adicionar novo <Plus size={15}/></button></div>
-            <div className="table-tools"><div className="search-box"><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar lanÃ§amento..."/></div><div className="filter-tabs"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "income" ? "selected" : ""} onClick={() => setFilter("income")}>Receitas</button><button className={filter === "expense" ? "selected" : ""} onClick={() => setFilter("expense")}>Despesas</button></div></div>
+            <div className="panel-heading transactions-heading"><div><h2>Últimos lançamentos</h2><p>Consulte e organize suas movimentações.</p></div><button className="text-btn" onClick={() => setModalOpen(true)}>Adicionar novo <Plus size={15}/></button></div>
+            <div className="table-tools"><div className="search-box"><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar lançamento..."/></div><div className="filter-tabs"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "income" ? "selected" : ""} onClick={() => setFilter("income")}>Receitas</button><button className={filter === "expense" ? "selected" : ""} onClick={() => setFilter("expense")}>Despesas</button></div></div>
             <div className="transaction-list">
-              {filtered.length === 0 ? <div className="empty-state"><FileText size={24}/><strong>Nenhum lanÃ§amento encontrado</strong><span>Adicione uma movimentaÃ§Ã£o ou altere sua busca.</span></div> : filtered.slice(0, 8).map(t => (
+              {filtered.length === 0 ? <div className="empty-state"><FileText size={24}/><strong>Nenhum lançamento encontrado</strong><span>Adicione uma movimentação ou altere sua busca.</span></div> : filtered.slice(0, 8).map(t => (
                 <div className="transaction-row" key={t.id}>
                   <div className={`transaction-icon ${t.type}`}>{t.type === "income" ? <ArrowDownLeft size={17}/> : <ArrowUpRight size={17}/>}</div>
-                  <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} Â· {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}</span></div>
-                  <strong className={`transaction-amount ${t.type}`}>{t.type === "income" ? "+" : "âˆ’"} {money(t.amount)}</strong>
-                  <button className="delete-btn" onClick={() => deleteTransaction(t.id)} title="Excluir lanÃ§amento" aria-label={`Excluir ${t.title}`}><Trash2 size={15}/></button>
+                  <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}</span></div>
+                  <strong className={`transaction-amount ${t.type}`}>{t.type === "income" ? "+" : "−"} {money(t.amount)}</strong>
+                  <button className="delete-btn" onClick={() => deleteTransaction(t.id)} title="Excluir lançamento" aria-label={`Excluir ${t.title}`}><Trash2 size={15}/></button>
                 </div>
               ))}
             </div>
           </div>
 
           <div className="panel goals-panel" id="goals">
-            <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>DistribuiÃ§Ã£o dos seus gastos</p></div><Activity size={18} className="subtle-icon"/></div>
+            <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição dos seus gastos</p></div><Activity size={18} className="subtle-icon"/></div>
             {expenseByCategory.length === 0 ? <div className="empty-state compact">Adicione despesas para ver as categorias.</div> : <div className="category-list">{expenseByCategory.slice(0, 5).map(([category, amount], index) => {
               const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
               const percent = totals.expenses ? amount / totals.expenses * 100 : 0;
@@ -231,17 +231,17 @@ function App() {
             <div className="category-footer"><span>Total de despesas</span><strong>{money(totals.expenses)}</strong></div>
           </div>
         </section>
-        <footer className="footer"><span>Â© 2026 FINANCE IA</span><span>OrganizaÃ§Ã£o financeira com clareza.</span><span>VersÃ£o 1.0 Â· DemonstraÃ§Ã£o</span></footer>
+        <footer className="footer"><span>© 2026 FINANCE IA</span><span>Organização financeira com clareza.</span><span>Versão 1.0 · Demonstração</span></footer>
       </main>
 
       {modalOpen && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModalOpen(false); }}>
         <form className="modal" onSubmit={addTransaction}>
-          <div className="modal-heading"><div><span className="eyebrow">MOVIMENTAÃ‡ÃƒO FINANCEIRA</span><h2>Novo lanÃ§amento</h2></div><button type="button" className="icon-btn" onClick={() => setModalOpen(false)} aria-label="Fechar"><X size={19}/></button></div>
+          <div className="modal-heading"><div><span className="eyebrow">MOVIMENTAÇÃO FINANCEIRA</span><h2>Novo lançamento</h2></div><button type="button" className="icon-btn" onClick={() => setModalOpen(false)} aria-label="Fechar"><X size={19}/></button></div>
           <div className="type-switch"><button type="button" className={form.type === "expense" ? "active expense-tab" : ""} onClick={() => setForm({ ...form, type: "expense" })}>Despesa</button><button type="button" className={form.type === "income" ? "active income-tab" : ""} onClick={() => setForm({ ...form, type: "income" })}>Receita</button></div>
-          <label>DescriÃ§Ã£o<input required autoFocus placeholder="Ex.: Compra de materiais" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}/></label>
+          <label>Descrição<input required autoFocus placeholder="Ex.: Compra de materiais" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}/></label>
           <div className="form-two"><label>Valor (R$)<input required inputMode="decimal" placeholder="0,00" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}/></label><label>Data<input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}/></label></div>
-          <label>Categoria<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{(form.type === "income" ? ["SalÃ¡rio", "ServiÃ§os", "Vendas", "Investimentos", "Outros"] : ["AlimentaÃ§Ã£o", "Moradia", "Transporte", "SaÃºde", "EducaÃ§Ã£o", "Lazer", "ServiÃ§os", "Outros"]).map(c => <option key={c}>{c}</option>)}</select></label>
-          <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setModalOpen(false)}>Cancelar</button><button type="submit" className="primary-btn"><Plus size={16}/> Salvar lanÃ§amento</button></div>
+          <label>Categoria<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{(form.type === "income" ? ["Salário", "Serviços", "Vendas", "Investimentos", "Outros"] : ["Alimentação", "Moradia", "Transporte", "Saúde", "Educação", "Lazer", "Serviços", "Outros"]).map(c => <option key={c}>{c}</option>)}</select></label>
+          <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setModalOpen(false)}>Cancelar</button><button type="submit" className="primary-btn"><Plus size={16}/> Salvar lançamento</button></div>
         </form>
       </div>}
     </div>
