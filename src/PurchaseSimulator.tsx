@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Calculator, AlertTriangle, CheckCircle2, TrendingUp, CalendarClock } from "lucide-react";
+import { parseBrazilianMoney } from "./lib/money";
 
 type Transaction = { date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
@@ -15,21 +16,22 @@ export default function PurchaseSimulator({ transactions, formatMoney }: Props) 
   const cash = parseMoney(cashPrice);
   const total = parseMoney(installmentTotal);
   const count = Math.min(48, Math.max(1, Number(installments) || 1));
-  const valid = Number.isFinite(cash) && cash > 0 && cash <= 10000000 &&
-    (mode === "cash" || (Number.isFinite(total) && total > 0 && total <= 10000000));
+  const valid = cash !== null && cash > 0 && cash <= 10000000 &&
+    (mode === "cash" || (total !== null && total > 0 && total <= 10000000));
 
   const history = useMemo(() => {
     const now = new Date();
     const months = Array.from({ length: 3 }, (_, index) => {
-      const date = new Date(now.getFullYear(), now.getMonth() - 2 + index, 1);
+      const date = new Date(now.getFullYear(), now.getMonth() - 3 + index, 1);
       return { key: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0"), income: 0, expenses: 0, entries: 0 };
     });
     const map = new Map(months.map(month => [month.key, month]));
     transactions.forEach(item => {
-      const month = item.date?.slice(0, 7);
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(item.date || "")) return;
+      const month = item.date.slice(0, 7);
       const bucket = map.get(month);
       const value = Number(item.amount);
-      if (!bucket || !Number.isFinite(value)) return;
+      if (!bucket || !Number.isFinite(value) || value < 0) return;
       if (item.type === "income") bucket.income += value;
       if (item.type === "expense") bucket.expenses += value;
       bucket.entries += 1;
@@ -38,18 +40,20 @@ export default function PurchaseSimulator({ transactions, formatMoney }: Props) 
     const income = populated.length ? populated.reduce((sum, month) => sum + month.income, 0) / populated.length : 0;
     const expenses = populated.length ? populated.reduce((sum, month) => sum + month.expenses, 0) / populated.length : 0;
     const currentKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-    const current = map.get(currentKey)!;
-    return { income, expenses, margin: income - expenses, populated: populated.length, currentIncome: current.income, currentExpenses: current.expenses, currentEntries: current.entries };
+    const current = transactions.filter(item => item.date?.startsWith(currentKey) && /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) && Number.isFinite(Number(item.amount)) && Number(item.amount) >= 0);
+    const currentIncome = current.filter(item => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
+    const currentExpenses = current.filter(item => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
+    return { income, expenses, margin: income - expenses, populated: populated.length, currentIncome, currentExpenses, currentEntries: current.length };
   }, [transactions]);
 
-  const monthlyPayment = mode === "cash" ? cash : total / count;
-  const finalCost = mode === "cash" ? cash : total;
-  const extraCost = mode === "installment" ? Math.max(0, total - cash) : 0;
+  const monthlyPayment = mode === "cash" ? cashAmount : totalAmount / count;
+  const finalCost = mode === "cash" ? cashAmount : totalAmount;
+  const extraCost = mode === "installment" ? Math.max(0, totalAmount - cashAmount) : 0;
   const months = Number(horizon);
   const projectedBaseline = history.margin * months;
   const installmentMonthsInHorizon = Math.min(months, count);
-  const projectedPurchase = projectedBaseline - (mode === "cash" ? cash : monthlyPayment * installmentMonthsInHorizon);
-  const currentMonthImpact = history.currentIncome - history.currentExpenses - (mode === "cash" ? cash : monthlyPayment);
+  const projectedPurchase = projectedBaseline - (mode === "cash" ? cashAmount : monthlyPayment * installmentMonthsInHorizon);
+  const currentMonthImpact = history.currentIncome - history.currentExpenses - (mode === "cash" ? cashAmount : monthlyPayment);
   const hasData = history.populated > 0;
   const affordable = hasData && projectedPurchase >= 0;
 
@@ -73,7 +77,7 @@ export default function PurchaseSimulator({ transactions, formatMoney }: Props) 
       </div>
       <div className={affordable ? "simulator-verdict simulator-ok" : "simulator-verdict simulator-caution"}>
         {affordable ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>}
-        <div><strong>{!hasData ? "Ainda faltam dados para avaliar" : affordable ? "A projeção suporta esta compra" : "A compra pode pressionar seu orçamento"}</strong>
+        <div><strong>{!hasData ? "Ainda faltam dados para avaliar" : affordable ? "A projeção registrada fica positiva" : "A compra pode pressionar seu orçamento"}</strong>
           <p>{!hasData ? "Registre receitas e despesas para criar uma projeção baseada no seu histórico." : "A simulação usa a média de " + history.populated + " mês(es) com lançamentos nos últimos 3 meses. " + (mode === "cash" ? "O valor à vista é descontado uma única vez." : "A parcela é considerada mensalmente durante o período escolhido.") + " Isso é uma estimativa, não uma garantia de sobra de dinheiro."}</p>
         </div>
       </div>
@@ -82,7 +86,7 @@ export default function PurchaseSimulator({ transactions, formatMoney }: Props) 
         <div><span><CalendarClock size={14}/> Margem estimada após a compra neste mês</span><strong className={currentMonthImpact < 0 ? "simulator-negative" : "simulator-positive"}>{formatMoney(currentMonthImpact)}</strong></div>
         {mode === "installment" && <div><span>Compromisso após o fim das parcelas</span><strong>{formatMoney(history.margin)}</strong></div>}
       </div>
-      <p className="simulator-disclaimer">Base: {history.currentEntries} lançamento(s) no mês atual e média dos últimos 3 meses com dados. A projeção pressupõe receitas e despesas semelhantes às registradas. Não consulta saldo bancário, faturas futuras, parcelas antigas não cadastradas ou condições completas do contrato. Confira também reserva de emergência e vencimentos.</p>
+      <p className="simulator-disclaimer">Base: {history.currentEntries} lançamento(s) no mês atual e média dos 3 meses completos anteriores com registros. A projeção pressupõe receitas e despesas semelhantes às registradas. Não consulta saldo bancário, faturas futuras, parcelas antigas não cadastradas ou condições completas do contrato. Confira também reserva de emergência e vencimentos.</p>
     </>}
   </section>;
 }
