@@ -71,18 +71,23 @@ export async function signUp(email: string, password: string): Promise<{ session
 
 export async function signOut(session: AuthSession): Promise<void> {
   try {
-    await fetch(`${SUPABASE_URL}/auth/v1/logout`, {
+    await fetch(SUPABASE_URL + "/auth/v1/logout", {
       method: "POST",
-      headers: { apikey: SUPABASE_KEY!, Authorization: `Bearer ${session.access_token}` },
+      headers: { apikey: SUPABASE_KEY!, Authorization: "Bearer " + session.access_token },
     });
-  } finally {
-    saveSession(null);
+  } catch {
+    // Encerra a sessão local mesmo quando a rede estiver indisponível.
   }
+  saveSession(null);
 }
 
 export async function refreshSession(session: AuthSession): Promise<AuthSession> {
-  if (session.expires_at > Math.floor(Date.now() / 1000) + 60) return session;
-  const result = await authRequest<AuthSession>("token?grant_type=refresh_token", { refresh_token: session.refresh_token });
+  const stored = readStoredSession();
+  const current = stored && stored.user.id === session.user.id && stored.expires_at > session.expires_at
+    ? stored
+    : session;
+  if (current.expires_at > Math.floor(Date.now() / 1000) + 60) return current;
+  const result = await authRequest<AuthSession>("token?grant_type=refresh_token", { refresh_token: current.refresh_token });
   const refreshed = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + result.expires_in };
   saveSession(refreshed);
   return refreshed;
@@ -91,11 +96,11 @@ export async function refreshSession(session: AuthSession): Promise<AuthSession>
 async function dataRequest<T>(session: AuthSession, path: string, init: RequestInit = {}): Promise<T> {
   ensureConfigured();
   const activeSession = await refreshSession(session);
-  const response = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+  const response = await fetch(SUPABASE_URL + "/rest/v1/" + path, {
     ...init,
     headers: {
       apikey: SUPABASE_KEY!,
-      Authorization: `Bearer ${activeSession.access_token}`,
+      Authorization: "Bearer " + activeSession.access_token,
       "Content-Type": "application/json",
       ...(init.headers || {}),
     },
