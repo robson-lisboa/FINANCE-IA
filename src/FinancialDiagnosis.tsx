@@ -1,10 +1,11 @@
 import { useMemo } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, Lightbulb, ShieldAlert, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import FinancialAssistant from "./FinancialAssistant";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
-type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
+type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; accessToken: string };
 
-export default function FinancialDiagnosis({ transactions, formatMoney }: Props) {
+export default function FinancialDiagnosis({ transactions, formatMoney, accessToken }: Props) {
   const report = useMemo(() => {
     const now = new Date();
     const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -69,6 +70,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney }: Props)
       <div className="stat-card"><div className="stat-top"><span>Resultado do mês</span><div className="stat-icon purple"><Wallet size={19}/></div></div><strong className="stat-value">{formatMoney(report.balance)}</strong><div className="stat-detail">Receitas menos despesas</div></div>
       <div className="stat-card"><div className="stat-top"><span>Taxa de economia</span><div className="stat-icon blue"><Activity size={19}/></div></div><strong className="stat-value">{report.savings === null ? "—" : `${report.savings.toFixed(1).replace(".", ",")}%`}</strong><div className="stat-detail">Sobre as receitas deste mês</div></div>
     </div>
+    <FinancialAssistant accessToken={accessToken}/>
     <div className="content-grid insights-page-grid">
       <div className="panel insight-panel">
         <div className="insight-title"><div className="ai-icon"><Lightbulb size={18}/></div><div><h2>Recomendação do Finance IA</h2><p>Orientação baseada nos registros disponíveis</p></div></div>
