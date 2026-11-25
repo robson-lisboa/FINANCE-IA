@@ -11,8 +11,11 @@ export default function ProactiveAdvisor({ transactions, formatMoney }: Props) {
     const month = transactions.filter(t => t.date.startsWith(key) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
     const income = month.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = month.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenseEntries = month.filter(t => t.type === "expense");
+    const distinctExpenseDays = new Set(expenseEntries.map(t => t.date)).size;
     const daysElapsed = Math.max(1, now.getDate());
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const projectionHasMinimumEvidence = expenseEntries.length >= 5 && distinctExpenseDays >= 3;
     const projected = expenses / daysElapsed * daysInMonth;
     const categories = month.filter(t => t.type === "expense").reduce<Record<string, number>>((acc, t) => {
       const category = t.category?.trim() || "Sem categoria";
@@ -34,7 +37,7 @@ export default function ProactiveAdvisor({ transactions, formatMoney }: Props) {
       title = "As despesas já passaram das receitas";
       action = "Pause novas compras parceladas e revise primeiro os gastos variáveis. Confira também se todas as receitas foram registradas.";
       evidence = `Resultado mensal de ${formatMoney(income - expenses)}. Foram registrados ${formatMoney(income)} em receitas e ${formatMoney(expenses)} em despesas.`;
-    } else if (income > 0 && expenses > 0 && projected > income) {
+    } else if (income > 0 && expenses > 0 && projectionHasMinimumEvidence && projected > income) {
       level = "warning";
       title = "O ritmo atual pode fechar o mês no vermelho";
       action = "Defina um teto para os próximos gastos e acompanhe as despesas nos próximos dias. A projeção muda conforme novos registros entram.";
@@ -49,6 +52,9 @@ export default function ProactiveAdvisor({ transactions, formatMoney }: Props) {
       title = "Nenhum risco prioritário apareceu nos registros";
       action = "Continue registrando as movimentações e mantenha uma reserva para imprevistos. O diagnóstico melhora com dados completos.";
       evidence = `${formatMoney(income)} em receitas e ${formatMoney(expenses)} em despesas registrados neste mês.`;
+      if (income > expenses && expenses > 0 && !projectionHasMinimumEvidence) {
+        evidence += ` A projeção de fechamento foi omitida: são necessários ao menos 5 despesas distribuídas em 3 dias diferentes para reduzir o risco de um alerta baseado em poucos registros.`;
+      }
     }
     return { level, title, action, evidence, income, expenses, count: month.length, top, share };
   }, [transactions, formatMoney]);
