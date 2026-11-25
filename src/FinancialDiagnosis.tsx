@@ -53,7 +53,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     const projectedBalance = currentIncome - projectedExpenses;
     const dailySafeLimit = currentIncome > 0 && daysRemaining > 0 && balance > 0 ? balance / daysRemaining : null;
     const duplicateMap = current.filter(t => t.type === "expense").reduce<Record<string, Transaction[]>>((acc, t) => {
-      const key = [t.date, t.title.trim().toLocaleLowerCase("pt-BR").replace(/\\s+/g, " "), Number(t.amount).toFixed(2)].join("|");
+      const key = [t.date, t.title.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " "), Number(t.amount).toFixed(2)].join("|");
       (acc[key] ||= []).push(t);
       return acc;
     }, {});
