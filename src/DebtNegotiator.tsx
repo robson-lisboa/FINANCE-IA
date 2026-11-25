@@ -26,6 +26,10 @@ export default function DebtNegotiator({ formatMoney }: Props) {
   const extraValue = parseBrazilianMoney(extraText);
   const debt = debtValue ?? 0, rate = (rateValue ?? 0) / 100, payment = paymentValue ?? 0, extra = extraValue ?? 0;
   const valid = debtValue !== null && rateValue !== null && paymentValue !== null && extraValue !== null && debt > 0 && debt <= 100000000 && rate >= 0 && rate <= 1 && payment > 0 && extra >= 0;
+  const result = useMemo(() => valid ? {
+    current: simulatePayoff(debt, rate, payment),
+    accelerated: simulatePayoff(debt, rate, payment + extra)
+  } : null, [valid, debt, rate, payment, extra]);
     current: simulatePayoff(debt, rate, payment),
     accelerated: simulatePayoff(debt, rate, payment + extra)
   } : null, [valid, debt, rate, payment, extra]);
