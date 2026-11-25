@@ -22,6 +22,7 @@ type Transaction = {
 
 const STORAGE_KEY = "finance-ia-transactions-v1";
 const SETTINGS_KEY = "finance-ia-settings-v1";
+const LEGACY_BACKUP_KEY = "finance-ia-local-backup-before-cloud-v1";
 type AppSettings = { theme: "dark" | "light"; accent: "purple" | "blue" | "green" | "red"; currency: "BRL" | "USD" | "EUR" };
 const DEFAULT_SETTINGS: AppSettings = { theme: "dark", accent: "purple", currency: "BRL" };
 const ACCENT_COLORS: Record<AppSettings["accent"], string> = {
@@ -110,17 +111,23 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       setCloudBusy(true);
       setCloudError("");
       try {
+        const savedLocal = localStorage.getItem(STORAGE_KEY);
+        if (savedLocal && !localStorage.getItem(LEGACY_BACKUP_KEY)) {
+          localStorage.setItem(LEGACY_BACKUP_KEY, savedLocal);
+        }
         const remote = await fetchTransactions(session);
         if (!active) return;
         if (remote.length > 0) {
           setTransactions(remote);
         } else {
-          const saved = localStorage.getItem(STORAGE_KEY);
-          const local = saved ? repairStoredTransactions(JSON.parse(saved) as unknown) : [];
+          const local = savedLocal ? repairStoredTransactions(JSON.parse(savedLocal) as unknown) : [];
           const shouldImport = local.length > 0 && window.confirm("Encontrei " + local.length + " lançamento(s) neste navegador. Deseja importar para sua conta na nuvem? Os dados locais só serão substituídos depois da importação.");
           if (shouldImport) {
             const imported = await insertTransactions(session, local.map(({ id: _id, ...transaction }) => transaction));
-            if (active) setTransactions(imported);
+            if (active) {
+              setTransactions(imported);
+              localStorage.removeItem(LEGACY_BACKUP_KEY);
+            }
           } else {
             setTransactions([]);
           }
