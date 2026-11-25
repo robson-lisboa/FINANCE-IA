@@ -46,7 +46,9 @@ export default function PurchaseSimulator({ transactions, formatMoney }: Props) 
   const finalCost = mode === "cash" ? cash : total;
   const extraCost = mode === "installment" ? Math.max(0, total - cash) : 0;
   const months = Number(horizon);
-  const projectedPurchase = projectedBaseline - (mode === "cash" ? cash : monthlyPayment * months);
+  const projectedBaseline = history.margin * months;
+  const installmentMonthsInHorizon = Math.min(months, count);
+  const projectedPurchase = projectedBaseline - (mode === "cash" ? cash : monthlyPayment * installmentMonthsInHorizon);
   const currentMonthImpact = history.currentIncome - history.currentExpenses - (mode === "cash" ? cash : monthlyPayment);
   const hasData = history.populated > 0;
   const affordable = hasData && projectedPurchase >= 0;
