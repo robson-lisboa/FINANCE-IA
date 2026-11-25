@@ -208,3 +208,40 @@ export async function updateTransactionInCloud(session: AuthSession, id: string,
 export async function deleteTransactionFromCloud(session: AuthSession, id: string): Promise<void> {
   await dataRequest<void>(session, `transactions?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
 }
+
+
+export type FinancialGoal = {
+  id: string;
+  title: string;
+  target_amount: number;
+  saved_amount: number;
+  deadline: string;
+};
+
+export async function fetchFinancialGoals(session: AuthSession): Promise<FinancialGoal[]> {
+  return dataRequest<FinancialGoal[]>(session, "financial_goals?select=id,title,target_amount,saved_amount,deadline&order=deadline.asc");
+}
+
+export async function createFinancialGoal(session: AuthSession, goal: Omit<FinancialGoal, "id">): Promise<FinancialGoal> {
+  const rows = await dataRequest<FinancialGoal[]>(session, "financial_goals?select=id,title,target_amount,saved_amount,deadline", {
+    method: "POST",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify({ ...goal, user_id: session.user.id }),
+  });
+  if (!rows?.length) throw new Error("A meta não foi retornada pelo banco.");
+  return rows[0];
+}
+
+export async function updateFinancialGoal(session: AuthSession, id: string, goal: Omit<FinancialGoal, "id">): Promise<FinancialGoal> {
+  const rows = await dataRequest<FinancialGoal[]>(session, `financial_goals?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}&select=id,title,target_amount,saved_amount,deadline`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(goal),
+  });
+  if (!rows?.length) throw new Error("A meta não foi encontrada para atualização.");
+  return rows[0];
+}
+
+export async function deleteFinancialGoal(session: AuthSession, id: string): Promise<void> {
+  await dataRequest<void>(session, `financial_goals?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}`, { method: "DELETE" });
+}
