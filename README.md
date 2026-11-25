@@ -18,7 +18,7 @@ Aplicação web de controle financeiro com visual escuro, responsivo e tecnológ
 
 ## Importante sobre esta versão
 
-Esta é uma demonstração funcional para validação do produto. Os dados ficam salvos somente no navegador/dispositivo em que foram cadastrados. Ainda não há login, sincronização entre dispositivos, banco de dados na nuvem, cobrança recorrente ou integração bancária. O gráfico de fluxo dos seis meses, os indicadores e os resumos refletem os lançamentos cadastrados. Em uma instalação nova, o painel começa sem movimentações; cadastre receitas e despesas para formar o histórico.
+A interface já possui cadastro/login e integração com Supabase. A sincronização em nuvem só fica ativa depois de criar o projeto Supabase, executar a migração SQL e configurar as variáveis no Render. Antes dessa configuração, os recursos de nuvem não estarão disponíveis. O gráfico de fluxo dos seis meses, os indicadores e os resumos refletem os lançamentos cadastrados. Em uma instalação nova, o painel começa sem movimentações; cadastre receitas e despesas para formar o histórico.
 
 Não use dados bancários reais ou informações sensíveis nesta versão de demonstração.
 
