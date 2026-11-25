@@ -81,13 +81,18 @@ function buildAuthSession(value: unknown): AuthSession {
   }
 
   const result = value as Partial<AuthSession>;
-  if (
-    typeof result.access_token !== "string" || !result.access_token ||
-    typeof result.refresh_token !== "string" || !result.refresh_token ||
-    !result.user || typeof result.user !== "object" ||
-    typeof result.user.id !== "string" || !result.user.id
-  ) {
-    throw new Error("O login foi recebido, mas os dados da conta vieram incompletos. Nenhuma sessão inválida foi salva.");
+  const user = result.user && typeof result.user === "object"
+    ? result.user as { id?: unknown; email?: unknown }
+    : null;
+  const missing: string[] = [];
+  if (typeof result.access_token !== "string" || !result.access_token) missing.push("access_token");
+  if (typeof result.refresh_token !== "string" || !result.refresh_token) missing.push("refresh_token");
+  if (!user) missing.push("user");
+  else if (typeof user.id !== "string" || !user.id) missing.push("user.id");
+
+  if (missing.length) {
+    const receivedFields = Object.keys(value as Record<string, unknown>).join(", ") || "nenhum";
+    throw new Error(`Resposta do Supabase incompleta. Campo(s) ausente(s): ${missing.join(", ")}. Campos recebidos: ${receivedFields}. Nenhuma sessão foi salva.`);
   }
 
   return {
