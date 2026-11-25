@@ -47,9 +47,25 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     const savings = currentIncome > 0 ? ((currentIncome - currentExpenses) / currentIncome) * 100 : null;
     const days = Math.max(1, now.getDate());
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+    const daysRemaining = Math.max(0, daysInMonth - days);
+    const balance = currentIncome - currentExpenses;
     const projectedExpenses = currentExpenses / days * daysInMonth;
     const projectedBalance = currentIncome - projectedExpenses;
-    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance: currentIncome - currentExpenses, ranked, recurring, recurringTotal, unusual, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, daysInMonth, daysElapsed: days, count: current.length };
+    const dailySafeLimit = currentIncome > 0 && daysRemaining > 0 && balance > 0 ? balance / daysRemaining : null;
+    const duplicateMap = current.filter(t => t.type === "expense").reduce<Record<string, Transaction[]>>((acc, t) => {
+      const key = [t.date, t.title.trim().toLocaleLowerCase("pt-BR").replace(/\\s+/g, " "), Number(t.amount).toFixed(2)].join("|");
+      (acc[key] ||= []).push(t);
+      return acc;
+    }, {});
+    const possibleDuplicates = Object.values(duplicateMap).filter(group => group.length > 1).map(group => ({ title: group[0].title, date: group[0].date, amount: Number(group[0].amount), count: group.length })).slice(0, 5);
+    const categoryForecast = ranked.map(([category, amount]) => {
+      const history = priorExpenses.filter(t => t.category.trim().toLocaleLowerCase("pt-BR") === category.trim().toLocaleLowerCase("pt-BR"));
+      const months = new Set(history.map(t => t.date.slice(0, 7)));
+      const historicalAverage = months.size >= 2 ? history.reduce((total, t) => total + Number(t.amount), 0) / months.size : null;
+      const projected = amount / days * daysInMonth;
+      return { category, projected, historicalAverage, difference: historicalAverage && historicalAverage > 0 ? (projected / historicalAverage - 1) * 100 : null };
+    }).filter(item => item.difference !== null && item.difference > 20).sort((a, b) => (b.difference || 0) - (a.difference || 0)).slice(0, 3);
+    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance, ranked, recurring, recurringTotal, unusual, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, daysInMonth, daysElapsed: days, daysRemaining, dailySafeLimit, possibleDuplicates, categoryForecast, count: current.length };
   }, [transactions]);
 
   const monthName = (key: string) => { const [year, month] = key.split("-").map(Number); return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); };
@@ -73,6 +89,18 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     </div>
     <FinancialAssistant accessToken={accessToken}/>
     <PurchaseSimulator transactions={transactions} formatMoney={formatMoney}/>
+    <div className="panel predictive-panel">
+      <div className="panel-heading"><div><h2>Plano inteligente até o fim do mês</h2><p>Limite diário calculado com o saldo dos lançamentos registrados</p></div><TrendingUp size={18} className="subtle-icon"/></div>
+      <div className="predictive-kpis">
+        <div><span>Dias restantes</span><strong>{report.daysRemaining}</strong></div>
+        <div><span>Limite diário sugerido</span><strong className={report.dailySafeLimit === null ? "predictive-muted" : "predictive-good"}>{report.dailySafeLimit === null ? "Indisponível" : formatMoney(report.dailySafeLimit)}</strong></div>
+        <div><span>Resultado projetado</span><strong className={report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{formatMoney(report.projectedBalance)}</strong></div>
+      </div>
+      {report.dailySafeLimit === null && <p className="insight-disclaimer">O limite diário só é calculado quando há receita registrada, saldo positivo e dias restantes. Ele não representa o saldo bancário disponível.</p>}
+      {report.categoryForecast.length > 0 && <div className="predictive-watch"><strong>Categorias que merecem atenção</strong>{report.categoryForecast.map(item => <div key={item.category}><span>{item.category}</span><b>Projeção {formatMoney(item.projected)} · {item.difference !== null ? `+${item.difference.toFixed(0)}%` : ""} vs. histórico</b></div>)}</div>}
+      {report.possibleDuplicates.length > 0 && <div className="predictive-watch duplicate-watch"><strong>Possíveis lançamentos duplicados — confira antes de excluir</strong>{report.possibleDuplicates.map(item => <div key={item.date + item.title + item.amount}><span>{item.title} · {item.date.split("-").reverse().join("/")}</span><b>{item.count} × {formatMoney(item.amount)}</b></div>)}</div>}
+      <p className="insight-disclaimer">As tendências por categoria comparam a projeção atual à média mensal dos meses anteriores disponíveis (mínimo de dois meses). Duplicidades são suspeitas por coincidência de data, descrição e valor; não são excluídas automaticamente.</p>
+    </div>
     <div className="panel preventive-alerts">
       <div className="panel-heading"><div><h2>Central de alertas preventivos</h2><p>Sinais identificados automaticamente nos seus lançamentos</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
       <div className="preventive-alert-list">
