@@ -90,9 +90,9 @@ function buildAuthSession(value: unknown): AuthSession {
   if (!user) missing.push("user");
   else if (typeof user.id !== "string" || !user.id) missing.push("user.id");
 
-  if (missing.length) {
+  if (missing.length || !user || typeof user.id !== "string" || !user.id) {
     const receivedFields = Object.keys(value as Record<string, unknown>).join(", ") || "nenhum";
-    throw new Error(`Resposta do Supabase incompleta. Campo(s) ausente(s): ${missing.join(", ")}. Campos recebidos: ${receivedFields}. Nenhuma sessão foi salva.`);
+    throw new Error(`Resposta do Supabase incompleta. Campo(s) ausente(s): ${missing.join(", ") || "dados da conta"}. Campos recebidos: ${receivedFields}. Nenhuma sessão foi salva.`);
   }
 
   return {
@@ -101,8 +101,8 @@ function buildAuthSession(value: unknown): AuthSession {
       ? result.expires_at
       : Math.floor(Date.now() / 1000) + (typeof result.expires_in === "number" ? result.expires_in : 3600),
     user: {
-      id: result.user.id,
-      ...(typeof result.user.email === "string" ? { email: result.user.email } : {}),
+      id: user.id,
+      ...(typeof user.email === "string" ? { email: user.email } : {}),
     },
   } as AuthSession;
 }
