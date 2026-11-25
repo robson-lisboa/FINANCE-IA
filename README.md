@@ -76,11 +76,11 @@ O arquivo `render.yaml` também descreve essa configuração para Blueprint.
 
 ## Próximas etapas antes de vender
 
-1. Criar autenticação e banco de dados multiusuário.
-2. Isolar os dados de cada conta com políticas de segurança no banco.
-3. Implementar backups, exclusão/exportação de dados e política de privacidade.
-4. Integrar pagamento e controle de assinatura.
-5. Substituir dados demonstrativos do gráfico por dados reais.
+1. Conectar e configurar o projeto Supabase no Render.
+2. Validar cadastro, confirmação de e-mail, login e recuperação de acesso.
+3. Testar isolamento entre duas contas e sincronização em dispositivos diferentes.
+4. Implementar backups, exclusão/exportação de dados e política de privacidade.
+5. Integrar pagamento e controle de assinatura.
 6. Adicionar testes automatizados e validação de segurança.
 
 ## Login e banco de dados na nuvem (Supabase)
