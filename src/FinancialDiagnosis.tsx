@@ -19,13 +19,26 @@ export default function FinancialDiagnosis({ transactions, formatMoney }: Props)
     const previousExpenses = sum(previous, "expense");
     const categories = current.filter(t => t.type === "expense").reduce<Record<string, number>>((acc, t) => { acc[t.category] = (acc[t.category] || 0) + Number(t.amount); return acc; }, {});
     const ranked = Object.entries(categories).sort((a, b) => b[1] - a[1]);
+    const recurringMap = valid.filter(t => t.type === "expense").reduce<Record<string, { title: string; months: Set<string>; total: number; count: number }>>((acc, t) => {
+      const title = t.title.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
+      if (!title) return acc;
+      if (!acc[title]) acc[title] = { title: t.title.trim(), months: new Set<string>(), total: 0, count: 0 };
+      acc[title].months.add(t.date.slice(0, 7));
+      acc[title].total += Number(t.amount);
+      acc[title].count += 1;
+      return acc;
+    }, {});
+    const recurring = Object.values(recurringMap).filter(item => item.months.size >= 2)
+      .map(item => ({ ...item, monthlyAverage: item.total / item.months.size }))
+      .sort((a, b) => b.monthlyAverage - a.monthlyAverage).slice(0, 5);
+    const recurringTotal = recurring.reduce((total, item) => total + item.monthlyAverage, 0);
     const change = previousExpenses > 0 ? ((currentExpenses - previousExpenses) / previousExpenses) * 100 : null;
     const savings = currentIncome > 0 ? ((currentIncome - currentExpenses) / currentIncome) * 100 : null;
     const days = Math.max(1, now.getDate());
     const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
     const projectedExpenses = currentExpenses / days * daysInMonth;
     const projectedBalance = currentIncome - projectedExpenses;
-    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance: currentIncome - currentExpenses, ranked, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, daysInMonth, daysElapsed: days, count: current.length };
+    return { currentKey, previousKey, currentIncome, currentExpenses, previousExpenses, balance: currentIncome - currentExpenses, ranked, recurring, recurringTotal, change, savings, dailyAverage: currentExpenses / days, projectedExpenses, projectedBalance, daysInMonth, daysElapsed: days, count: current.length };
   }, [transactions]);
 
   const monthName = (key: string) => { const [year, month] = key.split("-").map(Number); return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" }); };
@@ -58,6 +71,14 @@ export default function FinancialDiagnosis({ transactions, formatMoney }: Props)
         <div className="insight-title"><div className="ai-icon"><TrendingUp size={18}/></div><div><h2>Projeção de fechamento</h2><p>Estimativa pelo ritmo de gastos atual</p></div></div>
         <div className="diagnosis-forecast-grid"><div><span>Despesas estimadas no fim do mês</span><strong>{formatMoney(report.projectedExpenses)}</strong></div><div><span>Saldo estimado no fim do mês</span><strong className={report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{formatMoney(report.projectedBalance)}</strong></div></div>
         <p className="insight-disclaimer">Projeção linear baseada em {report.daysElapsed} de {report.daysInMonth} dias. Não considera contas futuras ainda não cadastradas nem mudanças no padrão de consumo.</p>
+      </div>
+      <div className="panel recurring-panel">
+        <div className="panel-heading"><div><h2>Possíveis gastos recorrentes</h2><p>Identificados pelo mesmo nome em meses diferentes</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
+        {report.recurring.length === 0 ? <div className="empty-state compact">Ainda não há lançamentos suficientes com o mesmo nome em pelo menos dois meses.</div> : <>
+          <div className="recurring-total"><span>Média mensal dos itens identificados</span><strong>{formatMoney(report.recurringTotal)}</strong></div>
+          <div className="recurring-list">{report.recurring.map(item => <div className="recurring-item" key={item.title}><div><strong>{item.title}</strong><small>{item.count} lançamento(s) em {item.months.size} mês(es)</small></div><b>{formatMoney(item.monthlyAverage)}/mês</b></div>)}</div>
+        </>}
+        <p className="insight-disclaimer">Detecção aproximada por descrição repetida; não confirma que seja assinatura ou cobrança automática. Valores são médias dos meses encontrados.</p>
       </div>
       <div className="panel goals-panel">
         <div className="panel-heading"><div><h2>Onde você mais gasta</h2><p>Despesas por categoria neste mês</p></div><Activity size={18} className="subtle-icon"/></div>
