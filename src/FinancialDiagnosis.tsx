@@ -96,7 +96,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       <div className="predictive-kpis">
         <div><span>Dias restantes</span><strong>{report.daysRemaining}</strong></div>
         <div><span>Limite diário sugerido</span><strong className={report.dailySafeLimit === null ? "predictive-muted" : "predictive-good"}>{report.dailySafeLimit === null ? "Indisponível" : formatMoney(report.dailySafeLimit)}</strong></div>
-        <div><span>Resultado projetado</span><strong className={report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{formatMoney(report.projectedBalance)}</strong></div>
+        <div><span>Resultado projetado</span><strong className={report.projectedBalance === null ? "predictive-muted" : report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{formatMoney(report.projectedBalance)}</strong></div>
       </div>
       {report.dailySafeLimit === null && <p className="insight-disclaimer">O limite diário só é calculado quando há receita registrada, saldo positivo e dias restantes. Ele não representa o saldo bancário disponível.</p>}
       {report.categoryForecast.length > 0 && <div className="predictive-watch"><strong>Categorias que merecem atenção</strong>{report.categoryForecast.map(item => <div key={item.category}><span>{item.category}</span><b>Projeção {formatMoney(item.projected)} · {item.difference !== null ? `+${item.difference.toFixed(0)}%` : ""} vs. histórico</b></div>)}</div>}
@@ -121,7 +121,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
         <div className="insight-title"><div className="ai-icon"><Lightbulb size={18}/></div><div><h2>Recomendação do Finance IA</h2><p>Orientação baseada nos registros disponíveis</p></div></div>
         <div className="insight-highlight"><span className="insight-label">PONTO DE ATENÇÃO</span><strong>{report.count === 0 ? "Ainda faltam dados para analisar." : report.balance < 0 ? "Atenção: resultado negativo." : report.change !== null && report.change > 15 ? "Despesas em alta." : "Acompanhe seu ritmo financeiro."}</strong><p>{advice}</p></div>
         <div className="diagnosis-comparison"><div><span>Despesas em {monthName(report.previousKey)}</span><strong>{formatMoney(report.previousExpenses)}</strong></div><div><span>Variação mensal</span><strong className={report.change === null ? "" : report.change > 0 ? "diagnosis-negative" : "goal-positive"}>{report.change === null ? "Sem base anterior" : `${report.change > 0 ? "+" : ""}${report.change.toFixed(1).replace(".", ",")}%`}</strong></div></div>
-        <p className="insight-disclaimer">Comparação entre meses-calendário. O mês atual ainda está em andamento; os valores podem mudar. Análise informativa, não é recomendação de investimento.</p>
+        <p className="insight-disclaimer">Comparação do mesmo intervalo de dias do mês atual e do mês anterior. O mês atual ainda está em andamento; os valores podem mudar. Análise informativa.</p>
       </div>
       <div className="panel diagnosis-forecast">
         <div className="insight-title"><div className="ai-icon"><TrendingUp size={18}/></div><div><h2>Projeção de fechamento</h2><p>Estimativa pelo ritmo de gastos atual</p></div></div>
