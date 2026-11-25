@@ -66,3 +66,8 @@
 .theme-light .settings-choice,.theme-light .accent-choice{background:#f8f9fc}
 .theme-light .settings-choice.selected,.theme-light .accent-choice.selected{background:var(--accent-soft)}
 @media(max-width:600px){.settings-panel{padding:17px}.settings-control{align-items:flex-start;flex-direction:column;gap:13px}.settings-footer{align-items:flex-start;flex-direction:column}.settings-options,.accent-options{width:100%}}
+
+.settings-select{min-width:245px;max-width:100%;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--text);padding:11px 13px;font:500 10px 'DM Sans',sans-serif;outline:none}
+.settings-select:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,transparent)}
+.theme-light .settings-select{background:#f8f9fc;color:#202a3b;border-color:#dce2ed}
+@media(max-width:600px){.settings-select{width:100%;min-width:0}}
