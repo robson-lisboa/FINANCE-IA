@@ -84,7 +84,19 @@ async function extractFile(file: File, setProgress: (value: string) => void): Pr
         setProgress("Lendo página " + pageNumber + " de " + pageLimit + "...");
         const page = await pdf.getPage(pageNumber);
         const content = await page.getTextContent();
-        const pageText = content.items.map(item => "str" in item ? item.str : "").join(" ");
+        // Preserva as linhas do PDF para não misturar datas e valores de compras diferentes.
+        const textLines = new Map<number, string[]>();
+        for (const item of content.items) {
+          if (!("str" in item) || !item.str.trim()) continue;
+          const y = Math.round(item.transform[5] / 2) * 2;
+          const line = textLines.get(y) || [];
+          line.push(item.str.trim());
+          textLines.set(y, line);
+        }
+        const pageText = [...textLines.entries()]
+          .sort((a, b) => b[0] - a[0])
+          .map(([, parts]) => parts.join(" "))
+          .join("\n");
         if (pageText.trim().length > 40) {
           chunks.push(pageText);
           continue;
