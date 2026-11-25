@@ -89,7 +89,7 @@ export async function refreshSession(session: AuthSession): Promise<AuthSession>
     : session;
   if (current.expires_at > Math.floor(Date.now() / 1000) + 60) return current;
   const result = await authRequest<AuthSession>("token?grant_type=refresh_token", { refresh_token: current.refresh_token });
-  const refreshed = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + result.expires_in };
+  const refreshed = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + (result.expires_in ?? 3600) };
   saveSession(refreshed);
   return refreshed;
 }
