@@ -261,3 +261,27 @@
 .ai-chat-error{font-size:10px;color:#f18a94}
 .ai-chat-disclaimer{font-size:8px;color:#718099;line-height:1.5;margin:10px 2px 0}
 @media(max-width:520px){.ai-assistant-panel{padding:14px}.ai-chat-form{align-items:stretch}.ai-chat-form .primary-btn{width:40px;padding:0;font-size:0}.ai-chat-form .primary-btn svg{width:16px}.ai-chat-message{max-width:100%}}
+
+
+/* Respostas formatadas do Finance IA */
+.ai-markdown{margin-top:6px;color:var(--text);font-size:11px;line-height:1.7;overflow-wrap:anywhere}
+.ai-markdown>*:first-child{margin-top:0}
+.ai-markdown>*:last-child{margin-bottom:0}
+.ai-markdown p{margin:7px 0;white-space:normal;font-size:11px;line-height:1.7;color:var(--text)}
+.ai-markdown h1,.ai-markdown h2,.ai-markdown h3{font-family:Manrope,sans-serif;color:var(--text);font-weight:800;line-height:1.35;margin:15px 0 7px}
+.ai-markdown h1{font-size:15px}.ai-markdown h2{font-size:13px}.ai-markdown h3{font-size:12px}
+.ai-markdown strong{font-weight:800;color:var(--text)}
+.ai-markdown ul,.ai-markdown ol{padding-left:20px;margin:7px 0}
+.ai-markdown li{padding:2px 0}
+.ai-markdown blockquote{margin:9px 0;padding:8px 11px;border-left:3px solid var(--accent);background:var(--accent-soft);border-radius:0 7px 7px 0;color:var(--muted)}
+.ai-markdown table{display:block;width:100%;max-width:100%;overflow-x:auto;border-collapse:collapse;margin:10px 0;font-size:10px}
+.ai-markdown th,.ai-markdown td{padding:7px 9px;border:1px solid var(--line);text-align:left;white-space:normal}
+.ai-markdown th{background:var(--panel);font-weight:800;color:var(--text)}
+.ai-markdown hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+.ai-markdown code{padding:2px 4px;border-radius:4px;background:var(--panel);font-family:ui-monospace,monospace;font-size:.92em}
+.ai-markdown pre{overflow-x:auto;padding:10px;border-radius:8px;background:var(--panel);white-space:pre}
+.ai-markdown pre code{padding:0;background:transparent}
+.ai-markdown a{color:var(--accent);text-decoration:underline}
+.ai-chat-message.assistant .ai-message-content{width:min(100%,760px)}
+.ai-chat-message.assistant{max-width:100%;width:100%}
+.ai-chat-message.user{max-width:92%}
