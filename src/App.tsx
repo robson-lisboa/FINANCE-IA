@@ -164,7 +164,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     };
     void loadCloudData();
     return () => { active = false; };
-  }, [session.user.id, accountStorageKey, onSessionExpired]);
+  }, [session.user.id, accountStorageKey]);
 
   useEffect(() => {
     if (cloudLoaded) localStorage.setItem(accountStorageKey, JSON.stringify(transactions));
