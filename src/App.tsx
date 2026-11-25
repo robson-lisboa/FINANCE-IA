@@ -20,8 +20,8 @@ type Transaction = {
 
 const STORAGE_KEY = "finance-ia-transactions-v1";
 const SETTINGS_KEY = "finance-ia-settings-v1";
-type AppSettings = { theme: "dark" | "light"; accent: "purple" | "blue" | "green" | "red" };
-const DEFAULT_SETTINGS: AppSettings = { theme: "dark", accent: "purple" };
+type AppSettings = { theme: "dark" | "light"; accent: "purple" | "blue" | "green" | "red"; currency: "BRL" | "USD" | "EUR" };
+const DEFAULT_SETTINGS: AppSettings = { theme: "dark", accent: "purple", currency: "BRL" };
 const ACCENT_COLORS: Record<AppSettings["accent"], string> = {
   purple: "#9a8cff", blue: "#55a6ff", green: "#35c99a", red: "#f07883"
 };
@@ -62,7 +62,7 @@ function repairStoredTransactions(value: unknown): Transaction[] {
   }) as Transaction[];
 }
 
-const money = (value: number) => value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const money = (value: number, currency: AppSettings["currency"] = "BRL") => value.toLocaleString("pt-BR", { style: "currency", currency });
 const today = new Date().toISOString().slice(0, 10);
 
 const initialTransactions: Transaction[] = [
@@ -176,6 +176,7 @@ function App() {
     URL.revokeObjectURL(url);
   };
 
+  const formatMoney = (value: number) => money(value, settings.currency);
   const topCategory = expenseByCategory[0];
   const savingsRate = totals.income > 0 ? Math.max(0, (totals.balance / totals.income) * 100) : 0;
 
@@ -234,7 +235,7 @@ function App() {
               <div><p className="eyebrow">PREFERÊNCIAS DO SISTEMA</p><h1>Configurações</h1><p className="muted-text">Personalize a aparência do seu Finance IA.</p></div>
             </div>
             <div className="panel settings-panel">
-              <div className="settings-section-heading"><div><h2>Aparência</h2><p>Escolha como deseja visualizar o sistema.</p></div><span className="settings-preview-icon"><Settings size={19}/></span></div>
+              <div className="settings-section-heading"><div><h2>Aparência e preferências</h2><p>Personalize a visualização e os valores do seu Finance IA.</p></div><span className="settings-preview-icon"><Settings size={19}/></span></div>
               <div className="settings-control">
                 <div><strong>Tema</strong><small>Alterne entre o modo escuro e claro.</small></div>
                 <div className="settings-options">
@@ -252,7 +253,15 @@ function App() {
                   ))}
                 </div>
               </div>
-              <div className="settings-footer"><span>Suas preferências são salvas automaticamente neste navegador.</span><button className="outline-btn" onClick={() => setSettings(DEFAULT_SETTINGS)}>Restaurar padrão</button></div>
+              <div className="settings-control currency-control">
+                <div><strong>Moeda</strong><small>Define como os valores financeiros são apresentados.</small></div>
+                <select className="settings-select" value={settings.currency} onChange={event => setSettings(current => ({ ...current, currency: event.target.value as AppSettings["currency"] }))}>
+                  <option value="BRL">Real brasileiro (BRL · R$)</option>
+                  <option value="USD">Dólar americano (USD · US$)</option>
+                  <option value="EUR">Euro (EUR · €)</option>
+                </select>
+              </div>
+              <div className="settings-footer"><span>Suas preferências são salvas automaticamente neste navegador. A troca de moeda altera apenas a exibição, não converte os lançamentos.</span><button className="outline-btn" onClick={() => setSettings(DEFAULT_SETTINGS)}>Restaurar padrão</button></div>
             </div>
           </section>
         ) : <>
@@ -262,9 +271,9 @@ function App() {
         </section>
 
         <section className="stats-grid">
-          <StatCard title="Saldo disponível" value={money(totals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas" />
-          <StatCard title="Receitas" value={money(totals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas" />
-          <StatCard title="Despesas" value={money(totals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas" />
+          <StatCard title="Saldo disponível" value={formatMoney(totals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas" />
+          <StatCard title="Receitas" value={formatMoney(totals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas" />
+          <StatCard title="Despesas" value={formatMoney(totals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas" />
           <StatCard title="Taxa de economia" value={`${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Saldo sobre receitas" />
         </section>
 
@@ -281,7 +290,7 @@ function App() {
                   </defs>
                   <CartesianGrid stroke="#242b3d" strokeDasharray="4 5" vertical={false}/>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 12 }}/>
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 11 }} tickFormatter={(v) => `R$${v/1000}k`}/>
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 11 }} tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: settings.currency, notation: "compact", maximumFractionDigits: 1 }).format(v)}/>
                   <Tooltip contentStyle={{ background: "#151c2d", border: "1px solid #303950", borderRadius: 12, color: "#f4f6fb" }} formatter={(value) => money(Number(value))}/>
                   <Area type="monotone" dataKey="income" name="Receitas" stroke="#9a8cff" strokeWidth={2.5} fill="url(#incomeFill)"/>
                   <Area type="monotone" dataKey="expenses" name="Despesas" stroke="#35c99a" strokeWidth={2.5} fill="url(#expenseFill)"/>
@@ -293,8 +302,8 @@ function App() {
 
           <div className="panel insight-panel" id="insights">
             <div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Análise inteligente</h2><p>Resumo automático dos seus dados</p></div></div>
-            <div className="insight-highlight"><span className="insight-label">VISÃO DO SEU DINHEIRO</span><strong>{totals.balance >= 0 ? "Seu saldo está positivo." : "Atenção ao seu saldo."}</strong><p>{totals.balance >= 0 ? `Você tem ${money(totals.balance)} de saldo considerando os lançamentos registrados.` : `Suas despesas superam as receitas em ${money(Math.abs(totals.balance))}. Revise seus gastos.`}</p></div>
-            <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} · ${money(topCategory[1])}` : "Adicione despesas para visualizar."}</p></div></div>
+            <div className="insight-highlight"><span className="insight-label">VISÃO DO SEU DINHEIRO</span><strong>{totals.balance >= 0 ? "Seu saldo está positivo." : "Atenção ao seu saldo."}</strong><p>{totals.balance >= 0 ? `Você tem ${formatMoney(totals.balance)} de saldo considerando os lançamentos registrados.` : `Suas despesas superam as receitas em ${formatMoney(Math.abs(totals.balance))}. Revise seus gastos.`}</p></div>
+            <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} · ${formatMoney(topCategory[1])}` : "Adicione despesas para visualizar."}</p></div></div>
             <div className="insight-row"><div className="mini-icon green"><TrendingUp size={16}/></div><div><strong>Taxa de economia</strong><p>{savingsRate.toFixed(1).replace(".", ",")}% das receitas permanecem no saldo.</p></div></div>
             <div className="insight-disclaimer">Esta análise é automática e informativa. Não é recomendação de investimento.</div>
           </div>
@@ -321,9 +330,9 @@ function App() {
             {expenseByCategory.length === 0 ? <div className="empty-state compact">Adicione despesas para ver as categorias.</div> : <div className="category-list">{expenseByCategory.slice(0, 5).map(([category, amount], index) => {
               const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
               const percent = totals.expenses ? amount / totals.expenses * 100 : 0;
-              return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{money(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
+              return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{formatMoney(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
             })}</div>}
-            <div className="category-footer"><span>Total de despesas</span><strong>{money(totals.expenses)}</strong></div>
+            <div className="category-footer"><span>Total de despesas</span><strong>{formatMoney(totals.expenses)}</strong></div>
           </div>
         </section>
         <footer className="footer"><span>© 2026 FINANCE IA</span><span>Organização financeira com clareza.</span><span>Versão 1.0 · Demonstração</span></footer>
@@ -335,7 +344,7 @@ function App() {
           <div className="modal-heading"><div><span className="eyebrow">MOVIMENTAÇÃO FINANCEIRA</span><h2>Novo lançamento</h2></div><button type="button" className="icon-btn" onClick={() => setModalOpen(false)} aria-label="Fechar"><X size={19}/></button></div>
           <div className="type-switch"><button type="button" className={form.type === "expense" ? "active expense-tab" : ""} onClick={() => setForm({ ...form, type: "expense" })}>Despesa</button><button type="button" className={form.type === "income" ? "active income-tab" : ""} onClick={() => setForm({ ...form, type: "income" })}>Receita</button></div>
           <label>Descrição<input required autoFocus placeholder="Ex.: Compra de materiais" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })}/></label>
-          <div className="form-two"><label>Valor (R$)<input required inputMode="decimal" placeholder="0,00" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}/></label><label>Data<input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}/></label></div>
+          <div className="form-two"><label>Valor ({settings.currency})<input required inputMode="decimal" placeholder="0,00" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })}/></label><label>Data<input required type="date" value={form.date} onChange={e => setForm({ ...form, date: e.target.value })}/></label></div>
           <label>Categoria<select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>{(form.type === "income" ? ["Salário", "Serviços", "Vendas", "Investimentos", "Outros"] : ["Alimentação", "Moradia", "Transporte", "Saúde", "Educação", "Lazer", "Serviços", "Outros"]).map(c => <option key={c}>{c}</option>)}</select></label>
           <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setModalOpen(false)}>Cancelar</button><button type="submit" className="primary-btn"><Plus size={16}/> Salvar lançamento</button></div>
         </form>
