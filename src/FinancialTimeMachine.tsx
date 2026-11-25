@@ -50,7 +50,7 @@ export default function FinancialTimeMachine({ transactions, formatMoney }: Prop
 
   return <section className="panel time-machine-panel">
     <div className="insight-title"><div className="ai-icon"><Clock3 size={18}/></div><div><h2>Máquina do Tempo Financeira</h2><p>Veja cenários possíveis para suas finanças nos próximos meses</p></div></div>
-    {!hasHistory ? <div className="time-machine-empty"><AlertTriangle size={18}/><div><strong>Precisamos de mais dados</strong><p>Registre receitas e despesas para projetar seu cenário. A análise usa até seis meses de lançamentos disponíveis.</p></div></div> : <>
+    {!hasHistory ? <div className="time-machine-empty"><AlertTriangle size={18}/><div><strong>Precisamos de mais dados</strong><p>Registre receitas e despesas para projetar seu cenário. A análise usa até seis meses de lançamentos disponíveis.</p></div></div> : !validAmounts ? <div className="time-machine-empty"><AlertTriangle size={18}/><div><strong>Confira os valores informados</strong><p>Use valores válidos e não negativos, como 1.500,00.</p></div></div> : <>
       <div className="time-machine-fields">
         <label>Projetar período<select value={horizon} onChange={event => setHorizon(event.target.value)}><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select></label>
         <label>Quanto pretende economizar a mais por mês (R$){moneyInput(monthlyAdjustment, setMonthlyAdjustment)}</label>
