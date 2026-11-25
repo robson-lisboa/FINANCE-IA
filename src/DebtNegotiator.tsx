@@ -19,11 +19,13 @@ export default function DebtNegotiator({ formatMoney }: Props) {
   const [debtText, setDebtText] = useState("");
   const [rateText, setRateText] = useState("");
   const [paymentText, setPaymentText] = useState("");
-  const [extraText, setExtraText] = useState("");
-  const parse = (value: string) => Number(value.replace(/\./g, "").replace(",", "."));
-  const debt = parse(debtText), rate = parse(rateText) / 100, payment = parse(paymentText), extra = parse(extraText);
-  const valid = [debt, rate, payment, extra].every(Number.isFinite) && debt > 0 && debt <= 100000000 && rate >= 0 && rate <= 1 && payment > 0 && extra >= 0 && payment + extra > 0;
-  const result = useMemo(() => valid ? {
+  const [extraText, setExtraText] = useState("0");
+  const debtValue = parseBrazilianMoney(debtText);
+  const rateValue = parseBrazilianMoney(rateText);
+  const paymentValue = parseBrazilianMoney(paymentText);
+  const extraValue = parseBrazilianMoney(extraText);
+  const debt = debtValue ?? 0, rate = (rateValue ?? 0) / 100, payment = paymentValue ?? 0, extra = extraValue ?? 0;
+  const valid = debtValue !== null && rateValue !== null && paymentValue !== null && extraValue !== null && debt > 0 && debt <= 100000000 && rate >= 0 && rate <= 1 && payment > 0 && extra >= 0;
     current: simulatePayoff(debt, rate, payment),
     accelerated: simulatePayoff(debt, rate, payment + extra)
   } : null, [valid, debt, rate, payment, extra]);
