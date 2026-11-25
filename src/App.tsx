@@ -168,7 +168,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
   useEffect(() => {
     localStorage.setItem(settingsStorageKey, JSON.stringify(settings));
-  }, [settings]);
+  }, [settings, settingsStorageKey]);
 
   useEffect(() => {
     const syncPage = () => { const page = window.location.hash.slice(1); setActivePage(["dashboard", "transactions", "insights", "planning", "goals", "settings"].includes(page) ? page : "dashboard"); };
