@@ -80,7 +80,7 @@ const today = (() => {
   return `${year}-${month}-${day}`;
 })();
 
-const initialTransactions: Transaction[] = [];function FinanceDashboard({ session, onSignOut }: { session: AuthSession; onSignOut: () => void }) {
+const initialTransactions: Transaction[] = [];function FinanceDashboard({ session, onSignOut, onSessionExpired }: { session: AuthSession; onSignOut: () => void; onSessionExpired: () => void }) {
   const accountStorageKey = STORAGE_KEY + "-" + session.user.id;
   const settingsStorageKey = SETTINGS_KEY + "-" + session.user.id;
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
@@ -153,14 +153,18 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           if (localStorage.getItem(STORAGE_KEY)) localStorage.removeItem(STORAGE_KEY);
         }
       } catch (error) {
-        if (active) setCloudError(error instanceof Error ? error.message : "Não foi possível carregar seus dados da nuvem.");
+        if (active) {
+          const message = error instanceof Error ? error.message : "Não foi possível carregar seus dados da nuvem.";
+          if (/sua sessão expirou ou não é mais válida/i.test(message)) onSessionExpired();
+          else setCloudError(message);
+        }
       } finally {
         if (active) setCloudBusy(false);
       }
     };
     void loadCloudData();
     return () => { active = false; };
-  }, [session.user.id, accountStorageKey]);
+  }, [session.user.id, accountStorageKey, onSessionExpired]);
 
   useEffect(() => {
     if (cloudLoaded) localStorage.setItem(accountStorageKey, JSON.stringify(transactions));
@@ -260,7 +264,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       setEditingId(null);
       setModalOpen(false);
     } catch (error) {
-      setCloudError(error instanceof Error ? error.message : "Não foi possível salvar o lançamento na nuvem.");
+      const message = error instanceof Error ? error.message : "Não foi possível salvar o lançamento na nuvem.";
+      if (/sua sessão expirou ou não é mais válida/i.test(message)) onSessionExpired();
+      else setCloudError(message);
     }
   };
 
@@ -270,7 +276,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       await deleteTransactionFromCloud(session, id);
       setTransactions(current => current.filter(t => t.id !== id));
     } catch (error) {
-      setCloudError(error instanceof Error ? error.message : "Não foi possível excluir o lançamento na nuvem.");
+      const message = error instanceof Error ? error.message : "Não foi possível excluir o lançamento na nuvem.";
+      if (/sua sessão expirou ou não é mais válida/i.test(message)) onSessionExpired();
+      else setCloudError(message);
     }
   };
 
@@ -578,7 +586,7 @@ function App() {
       </main>
     );
   }
-  return <FinanceDashboard key={session.user.id} session={session} onSignOut={() => { void handleSignOut(); }}/>;
+  return <FinanceDashboard key={session.user.id} session={session} onSignOut={() => { void handleSignOut(); }} onSessionExpired={() => setSession(null)}/>;
 }
 
 export default App;
