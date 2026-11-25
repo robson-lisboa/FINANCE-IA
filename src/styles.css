@@ -182,3 +182,14 @@
 .goal-balance-note{font-size:10px;color:var(--muted);margin:16px 2px}
 .goal-form{width:min(100%,540px)}
 @media(max-width:700px){.goals-kpis{grid-template-columns:1fr}.goals-kpis .panel{padding:13px}.goals-cards{grid-template-columns:1fr}.goals-manager .page-heading{align-items:flex-start;gap:12px}.goals-manager .page-heading>.primary-btn{flex:none}}
+
+
+/* Diagnóstico financeiro */
+.diagnosis-page .diagnosis-comparison{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+.diagnosis-comparison>div{padding:13px;border:1px solid var(--line);border-radius:10px;display:flex;flex-direction:column;gap:7px;min-width:0}
+.diagnosis-comparison span{font-size:11px;color:var(--muted)}
+.diagnosis-comparison strong{font-size:16px;color:var(--text);overflow-wrap:anywhere}
+.diagnosis-comparison .diagnosis-negative{color:#f07883}
+.diagnosis-page .insight-disclaimer{line-height:1.6}
+@media(max-width:700px){.diagnosis-page .diagnosis-comparison{grid-template-columns:1fr}.diagnosis-page .stats-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.diagnosis-page .stats-grid{grid-template-columns:1fr}}
