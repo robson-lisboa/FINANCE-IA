@@ -73,25 +73,68 @@ ${JSON.stringify(safeTransactions)}
 
 METAS FINANCEIRAS:
 ${JSON.stringify(safeGoals)}`;
-    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: "Bearer " + groqKey },
-      body: JSON.stringify({
-        model,
-        messages: [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }],
-        reasoning_effort: "low",
-        include_reasoning: false,
-        max_completion_tokens: 2400
-      })
-    });
-    const payload = await aiResponse.json().catch(() => ({}));
-    if (!aiResponse.ok) {
-      const status = aiResponse.status === 429 ? 429 : 502;
-      return res.status(status).json({ error: aiResponse.status === 429 ? "A IA atingiu o limite de uso disponível. Tente novamente mais tarde." : "A IA não conseguiu responder agora. Tente novamente em instantes." });
+    const groqMessages = [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }];
+    const callGroq = async (selectedModel, tokenLimit, useReasoningOptions) => {
+      const body = {
+        model: selectedModel,
+        messages: groqMessages,
+        max_completion_tokens: tokenLimit
+      };
+      if (useReasoningOptions) {
+        body.reasoning_effort = "low";
+        body.include_reasoning = false;
+      }
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer " + groqKey },
+        body: JSON.stringify(body)
+      });
+      const data = await response.json().catch(() => ({}));
+      return { response, data };
+    };
+
+    let result = await callGroq(model, 2400, true);
+    if (!result.response.ok) {
+      console.error("groq_api_error", JSON.stringify({
+        status: result.response.status,
+        code: result.data?.error?.code || null,
+        type: result.data?.error?.type || null
+      }));
+      const status = result.response.status === 429 ? 429 : 502;
+      return res.status(status).json({ error: result.response.status === 429 ? "A IA atingiu o limite de uso disponível. Tente novamente mais tarde." : "A provedora de IA recusou a solicitação. Verifique a configuração do serviço." });
     }
-    const answer = payload.choices?.[0]?.message?.content;
-    if (typeof answer !== "string" || !answer.trim()) return res.status(502).json({ error: "A IA retornou uma resposta vazia. Tente novamente." });
-    return res.json({ answer: answer.trim(), model });
+
+    const firstChoice = result.data?.choices?.[0];
+    let answer = firstChoice?.message?.content;
+    if (Array.isArray(answer)) {
+      answer = answer.map(part => typeof part === "string" ? part : part?.text || "").join("");
+    }
+    if (typeof answer !== "string" || !answer.trim()) {
+      console.warn("groq_empty_completion", JSON.stringify({
+        model,
+        finish_reason: firstChoice?.finish_reason || null,
+        usage: result.data?.usage || null,
+        message_fields: Object.keys(firstChoice?.message || {})
+      }));
+      // Resposta alternativa: evita deixar o chat sem texto quando o modelo principal não conclui.
+      result = await callGroq("llama-3.3-70b-versatile", 1200, false);
+      if (!result.response.ok) {
+        console.error("groq_fallback_error", JSON.stringify({ status: result.response.status }));
+        return res.status(502).json({ error: "A IA principal não concluiu e a alternativa está indisponível. Tente novamente." });
+      }
+      const fallbackMessage = result.data?.choices?.[0]?.message?.content;
+      answer = Array.isArray(fallbackMessage)
+        ? fallbackMessage.map(part => typeof part === "string" ? part : part?.text || "").join("")
+        : fallbackMessage;
+      if (typeof answer !== "string" || !answer.trim()) {
+        console.error("groq_fallback_empty", JSON.stringify({
+          finish_reason: result.data?.choices?.[0]?.finish_reason || null,
+          usage: result.data?.usage || null
+        }));
+        return res.status(502).json({ error: "Os modelos de IA não conseguiram gerar texto agora. Tente novamente em instantes." });
+      }
+    }
+    return res.json({ answer: answer.trim(), model: result.data?.model || model });
   } catch (error) {
     console.error("assistant_chat_error", error instanceof Error ? error.message : "unknown");
     return res.status(503).json({ error: "Não foi possível concluir a análise agora. Tente novamente." });
