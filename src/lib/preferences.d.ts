@@ -13,6 +13,6 @@ export type AppSettings = {
     categories: boolean;
   };
 };
-export const DEFAULT_SETTINGS: Readonly<AppSettings>;
+export const DEFAULT_SETTINGS: AppSettings;
 export function normalizeSettings(value: unknown): AppSettings;
 export function readSettings(serialized: string | null): AppSettings;
