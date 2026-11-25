@@ -35,8 +35,30 @@ function saveSession(session: AuthSession | null) {
 export function readStoredSession(): AuthSession | null {
   try {
     const value = localStorage.getItem(STORAGE_KEY);
-    return value ? JSON.parse(value) as AuthSession : null;
+    if (!value) return null;
+
+    const parsed: unknown = JSON.parse(value);
+    if (
+      !parsed ||
+      typeof parsed !== "object" ||
+      !("access_token" in parsed) ||
+      typeof parsed.access_token !== "string" ||
+      !("refresh_token" in parsed) ||
+      typeof parsed.refresh_token !== "string" ||
+      !("user" in parsed) ||
+      !parsed.user ||
+      typeof parsed.user !== "object" ||
+      !("id" in parsed.user) ||
+      typeof parsed.user.id !== "string" ||
+      !parsed.user.id
+    ) {
+      localStorage.removeItem(STORAGE_KEY);
+      return null;
+    }
+
+    return parsed as AuthSession;
   } catch {
+    localStorage.removeItem(STORAGE_KEY);
     return null;
   }
 }
