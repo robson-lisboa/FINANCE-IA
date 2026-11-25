@@ -79,8 +79,9 @@ ${JSON.stringify(safeGoals)}`;
       body: JSON.stringify({
         model,
         messages: [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }],
-        reasoning_effort: "high",
-        max_completion_tokens: 1200
+        reasoning_effort: "low",
+        include_reasoning: false,
+        max_completion_tokens: 2400
       })
     });
     const payload = await aiResponse.json().catch(() => ({}));
