@@ -19,6 +19,12 @@ type Transaction = {
 };
 
 const STORAGE_KEY = "finance-ia-transactions-v1";
+const SETTINGS_KEY = "finance-ia-settings-v1";
+type AppSettings = { theme: "dark" | "light"; accent: "purple" | "blue" | "green" | "red" };
+const DEFAULT_SETTINGS: AppSettings = { theme: "dark", accent: "purple" };
+const ACCENT_COLORS: Record<AppSettings["accent"], string> = {
+  purple: "#9a8cff", blue: "#55a6ff", green: "#35c99a", red: "#f07883"
+};
 
 // Corrige textos antigos gravados no navegador com UTF-8 interpretado como Latin-1.
 // A conversão só é aplicada quando o resultado remove os sinais típicos de corrupção.
@@ -87,6 +93,15 @@ function App() {
       return initialTransactions;
     }
   });
+  const [settings, setSettings] = useState<AppSettings>(() => {
+    try {
+      const saved = localStorage.getItem(SETTINGS_KEY);
+      return saved ? { ...DEFAULT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_SETTINGS;
+    } catch {
+      return DEFAULT_SETTINGS;
+    }
+  });
+  const [activePage, setActivePage] = useState(() => window.location.hash === "#settings" ? "settings" : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | Kind>("all");
@@ -98,6 +113,16 @@ function App() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
   }, [transactions]);
+
+  useEffect(() => {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  }, [settings]);
+
+  useEffect(() => {
+    const syncPage = () => setActivePage(window.location.hash === "#settings" ? "settings" : "dashboard");
+    window.addEventListener("hashchange", syncPage);
+    return () => window.removeEventListener("hashchange", syncPage);
+  }, []);
 
   const totals = useMemo(() => {
     const income = transactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
@@ -155,7 +180,10 @@ function App() {
   const savingsRate = totals.income > 0 ? Math.max(0, (totals.balance / totals.income) * 100) : 0;
 
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${settings.theme === "light" ? "theme-light" : ""}`}
+      style={{ "--accent": ACCENT_COLORS[settings.accent], "--accent-soft": settings.accent === "purple" ? "#29264b" : settings.accent === "blue" ? "#1c3551" : settings.accent === "green" ? "#163c37" : "#432630" } as React.CSSProperties}
+    >
       <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
         <div className="brand">
           <div className="brand-mark"><Activity size={21} /></div>
@@ -164,7 +192,7 @@ function App() {
         </div>
         <div className="workspace-label">MENU PRINCIPAL</div>
         <nav className="nav-list">
-          <a className="nav-item active" href="#dashboard"><LayoutDashboard size={18}/> Visão geral</a>
+          <a className={`nav-item ${activePage === "dashboard" ? "active" : ""}`} href="#dashboard" onClick={() => setActivePage("dashboard")}><LayoutDashboard size={18}/> Visão geral</a>
           <a className="nav-item" href="#transactions"><Wallet size={18}/> Lançamentos</a>
           <a className="nav-item" href="#insights"><Sparkles size={18}/> Análise inteligente <span className="new-pill">NOVO</span></a>
           <a className="nav-item" href="#goals"><Target size={18}/> Metas financeiras</a>
@@ -176,7 +204,7 @@ function App() {
             <p>Organize suas finanças com mais clareza.</p>
             <a href="#insights">Ver dicas <span>→</span></a>
           </div>
-          <a className="nav-item muted" href="#settings"><Settings size={18}/> Configurações</a>
+          <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => setActivePage("settings")}><Settings size={18}/> Configurações</a>
           <div className="profile">
             <div className="avatar">R</div>
             <div className="profile-text"><strong>Minha conta</strong><small>Plano demonstração</small></div>
@@ -200,6 +228,34 @@ function App() {
           </div>
         </header>
 
+        {activePage === "settings" ? (
+          <section className="settings-page">
+            <div className="page-heading">
+              <div><p className="eyebrow">PREFERÊNCIAS DO SISTEMA</p><h1>Configurações</h1><p className="muted-text">Personalize a aparência do seu Finance IA.</p></div>
+            </div>
+            <div className="panel settings-panel">
+              <div className="settings-section-heading"><div><h2>Aparência</h2><p>Escolha como deseja visualizar o sistema.</p></div><span className="settings-preview-icon"><Settings size={19}/></span></div>
+              <div className="settings-control">
+                <div><strong>Tema</strong><small>Alterne entre o modo escuro e claro.</small></div>
+                <div className="settings-options">
+                  <button className={`settings-choice ${settings.theme === "dark" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, theme: "dark" }))}>◐ Escuro</button>
+                  <button className={`settings-choice ${settings.theme === "light" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, theme: "light" }))}>☀ Claro</button>
+                </div>
+              </div>
+              <div className="settings-control accent-control">
+                <div><strong>Cor principal</strong><small>Personalize botões, destaques e elementos de navegação.</small></div>
+                <div className="accent-options">
+                  {([{ id: "purple", label: "Roxo" }, { id: "blue", label: "Azul" }, { id: "green", label: "Verde" }, { id: "red", label: "Vermelho" }] as const).map(color => (
+                    <button key={color.id} className={`accent-choice ${settings.accent === color.id ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, accent: color.id }))} aria-pressed={settings.accent === color.id}>
+                      <i style={{ background: ACCENT_COLORS[color.id] }}/>{color.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-footer"><span>Suas preferências são salvas automaticamente neste navegador.</span><button className="outline-btn" onClick={() => setSettings(DEFAULT_SETTINGS)}>Restaurar padrão</button></div>
+            </div>
+          </section>
+        ) : <>
         <section className="page-heading">
           <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>Visão geral</h1><p className="muted-text">Acompanhe sua vida financeira em um só lugar.</p></div>
           <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
@@ -271,6 +327,7 @@ function App() {
           </div>
         </section>
         <footer className="footer"><span>© 2026 FINANCE IA</span><span>Organização financeira com clareza.</span><span>Versão 1.0 · Demonstração</span></footer>
+        </>}
       </main>
 
       {modalOpen && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModalOpen(false); }}>
