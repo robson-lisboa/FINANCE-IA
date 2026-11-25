@@ -12,11 +12,13 @@ Aplicação web de controle financeiro com visual escuro, responsivo e tecnológ
 - Gravação automática no navegador (`localStorage`).
 - Exportação dos lançamentos em CSV.
 - Resumo automático e despesas por categoria.
+- Gráfico mensal de receitas e despesas calculado pelos lançamentos reais dos últimos seis meses.
+- Instalação nova começa vazia, sem movimentações fictícias.
 - Layout adaptado para celular.
 
 ## Importante sobre esta versão
 
-Esta é uma demonstração funcional para validação do produto. Os dados ficam salvos somente no navegador/dispositivo em que foram cadastrados. Ainda não há login, sincronização entre dispositivos, banco de dados na nuvem, cobrança recorrente ou integração bancária. O gráfico de fluxo dos seis meses contém dados demonstrativos; os indicadores e lançamentos refletem os dados cadastrados.
+Esta é uma demonstração funcional para validação do produto. Os dados ficam salvos somente no navegador/dispositivo em que foram cadastrados. Ainda não há login, sincronização entre dispositivos, banco de dados na nuvem, cobrança recorrente ou integração bancária. O gráfico de fluxo dos seis meses, os indicadores e os resumos refletem os lançamentos cadastrados. Em uma instalação nova, o painel começa sem movimentações; cadastre receitas e despesas para formar o histórico.
 
 Não use dados bancários reais ou informações sensíveis nesta versão de demonstração.
 
