@@ -286,7 +286,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   };
 
   const formatMoney = (value: number) => money(value, settings.currency);
-  const savingsRate = monthlyTotals.income > 0 ? (monthlyTotals.balance / monthlyTotals.income) * 100 : 0;
+  const savingsRate = monthlyTotals.income > 0 ? (monthlyTotals.balance / monthlyTotals.income) * 100 : null;
 
   if (!cloudLoaded) {
     return <main className="auth-screen"><section className="auth-card"><div className="auth-brand"><span><Activity size={23}/></span><div><strong>FINANCE <b>IA</b></strong><small>CONTROLE FINANCEIRO PESSOAL</small></div></div><h1 className="auth-heading">Conectando sua conta</h1><p className="auth-footnote">{cloudBusy ? "Carregando seus dados protegidos..." : cloudError || "Aguardando sincronização."}</p>{cloudError && <button className="primary-btn auth-submit" onClick={() => window.location.reload()}>Tentar novamente</button>}</section></main>;
@@ -422,7 +422,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas registradas" />
           <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas neste mês" />
           <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas neste mês" />
-          <StatCard title="Taxa de economia" value={`${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Resultado sobre receitas do mês" />
+          <StatCard title="Taxa de economia" value={savingsRate === null ? "—" : `${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Resultado sobre receitas do mês" />
         </section>
 
         <section className="content-grid">
