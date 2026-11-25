@@ -478,7 +478,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         )}
       </main>
 
-      {invoiceOpen && <InvoiceImporter onClose={() => setInvoiceOpen(false)} onImport={async rows => { const existing = new Set(transactions.filter(t => t.type === "expense").map(t => `${t.title.toLowerCase()}|${t.date}|${t.amount.toFixed(2)}`)); const fresh = rows.filter(row => !existing.has(`${row.title.toLowerCase()}|${row.date}|${row.amount.toFixed(2)}`)); if (!fresh.length) throw new Error("Essas compras já existem nos seus lançamentos. Nenhuma duplicidade foi importada."); const saved = await insertTransactions(session, fresh.map(row => ({ ...row, type: "expense" as Kind }))); setTransactions(current => [...saved, ...current]); }} />}
+      {invoiceOpen && <InvoiceImporter transactions={transactions} onClose={() => setInvoiceOpen(false)} onImport={async rows => { const existing = new Set(transactions.filter(t => t.type === "expense").map(t => `${t.title.toLowerCase()}|${t.date}|${t.amount.toFixed(2)}`)); const fresh = rows.filter(row => !existing.has(`${row.title.toLowerCase()}|${row.date}|${row.amount.toFixed(2)}`)); if (!fresh.length) throw new Error("Essas compras já existem nos seus lançamentos. Nenhuma duplicidade foi importada."); const saved = await insertTransactions(session, fresh.map(row => ({ ...row, type: "expense" as Kind }))); setTransactions(current => [...saved, ...current]); }} />}
       {helpOpen && <div className="modal-backdrop help-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setHelpOpen(false); }}>
         <section className="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
           <div className="modal-heading">
