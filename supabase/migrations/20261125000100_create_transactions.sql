@@ -17,6 +17,10 @@ create index if not exists transactions_user_date_idx
 
 alter table public.transactions enable row level security;
 
+-- Permissões mínimas: visitantes sem login não acessam a tabela.
+revoke all on table public.transactions from anon, authenticated;
+grant select, insert, update, delete on table public.transactions to authenticated;
+
 drop policy if exists "Users can read their own transactions" on public.transactions;
 create policy "Users can read their own transactions"
   on public.transactions for select
