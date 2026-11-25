@@ -195,6 +195,16 @@ export async function insertTransactions(session: AuthSession, transactions: Omi
   });
 }
 
+export async function updateTransactionInCloud(session: AuthSession, id: string, transaction: Omit<FinanceTransaction, "id">): Promise<FinanceTransaction> {
+  const rows = await dataRequest<FinanceTransaction[]>(session, `transactions?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}&select=id,title,category,date,amount,type`, {
+    method: "PATCH",
+    headers: { Prefer: "return=representation" },
+    body: JSON.stringify(transaction),
+  });
+  if (!rows?.length) throw new Error("O lançamento não foi encontrado para atualização.");
+  return rows[0];
+}
+
 export async function deleteTransactionFromCloud(session: AuthSession, id: string): Promise<void> {
   await dataRequest<void>(session, `transactions?id=eq.${encodeURIComponent(id)}`, { method: "DELETE" });
 }
