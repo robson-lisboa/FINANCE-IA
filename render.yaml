@@ -2,7 +2,7 @@ services:
   - type: web
     name: finance-ia
     runtime: node
-    buildCommand: npm ci && npm test && npm run build
+    buildCommand: npm ci --include=dev && npm test && npm run build
     startCommand: npm start
     healthCheckPath: /health
     envVars:
