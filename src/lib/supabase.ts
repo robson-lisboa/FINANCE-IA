@@ -121,7 +121,7 @@ export async function insertTransactions(session: AuthSession, transactions: Omi
   return dataRequest<FinanceTransaction[]>(session, "transactions?select=id,title,category,date,amount,type", {
     method: "POST",
     headers: { Prefer: "return=representation" },
-    body: JSON.stringify(transactions),
+    body: JSON.stringify(transactions.map(transaction => ({ ...transaction, user_id: session.user.id }))),
   });
 }
 
