@@ -89,3 +89,5 @@
 .auth-switch{text-align:center;color:#9aa5bb;font-size:12px;margin:22px 0 0}.auth-switch button{border:0;background:none;color:#b9adff;font-weight:700;padding:0 0 0 4px}
 .auth-footnote{text-align:center;border-top:1px solid #29334a;padding-top:18px;margin:25px 0 0;color:#77839a;font-size:10px}
 .auth-message>svg{color:#a99cff}.auth-message ol{padding-left:20px;color:#c0c8d8;font-size:12px;line-height:1.8;margin:18px 0}.auth-message code{color:#c4baff;background:#25213f;padding:2px 4px;border-radius:4px;font-size:11px}.auth-message a{display:inline-block;color:#b9adff;text-decoration:none;font-size:12px;font-weight:700;margin-top:4px}
+
+.cloud-status{margin:10px 0;padding:10px 13px;border:1px solid #3b4261;border-radius:9px;background:#191d37;color:#c8c1ff;font-size:11px}.cloud-alert{margin:10px 0;padding:11px 14px;border:1px solid #7a3942;border-radius:9px;background:#351d28;color:#ffb3ba;font-size:12px}.profile-signout{margin-left:auto;border:1px solid #34405a;border-radius:7px;padding:6px 9px;background:transparent;color:#b9adff;font-size:10px;font-weight:700}.profile-signout:hover{background:#29264b}
