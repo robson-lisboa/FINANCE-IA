@@ -46,13 +46,10 @@ export default function PurchaseSimulator({ transactions, formatMoney }: Props) 
   const finalCost = mode === "cash" ? cash : total;
   const extraCost = mode === "installment" ? Math.max(0, total - cash) : 0;
   const months = Number(horizon);
-  const projectedBaseline = history.margin * months;
   const projectedPurchase = projectedBaseline - (mode === "cash" ? cash : monthlyPayment * months);
-  const purchaseImpact = mode === "cash" ? cash : monthlyPayment * months;
   const currentMonthImpact = history.currentIncome - history.currentExpenses - (mode === "cash" ? cash : monthlyPayment);
   const hasData = history.populated > 0;
   const affordable = hasData && projectedPurchase >= 0;
-  const installmentCoverage = count > 0 ? (history.margin - monthlyPayment) : history.margin;
 
   return <section className="panel purchase-simulator">
     <div className="insight-title"><div className="ai-icon"><Calculator size={18}/></div><div><h2>Simulador de decisões inteligentes</h2><p>Compare o custo real e o efeito da compra nos próximos meses</p></div></div>
