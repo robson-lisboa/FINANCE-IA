@@ -351,33 +351,61 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               <div><p className="eyebrow">PREFERÊNCIAS DO SISTEMA</p><h1>Configurações</h1><p className="muted-text">Personalize a aparência do seu Finance IA.</p></div>
             </div>
             <div className="panel settings-panel">
-              <div className="settings-section-heading"><div><h2>Aparência e preferências</h2><p>Personalize a visualização e os valores do seu Finance IA.</p></div><span className="settings-preview-icon"><Settings size={19}/></span></div>
+              <div className="settings-section-heading"><div><h2>Aparência e preferências</h2><p>Personalize o visual e escolha o que aparece no seu painel.</p></div><span className="settings-preview-icon"><Settings size={19}/></span></div>
               <div className="settings-control">
-                <div><strong>Tema</strong><small>Alterne entre o modo escuro e claro.</small></div>
+                <div><strong>Tema</strong><small>Alterne entre modo escuro e claro.</small></div>
                 <div className="settings-options">
-                  <button className={`settings-choice ${settings.theme === "dark" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, theme: "dark" }))}>◐ Escuro</button>
-                  <button className={`settings-choice ${settings.theme === "light" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, theme: "light" }))}>☀ Claro</button>
+                  <button type="button" className={`settings-choice ${settings.theme === "dark" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, theme: "dark" }))}>◐ Escuro</button>
+                  <button type="button" className={`settings-choice ${settings.theme === "light" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, theme: "light" }))}>☀ Claro</button>
                 </div>
               </div>
               <div className="settings-control accent-control">
-                <div><strong>Cor principal</strong><small>Personalize botões, destaques e elementos de navegação.</small></div>
+                <div><strong>Cor principal</strong><small>Escolha uma cor pronta ou crie a sua.</small></div>
                 <div className="accent-options">
                   {([{ id: "purple", label: "Roxo" }, { id: "blue", label: "Azul" }, { id: "green", label: "Verde" }, { id: "red", label: "Vermelho" }] as const).map(color => (
-                    <button key={color.id} className={`accent-choice ${settings.accent === color.id ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, accent: color.id }))} aria-pressed={settings.accent === color.id}>
+                    <button type="button" key={color.id} className={`accent-choice ${!settings.customAccent && settings.accent === color.id ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, accent: color.id, customAccent: "" }))} aria-pressed={!settings.customAccent && settings.accent === color.id}>
                       <i style={{ background: ACCENT_COLORS[color.id] }}/>{color.label}
                     </button>
                   ))}
+                  <label className={`accent-choice custom-color-choice ${settings.customAccent ? "selected" : ""}`}>
+                    <i style={{ background: settings.customAccent || "#9a8cff" }}/> Personalizada
+                    <input aria-label="Escolher cor personalizada" type="color" value={settings.customAccent || ACCENT_COLORS[settings.accent]} onChange={event => setSettings(current => ({ ...current, customAccent: event.target.value }))}/>
+                  </label>
+                </div>
+              </div>
+              <div className="settings-control">
+                <div><strong>Espaçamento</strong><small>Escolha uma tela mais compacta ou mais arejada.</small></div>
+                <div className="settings-options">
+                  <button type="button" className={`settings-choice ${settings.density === "comfortable" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, density: "comfortable" }))}>Confortável</button>
+                  <button type="button" className={`settings-choice ${settings.density === "compact" ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, density: "compact" }))}>Compacto</button>
+                </div>
+              </div>
+              <div className="settings-control">
+                <div><strong>Tamanho do texto</strong><small>Ajuste a leitura do painel.</small></div>
+                <div className="settings-options">
+                  {([{id:"small",label:"Pequeno"},{id:"normal",label:"Padrão"},{id:"large",label:"Grande"}] as const).map(size => <button type="button" key={size.id} className={`settings-choice ${settings.fontScale === size.id ? "selected" : ""}`} onClick={() => setSettings(current => ({ ...current, fontScale: size.id }))}>{size.label}</button>)}
                 </div>
               </div>
               <div className="settings-control currency-control">
-                <div><strong>Moeda</strong><small>Define como os valores financeiros são apresentados.</small></div>
+                <div><strong>Moeda de exibição</strong><small>Altera apenas o símbolo e a formatação, não converte valores.</small></div>
                 <select className="settings-select" value={settings.currency} onChange={event => setSettings(current => ({ ...current, currency: event.target.value as AppSettings["currency"] }))}>
                   <option value="BRL">Real brasileiro (BRL · R$)</option>
                   <option value="USD">Dólar americano (USD · US$)</option>
                   <option value="EUR">Euro (EUR · €)</option>
                 </select>
               </div>
-              <div className="settings-footer"><span>Suas preferências são salvas automaticamente neste navegador. A troca de moeda altera apenas a exibição, não converte os lançamentos.</span><button className="outline-btn" onClick={() => setSettings(DEFAULT_SETTINGS)}>Restaurar padrão</button></div>
+              <div className="settings-widget-section">
+                <div><strong>Meu painel inicial</strong><small>Ative somente os blocos que deseja visualizar. As alterações aparecem imediatamente.</small></div>
+                <div className="settings-widget-grid">
+                  {([{id:"stats",label:"Indicadores financeiros"},{id:"chart",label:"Gráfico de fluxo"},{id:"advisor",label:"Consultor inteligente"},{id:"transactions",label:"Últimos lançamentos"},{id:"categories",label:"Despesas por categoria"}] as const).map(widget => (
+                    <label className="settings-toggle" key={widget.id}>
+                      <input type="checkbox" checked={settings.widgets[widget.id]} onChange={event => setSettings(current => ({ ...current, widgets: { ...current.widgets, [widget.id]: event.target.checked } }))}/>
+                      <span>{widget.label}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div className="settings-footer"><span>Preferências salvas automaticamente neste navegador e restauradas ao voltar. Seus lançamentos não são alterados por estas opções.</span><button type="button" className="outline-btn" onClick={() => setSettings(DEFAULT_SETTINGS)}>Restaurar padrão</button></div>
             </div>
           </section>
         ) : activePage === "transactions" ? (
