@@ -95,3 +95,23 @@
 
 /* Central de ajuda — Etapa 1 */
 .help-card .help-link{display:inline-flex;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:#b5aaff;font-size:10px;text-decoration:none;cursor:pointer}.help-card .help-link:hover{color:#fff;text-decoration:underline}.help-modal{width:min(100%,560px);max-height:min(85vh,720px);overflow-y:auto}.help-intro{font-size:11px;color:#9aa5bb;line-height:1.6;margin:-8px 0 17px}.help-topic{padding:13px 0;border-top:1px solid #29344a}.help-topic strong{font-size:11px;color:#eef1f8}.help-topic p{font-size:10px;line-height:1.65;color:#a5afc1;margin:6px 0 0}.help-note{margin-top:14px;padding:12px;border:1px solid #39345e;border-radius:9px;background:#211f3b;color:#c2bbef;font-size:10px;line-height:1.6}.theme-light .help-topic{border-color:#e5e9f1}.theme-light .help-topic strong{color:#202a3b}.theme-light .help-topic p,.theme-light .help-intro{color:#66738a}.theme-light .help-note{background:#efedff;border-color:#ded9fa;color:#514b80}
+
+
+/* Páginas independentes do menu principal */
+.page-section{padding-bottom:24px}
+.full-page-panel{min-height:320px}
+.full-page-panel .transaction-list{max-height:none}
+.full-page-panel .transaction-row{padding:15px 2px}
+.insights-page-grid{align-items:start}
+.insights-page-grid .insight-panel{min-height:310px}
+.goals-page-panel{max-width:900px;min-height:300px;padding:32px;display:flex;flex-direction:column;align-items:flex-start}
+.goals-empty-icon{width:54px;height:54px;border-radius:15px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent);margin-bottom:18px}
+.goals-page-panel h2{font:800 18px Manrope,sans-serif;color:var(--text);margin:0 0 9px}
+.goals-page-panel>p{max-width:600px;color:var(--muted);font-size:11px;line-height:1.7;margin:0}
+.goals-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;width:100%;margin-top:28px}
+.goals-summary>div{padding:15px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.goals-summary span,.goals-summary strong{display:block}
+.goals-summary span{font-size:9px;color:var(--muted);margin-bottom:8px}
+.goals-summary strong{font:700 15px Manrope,sans-serif;color:var(--text)}
+.theme-light .goals-page-panel h2{color:#202a3b}
+@media(max-width:600px){.goals-page-panel{padding:20px}.goals-summary{grid-template-columns:1fr}.full-page-panel .transaction-row{gap:8px}}
