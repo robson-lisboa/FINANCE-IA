@@ -1,4 +1,4 @@
-﻿import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
@@ -96,6 +96,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   });
   const [activePage, setActivePage] = useState(() => window.location.hash === "#settings" ? "settings" : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | Kind>("all");
   const [search, setSearch] = useState("");
@@ -275,7 +276,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <div className="help-icon"><CircleHelp size={18}/></div>
             <strong>Precisa de ajuda?</strong>
             <p>Organize suas finanças com mais clareza.</p>
-            <a href="#insights">Ver dicas <span>→</span></a>
+            <button type="button" className="help-link" onClick={() => setHelpOpen(true)}>Ver dicas <span>→</span></button>
           </div>
           <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => setActivePage("settings")}><Settings size={18}/> Configurações</a>
           <div className="profile">
@@ -413,6 +414,20 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         </>}
       </main>
 
+      {helpOpen && <div className="modal-backdrop help-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setHelpOpen(false); }}>
+        <section className="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
+          <div className="modal-heading">
+            <div><span className="eyebrow">CENTRAL DE AJUDA</span><h2 id="help-title">Como podemos ajudar?</h2></div>
+            <button type="button" className="icon-btn" onClick={() => setHelpOpen(false)} aria-label="Fechar ajuda"><X size={19}/></button>
+          </div>
+          <p className="help-intro">Veja orientações rápidas para começar a usar o Finance IA.</p>
+          <div className="help-topic"><strong>1. Cadastrar receitas e despesas</strong><p>Clique em “Novo lançamento”, escolha Receita ou Despesa, informe descrição, valor, data e categoria e depois selecione “Salvar lançamento”.</p></div>
+          <div className="help-topic"><strong>2. Acompanhar seu saldo</strong><p>Na Visão geral, o saldo é calculado pelas receitas menos as despesas que você cadastrou. Os gráficos são atualizados com esses lançamentos.</p></div>
+          <div className="help-topic"><strong>3. Consultar e filtrar lançamentos</strong><p>Use a busca para localizar uma movimentação e os filtros Todos, Receitas e Despesas para organizar a lista.</p></div>
+          <div className="help-topic"><strong>4. Personalizar o sistema</strong><p>Em Configurações, você pode alterar tema, cor principal e a forma de exibição da moeda. A moeda não converte os valores cadastrados.</p></div>
+          <div className="help-note">Dica: seus lançamentos são sincronizados com sua conta na nuvem. Se aparecer uma mensagem de erro, confira sua conexão e tente novamente.</div>
+        </section>
+      </div>}
       {modalOpen && <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setModalOpen(false); }}>
         <form className="modal" onSubmit={addTransaction}>
           <div className="modal-heading"><div><span className="eyebrow">MOVIMENTAÇÃO FINANCEIRA</span><h2>Novo lançamento</h2></div><button type="button" className="icon-btn" onClick={() => setModalOpen(false)} aria-label="Fechar"><X size={19}/></button></div>
