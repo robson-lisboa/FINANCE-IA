@@ -22,7 +22,7 @@ export default function WasteDetector({ transactions, formatMoney }: Props) {
     const monthKeys = [...new Set(valid.map(t => t.date.slice(0, 7)))].sort();
     const now = new Date();
     const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const monthKey = monthKeys.includes(currentKey) ? currentKey : monthKeys.at(-1) ?? currentKey;
+    const monthKey = monthKeys.includes(currentKey) ? currentKey : monthKeys[monthKeys.length - 1] ?? currentKey;
     const monthTransactions = valid.filter(t => t.date.startsWith(monthKey));
     const small = monthTransactions.filter(t => Number(t.amount) <= 50).sort((a, b) => Number(b.amount) - Number(a.amount));
     const total = monthTransactions.reduce((sum, t) => sum + Number(t.amount), 0);
