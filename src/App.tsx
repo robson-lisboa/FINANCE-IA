@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
 import InvoiceImporter from "./InvoiceImporter";
+import GoalsManager from "./GoalsManager";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
@@ -417,21 +418,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </section>
           </section>
         ) : activePage === "goals" ? (
-          <section className="page-section">
-            <div className="page-heading">
-              <div><p className="eyebrow">PLANEJAMENTO FINANCEIRO</p><h1>Metas financeiras</h1><p className="muted-text">Acompanhe objetivos e planeje o uso do seu dinheiro.</p></div>
-            </div>
-            <div className="panel goals-page-panel">
-              <div className="goals-empty-icon"><Target size={28}/></div>
-              <h2>Organize seus próximos objetivos</h2>
-              <p>Esta área agora tem uma página própria. A criação e o acompanhamento de metas serão implementados na próxima etapa, com armazenamento seguro vinculado à sua conta.</p>
-              <div className="goals-summary">
-                <div><span>Saldo atual</span><strong>{formatMoney(totals.balance)}</strong></div>
-                <div><span>Receitas registradas</span><strong>{formatMoney(totals.income)}</strong></div>
-                <div><span>Despesas registradas</span><strong>{formatMoney(totals.expenses)}</strong></div>
-              </div>
-            </div>
-          </section>
+          <GoalsManager session={session} balance={totals.balance} formatMoney={formatMoney}/>
         ) : (
         <>
         <section className="page-section">
