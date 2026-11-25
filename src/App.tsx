@@ -389,7 +389,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </div>
           </section>
         ) : activePage === "insights" ? (
-          <FinancialDiagnosis transactions={transactions} formatMoney={formatMoney}/>
+          <FinancialDiagnosis transactions={transactions} formatMoney={formatMoney} accessToken={session.access_token}/>
         ) : activePage === "goals" ? (
           <GoalsManager session={session} balance={totals.balance} formatMoney={formatMoney}/>
         ) : (
