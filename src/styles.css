@@ -344,3 +344,21 @@
 .preventive-alert.positive>svg{color:#35c99a}
 .preventive-alert.neutral>svg{color:var(--accent)}
 .theme-light .preventive-alert{background:#f7f8fc}
+
+/* Planejamento preditivo e detecção de anomalias */
+.predictive-panel{margin:0 0 16px}
+.predictive-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+.predictive-kpis>div{display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid var(--line);border-radius:10px;min-width:0}
+.predictive-kpis span{font-size:11px;color:var(--muted)}
+.predictive-kpis strong{font:800 clamp(15px,2vw,20px) Manrope,sans-serif;color:var(--text);overflow-wrap:anywhere}
+.predictive-kpis .predictive-good{color:#35c99a}
+.predictive-kpis .predictive-muted{color:var(--muted);font-size:14px}
+.predictive-kpis .diagnosis-negative{color:#f07883}
+.predictive-kpis .goal-positive{color:#35c99a}
+.predictive-watch{display:grid;gap:8px;margin-top:15px;padding:13px;border:1px solid var(--line);border-radius:9px;background:var(--panel2)}
+.predictive-watch>strong{font-size:11px;color:var(--text);margin-bottom:2px}
+.predictive-watch>div{display:flex;justify-content:space-between;gap:12px;padding-top:8px;border-top:1px solid var(--line)}
+.predictive-watch span{font-size:11px;color:var(--muted);overflow-wrap:anywhere}
+.predictive-watch b{font-size:11px;color:#f3b85b;text-align:right}
+.duplicate-watch b{color:#5ca9ff}
+@media(max-width:600px){.predictive-kpis{grid-template-columns:1fr}.predictive-watch>div{flex-direction:column;gap:4px}.predictive-watch b{text-align:left}}
