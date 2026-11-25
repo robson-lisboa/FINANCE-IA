@@ -94,7 +94,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       return DEFAULT_SETTINGS;
     }
   });
-  const [activePage, setActivePage] = useState(() => window.location.hash === "#settings" ? "settings" : "dashboard");
+  const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "goals", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -157,7 +157,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   }, [settings]);
 
   useEffect(() => {
-    const syncPage = () => setActivePage(window.location.hash === "#settings" ? "settings" : "dashboard");
+    const syncPage = () => { const page = window.location.hash.slice(1); setActivePage(["dashboard", "transactions", "insights", "goals", "settings"].includes(page) ? page : "dashboard"); };
     window.addEventListener("hashchange", syncPage);
     return () => window.removeEventListener("hashchange", syncPage);
   }, []);
@@ -266,10 +266,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         </div>
         <div className="workspace-label">MENU PRINCIPAL</div>
         <nav className="nav-list">
-          <a className={`nav-item ${activePage === "dashboard" ? "active" : ""}`} href="#dashboard" onClick={() => setActivePage("dashboard")}><LayoutDashboard size={18}/> Visão geral</a>
-          <a className="nav-item" href="#transactions"><Wallet size={18}/> Lançamentos</a>
-          <a className="nav-item" href="#insights"><Sparkles size={18}/> Análise inteligente <span className="new-pill">NOVO</span></a>
-          <a className="nav-item" href="#goals"><Target size={18}/> Metas financeiras</a>
+          <a className={`nav-item ${activePage === "dashboard" ? "active" : ""}`} href="#dashboard" onClick={() => { setActivePage("dashboard"); setMenuOpen(false); }}><LayoutDashboard size={18}/> Visão geral</a>
+          <a className={`nav-item ${activePage === "transactions" ? "active" : ""}`} href="#transactions" onClick={() => { setActivePage("transactions"); setMenuOpen(false); }}><Wallet size={18}/> Lançamentos</a>
+          <a className={`nav-item ${activePage === "insights" ? "active" : ""}`} href="#insights" onClick={() => { setActivePage("insights"); setMenuOpen(false); }}><Sparkles size={18}/> Análise inteligente <span className="new-pill">NOVO</span></a>
+          <a className={`nav-item ${activePage === "goals" ? "active" : ""}`} href="#goals" onClick={() => { setActivePage("goals"); setMenuOpen(false); }}><Target size={18}/> Metas financeiras</a>
         </nav>
         <div className="sidebar-bottom">
           <div className="help-card">
@@ -278,7 +278,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <p>Organize suas finanças com mais clareza.</p>
             <button type="button" className="help-link" onClick={() => setHelpOpen(true)}>Ver dicas <span>→</span></button>
           </div>
-          <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => setActivePage("settings")}><Settings size={18}/> Configurações</a>
+          <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => { setActivePage("settings"); setMenuOpen(false); }}><Settings size={18}/> Configurações</a>
           <div className="profile">
             <div className="avatar">R</div>
             <div className="profile-text"><strong>{session.user.email || "Minha conta"}</strong><small>Conta sincronizada</small></div>
