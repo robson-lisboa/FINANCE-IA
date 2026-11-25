@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
 import InvoiceImporter from "./InvoiceImporter";
-import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
+import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
   CircleHelp, Download, LayoutDashboard, Lightbulb, Menu, Plus, Search,
