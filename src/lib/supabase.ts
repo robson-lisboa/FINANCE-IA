@@ -11,6 +11,7 @@ export type AuthSession = {
   access_token: string;
   refresh_token: string;
   expires_at: number;
+  expires_in?: number;
   user: { id: string; email?: string };
 };
 
@@ -54,7 +55,7 @@ async function authRequest<T>(path: string, body?: unknown): Promise<T> {
 
 export async function signIn(email: string, password: string): Promise<AuthSession> {
   const result = await authRequest<AuthSession>("token?grant_type=password", { email, password });
-  const session = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + result.expires_in };
+  const session = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + (result.expires_in ?? 3600) };
   saveSession(session);
   return session;
 }
