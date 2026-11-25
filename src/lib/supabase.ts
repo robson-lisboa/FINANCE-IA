@@ -75,17 +75,44 @@ async function authRequest<T>(path: string, body?: unknown): Promise<T> {
   return result as T;
 }
 
+function buildAuthSession(value: unknown): AuthSession {
+  if (!value || typeof value !== "object") {
+    throw new Error("O serviço de autenticação retornou uma sessão inválida. Tente entrar novamente.");
+  }
+
+  const result = value as Partial<AuthSession>;
+  if (
+    typeof result.access_token !== "string" || !result.access_token ||
+    typeof result.refresh_token !== "string" || !result.refresh_token ||
+    !result.user || typeof result.user !== "object" ||
+    typeof result.user.id !== "string" || !result.user.id
+  ) {
+    throw new Error("O login foi recebido, mas os dados da conta vieram incompletos. Nenhuma sessão inválida foi salva.");
+  }
+
+  return {
+    ...result,
+    expires_at: typeof result.expires_at === "number"
+      ? result.expires_at
+      : Math.floor(Date.now() / 1000) + (typeof result.expires_in === "number" ? result.expires_in : 3600),
+    user: {
+      id: result.user.id,
+      ...(typeof result.user.email === "string" ? { email: result.user.email } : {}),
+    },
+  } as AuthSession;
+}
+
 export async function signIn(email: string, password: string): Promise<AuthSession> {
-  const result = await authRequest<AuthSession>("token?grant_type=password", { email, password });
-  const session = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + (result.expires_in ?? 3600) };
+  const result = await authRequest<unknown>("token?grant_type=password", { email, password });
+  const session = buildAuthSession(result);
   saveSession(session);
   return session;
 }
 
 export async function signUp(email: string, password: string): Promise<{ session: AuthSession | null; needsEmailConfirmation: boolean }> {
-  const result = await authRequest<AuthSession & { id?: string }>("signup", { email, password });
-  if (result.access_token && result.refresh_token) {
-    const session = { ...result, expires_at: result.expires_at ?? Math.floor(Date.now() / 1000) + (result.expires_in ?? 3600) };
+  const result = await authRequest<unknown>("signup", { email, password });
+  if (result && typeof result === "object" && "access_token" in result && "refresh_token" in result && (result as { access_token?: unknown }).access_token && (result as { refresh_token?: unknown }).refresh_token) {
+    const session = buildAuthSession(result);
     saveSession(session);
     return { session, needsEmailConfirmation: false };
   }
