@@ -5,6 +5,7 @@ import GoalsManager from "./GoalsManager";
 import FinancialDiagnosis from "./FinancialDiagnosis";
 import PlanningCenter from "./PlanningCenter";
 import ProactiveAdvisor from "./ProactiveAdvisor";
+import { parseBrazilianMoney } from "./lib/money-core.js";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
@@ -242,8 +243,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
   const addTransaction = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const amount = Number(form.amount.replace(",", "."));
-    if (!cloudLoaded || !form.title.trim() || !Number.isFinite(amount) || amount <= 0) return;
+    const parsedAmount = parseBrazilianMoney(form.amount);
+    if (!cloudLoaded || !form.title.trim() || parsedAmount === null || parsedAmount <= 0) return;
+    const amount = parsedAmount;
     setCloudError("");
     try {
       const payload = { title: form.title.trim(), category: form.category, date: form.date, amount, type: form.type };
