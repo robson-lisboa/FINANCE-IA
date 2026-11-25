@@ -633,3 +633,17 @@
 .theme-light .settings-toggle{background:#f8f9fc;border-color:#dce2ed;color:#202a3b}
 .theme-light .custom-color-choice input[type=color]{background:transparent}
 @media(max-width:650px){.settings-widget-grid{grid-template-columns:1fr}.density-comfortable .panel,.density-comfortable .stat-card{padding:17px}}
+
+.waste-period-label{margin:12px 0 0;color:var(--muted);font-size:10px;text-transform:capitalize}
+.waste-purchases{margin-top:14px;padding:13px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.waste-purchases-heading{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
+.waste-purchases-heading strong{font-size:11px}
+.waste-purchases-heading span{font-size:9px;color:var(--muted)}
+.waste-purchase{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line);cursor:pointer}
+.waste-purchase input{width:16px;height:16px;flex:none;margin:0;accent-color:var(--accent)}
+.waste-purchase span{display:grid;gap:3px;min-width:0;flex:1}
+.waste-purchase span strong{font-size:10px;overflow-wrap:anywhere}
+.waste-purchase small{font-size:9px;color:var(--muted)}
+.waste-purchase>b{font-size:10px;white-space:nowrap}
+.waste-selection-total{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:10px;margin-top:4px;font-size:10px;color:var(--muted)}
+.waste-selection-total strong{color:var(--text);font-size:12px}
