@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { ShieldCheck, AlertTriangle, TrendingUp } from "lucide-react";
-import { parseBrazilianMoney } from "./lib/money";
+import { parseBrazilianMoney } from "./lib/money-core.js";
 
 type Props = { formatMoney: (value: number) => string };
 type Payoff = { months: number; interest: number; total: number; impossible: boolean };
