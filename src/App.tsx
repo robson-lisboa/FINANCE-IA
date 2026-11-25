@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
 import InvoiceImporter from "./InvoiceImporter";
 import GoalsManager from "./GoalsManager";
+import FinancialDiagnosis from "./FinancialDiagnosis";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
@@ -388,35 +389,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </div>
           </section>
         ) : activePage === "insights" ? (
-          <section className="page-section">
-            <div className="page-heading">
-              <div><p className="eyebrow">LEITURA DOS SEUS DADOS</p><h1>Relatório inteligente</h1><p className="muted-text">Indicadores e observações calculados a partir dos seus lançamentos.</p></div>
-              <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
-            </div>
-            <section className="stats-grid">
-              <StatCard title="Saldo atual" value={formatMoney(totals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas"/>
-              <StatCard title="Total de receitas" value={formatMoney(totals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas"/>
-              <StatCard title="Total de despesas" value={formatMoney(totals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas"/>
-              <StatCard title="Taxa de economia" value={`${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Saldo sobre receitas"/>
-            </section>
-            <section className="content-grid insights-page-grid">
-              <div className="panel insight-panel">
-                <div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Análise dos seus resultados</h2><p>Resumo automático dos seus dados</p></div></div>
-                <div className="insight-highlight"><span className="insight-label">SITUAÇÃO FINANCEIRA</span><strong>{totals.balance >= 0 ? "Seu saldo está positivo." : "Atenção ao seu saldo."}</strong><p>{totals.balance >= 0 ? `Você tem ${formatMoney(totals.balance)} de saldo considerando os lançamentos registrados.` : `Suas despesas superam as receitas em ${formatMoney(Math.abs(totals.balance))}. Revise seus gastos.`}</p></div>
-                <div className="insight-row"><div className="mini-icon purple"><Lightbulb size={16}/></div><div><strong>Maior categoria de despesa</strong><p>{topCategory ? `${topCategory[0]} · ${formatMoney(topCategory[1])}` : "Ainda não há despesas para analisar."}</p></div></div>
-                <div className="insight-row"><div className="mini-icon green"><TrendingUp size={16}/></div><div><strong>Taxa de economia</strong><p>{savingsRate.toFixed(1).replace(".", ",")}% das receitas permanecem no saldo.</p></div></div>
-                <div className="insight-disclaimer">Análise automática e informativa. Não é recomendação de investimento.</div>
-              </div>
-              <div className="panel goals-panel">
-                <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Onde seus gastos estão concentrados</p></div><Activity size={18} className="subtle-icon"/></div>
-                {expenseByCategory.length === 0 ? <div className="empty-state compact">Cadastre despesas para gerar este relatório.</div> : <div className="category-list">{expenseByCategory.map(([category, amount], index) => {
-                  const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
-                  const percent = totals.expenses ? amount / totals.expenses * 100 : 0;
-                  return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{formatMoney(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
-                })}</div>}
-              </div>
-            </section>
-          </section>
+          <FinancialDiagnosis transactions={transactions} formatMoney={formatMoney}/>
         ) : activePage === "goals" ? (
           <GoalsManager session={session} balance={totals.balance} formatMoney={formatMoney}/>
         ) : (
