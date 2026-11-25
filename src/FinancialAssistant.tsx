@@ -24,8 +24,22 @@ export default function FinancialAssistant({ accessToken }: { accessToken: strin
     const history = messages.slice(-8);
     setMessages(current => [...current, { role: "user", content: message }]);
     setDraft("");
-    setBusy(true);
     setError("");
+
+    // Saudações isoladas são reconhecidas imediatamente, sem gastar uma chamada de IA.
+    const normalized = message.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[!?.,;:]+/g, " ").trim();
+    const greetingOnly = /^(oi|ola|bom dia|boa tarde|boa noite|bom dia tudo bem|boa tarde tudo bem|boa noite tudo bem|tudo bem|tudo bom|e ai|opa)(\s+(finance ia|finance))?$/.test(normalized);
+    if (greetingOnly) {
+      const hour = new Date().getHours();
+      const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+      setMessages(current => [...current, {
+        role: "assistant",
+        content: greeting + "! Estou aqui para ajudar. Posso analisar seus lançamentos, identificar seus maiores gastos, calcular médias e acompanhar suas metas."
+      }]);
+      return;
+    }
+
+    setBusy(true);
     try {
       const response = await fetch("/api/assistant/chat", {
         method: "POST",
