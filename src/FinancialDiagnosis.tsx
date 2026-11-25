@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, Lightbulb, ShieldAlert, TrendingDown, TrendingUp, Wallet } from "lucide-react";
 import FinancialAssistant from "./FinancialAssistant";
+import PurchaseSimulator from "./PurchaseSimulator";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; accessToken: string };
@@ -71,6 +72,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       <div className="stat-card"><div className="stat-top"><span>Taxa de economia</span><div className="stat-icon blue"><Activity size={19}/></div></div><strong className="stat-value">{report.savings === null ? "—" : `${report.savings.toFixed(1).replace(".", ",")}%`}</strong><div className="stat-detail">Sobre as receitas deste mês</div></div>
     </div>
     <FinancialAssistant accessToken={accessToken}/>
+    <PurchaseSimulator transactions={transactions} formatMoney={formatMoney}/>
     <div className="content-grid insights-page-grid">
       <div className="panel insight-panel">
         <div className="insight-title"><div className="ai-icon"><Lightbulb size={18}/></div><div><h2>Recomendação do Finance IA</h2><p>Orientação baseada nos registros disponíveis</p></div></div>
