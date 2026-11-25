@@ -54,7 +54,7 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
   try {
     const headers = { apikey: supabaseKey, Authorization: "Bearer " + req.accessToken };
     const [transactionsResponse, goalsResponse] = await Promise.all([
-      fetch(supabaseUrl + "/rest/v1/transactions?select=title,category,date,amount,type&order=date.desc&limit=500", { headers }),
+      fetch(supabaseUrl + "/rest/v1/transactions?select=title,category,date,amount,type&order=date.desc&limit=120", { headers }),
       fetch(supabaseUrl + "/rest/v1/financial_goals?select=title,target_amount,saved_amount,deadline&order=deadline.asc", { headers })
     ]);
     if (!transactionsResponse.ok) throw new Error("Não foi possível consultar seus lançamentos.");
@@ -79,7 +79,7 @@ ${JSON.stringify(safeGoals)}`;
       body: JSON.stringify({
         model,
         messages: [{ role: "system", content: systemPrompt }, ...history, { role: "user", content: message }],
-        temperature: 0.35,
+        reasoning_effort: "high",
         max_completion_tokens: 1200
       })
     });
