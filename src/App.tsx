@@ -286,6 +286,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   };
 
   const formatMoney = (value: number) => money(value, settings.currency);
+  const savingsRate = monthlyTotals.income > 0 ? (monthlyTotals.balance / monthlyTotals.income) * 100 : 0;
 
   if (!cloudLoaded) {
     return <main className="auth-screen"><section className="auth-card"><div className="auth-brand"><span><Activity size={23}/></span><div><strong>FINANCE <b>IA</b></strong><small>CONTROLE FINANCEIRO PESSOAL</small></div></div><h1 className="auth-heading">Conectando sua conta</h1><p className="auth-footnote">{cloudBusy ? "Carregando seus dados protegidos..." : cloudError || "Aguardando sincronização."}</p>{cloudError && <button className="primary-btn auth-submit" onClick={() => window.location.reload()}>Tentar novamente</button>}</section></main>;
