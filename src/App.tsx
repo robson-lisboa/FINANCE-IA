@@ -478,7 +478,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição dos gastos neste mês</p></div><Activity size={18} className="subtle-icon"/></div>
             {expenseByCategory.length === 0 ? <div className="empty-state compact">Adicione despesas para ver as categorias.</div> : <div className="category-list">{expenseByCategory.slice(0, 5).map(([category, amount], index) => {
               const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
-              const percent = totals.expenses ? amount / totals.expenses * 100 : 0;
+              const percent = monthlyTotals.expenses ? amount / monthlyTotals.expenses * 100 : 0;
               return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{formatMoney(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
             })}</div>}
             <div className="category-footer"><span>Total de despesas</span><strong>{formatMoney(monthlyTotals.expenses)}</strong></div>
