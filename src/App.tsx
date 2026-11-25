@@ -440,7 +440,7 @@ function App() {
 
   if (checkingSession) return <main className="auth-screen"><div className="cloud-status">Preparando acesso seguro...</div></main>;
   if (!session) return <AuthScreen onAuthenticated={setSession}/>;
-  return <FinanceDashboard session={session} onSignOut={() => { void handleSignOut(); }}/>;
+  return <FinanceDashboard key={session.user.id} session={session} onSignOut={() => { void handleSignOut(); }}/>;
 }
 
 export default App;
