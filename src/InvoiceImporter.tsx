@@ -293,7 +293,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         </label>
         {!rows.length && <button className="primary-btn invoice-action" disabled={!file || busy || (file?.size || 0) > 15 * 1024 * 1024} onClick={() => void analyze()}>{busy ? <><LoaderCircle className="spin" size={16}/> {progress || "Analisando..."}</> : "Analisar documento"}</button>}
         {file && file.size > 15 * 1024 * 1024 && <p className="invoice-error">O arquivo ultrapassa o limite de 15 MB.</p>}
-        {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}\n        {accountSummary && <section className="invoice-audit" aria-label="Conciliação do extrato bancário">
+        {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}
+        {accountSummary && <section className="invoice-audit" aria-label="Conciliação do extrato bancário">
           <div className="invoice-audit-heading"><span className="eyebrow">CONCILIAÇÃO BANCÁRIA</span><strong>Conferência dos saldos</strong></div>
           <div className="invoice-audit-grid">
             <div><strong>{accountSummary.openingBalance.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong><span>Saldo inicial</span></div>
