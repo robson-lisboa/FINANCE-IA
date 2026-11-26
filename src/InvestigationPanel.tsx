@@ -10,14 +10,16 @@ export default function InvestigationPanel({ transactions, formatMoney, selected
   const [opened, setOpened] = useState<string | null>(null);
   const findings = useMemo<Finding[]>(() => {
     const key = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+    const now = new Date();
     const [year, month] = selectedMonth.split("-").map(Number);
     const selectedDate = new Date(year, month - 1, 1);
+    const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1;
     const currentKey = selectedMonth;
     const previousKey = key(new Date(year, month - 2, 1));
     const selectedLabel = selectedDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
     const expenses = transactions.filter(t => t.type === "expense" && /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(t.amount) && t.amount > 0);
     const current = expenses.filter(t => t.date.startsWith(currentKey));
-    const previous = expenses.filter(t => t.date.startsWith(previousKey));
+    const previous = expenses.filter(t => t.date.startsWith(previousKey) && (!isCurrentMonth || Number(t.date.slice(8, 10)) <= now.getDate()));
     const result: Finding[] = [];
     const largest = [...current].sort((a,b) => b.amount-a.amount)[0];
     if (largest) result.push({ id:"largest", title:"Maior saída do período", summary:`${largest.title} · ${largest.category} · ${largest.date.split("-").reverse().join("/")}`, value:formatMoney(largest.amount), detail:`Este é o maior lançamento individual classificado como despesa em ${selectedLabel}.`, icon:"largest", rows:[largest] });
@@ -30,7 +32,7 @@ export default function InvestigationPanel({ transactions, formatMoney, selected
     if (growth) {
       const rows = current.filter(t=>t.category.trim().toLocaleLowerCase("pt-BR")===growth.category.trim().toLocaleLowerCase("pt-BR"));
       const pct = (growth.now/growth.before-1)*100;
-      result.push({ id:"growth", title:"Categoria que mais acelerou", summary:`${growth.category} · ${pct.toFixed(0)}% acima do mês anterior`, value:formatMoney(growth.now), detail:`A categoria somou ${formatMoney(growth.now)} em ${selectedLabel}, contra ${formatMoney(growth.before)} no mês anterior.`, icon:"growth", rows });
+      result.push({ id:"growth", title:"Categoria que mais acelerou", summary:`${growth.category} · ${pct.toFixed(0)}% acima do mês anterior`, value:formatMoney(growth.now), detail:`A categoria somou ${formatMoney(growth.now)} em ${selectedLabel}, contra ${formatMoney(growth.before)} no mesmo intervalo do mês anterior quando o período está em andamento.`, icon:"growth", rows });
     }
     const groups = new Map<string, Transaction[]>();
     expenses.forEach(t=>{ const k=t.title.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g," "); if(!k)return; groups.set(k,[...(groups.get(k)||[]),t]); });
