@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
 import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle, Trash2, Pencil } from "lucide-react";
+import { classifyStatementMovement, isStatementSummaryLine } from "./lib/statement-parser.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
@@ -90,7 +91,7 @@ function parseRows(text: string): InvoiceRow[] {
   const referenceDate = detectInvoiceReferenceDate(text);
   const rows: InvoiceRow[] = [], seen = new Set<string>();
   for (const line of lines) {
-    if (/\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|saldo disponível|saldo disponivel|saldo final|saldo inicial|limite total|limite disponivel|limite disponível|limite utilizado|encargos|iof|anuidade|valor minimo|valor mínimo|resumo da fatura|melhor dia de compra|vencimento|total de creditos|total de debitos|saldo do dia|saldo atual|saldo disponível|saldo disponivel|total do dia|subtotal)\b/i.test(line)) continue;
+    if (isStatementSummaryLine(line)) continue;
     const date = parseBrazilianDate(line, referenceDate);
     if (!date) continue;
     const amountMatches = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g)];
@@ -98,14 +99,10 @@ function parseRows(text: string): InvoiceRow[] {
     const match = amountMatches[amountMatches.length - 1];
     const amount = Number(match[1].replace(/\./g, "").replace(",", "."));
     if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) continue;
-    const beforeAmount = line.slice(0, match.index ?? 0);
-    const afterAmount = line.slice((match.index ?? 0) + match[0].length);
-    const explicitDebit = /-\s*$/.test(beforeAmount) || /^\s*-/.test(beforeAmount) || /^\s*D(?:ÉBITO|EBITO)?\b/i.test(afterAmount) || /^\s*\d*\s*-\s*$/.test(afterAmount);
-    const explicitCredit = /\+\s*$/.test(beforeAmount) || /^\s*C(?:RÉDITO|REDITO)?\b/i.test(afterAmount);
-    const income = !explicitDebit && (explicitCredit || /\b(sal[aá]rio|proventos|recebido|recebimento|dep[oó]sito recebido|pix recebido|transfer[eê]ncia recebida|estorno|reembolso|cashback|rendimento|cr[eé]dito)\b/i.test(line));
+    const amountEndIndex = (match.index ?? 0) + match[0].length;
+    const type = classifyStatementMovement(line, amountEndIndex);
     const title = line.replace(/\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b/, "").replace(/(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}/g, "").replace(/\s+/g, " ").trim().replace(/\s+(?:C|D|CRÉDITO|CREDITO|DÉBITO|DEBITO)\s*$/i, "").replace(/[+-]$/, "").replace(/^[\-–|:]+|[\-–|:]+$/g, "");
     if (title.length < 3 || /cartão|fatura|titular|você pagou|compras nacionais/i.test(title)) continue;
-    const type = income ? "income" : "expense";
     const key = [type, title.toLowerCase(), date, amount.toFixed(2)].join("|");
     if (seen.has(key)) continue;
     seen.add(key);
