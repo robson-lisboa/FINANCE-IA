@@ -1,98 +1,93 @@
 import { useMemo, useState } from "react";
-import { Calculator, AlertTriangle, CheckCircle2, TrendingUp, CalendarClock } from "lucide-react";
+import { Calculator, AlertTriangle, CheckCircle2, TrendingUp, Info } from "lucide-react";
 import { parseBrazilianMoney } from "./lib/money-core.js";
 
 type Transaction = { date: string; amount: number; type: "income" | "expense" };
-type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
+type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; selectedMonth: string };
 
-export default function PurchaseSimulator({ transactions, formatMoney }: Props) {
-  const [cashPrice, setCashPrice] = useState("1500");
-  const [installmentTotal, setInstallmentTotal] = useState("1500");
+function labelMonth(key: string) {
+  const [year, month] = key.split("-").map(Number);
+  return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+}
+
+export default function PurchaseSimulator({ transactions, formatMoney, selectedMonth }: Props) {
+  const [cashPrice, setCashPrice] = useState("");
+  const [installmentTotal, setInstallmentTotal] = useState("");
   const [installments, setInstallments] = useState("12");
-  const [mode, setMode] = useState<"cash" | "installment">("cash");
-  const [horizon, setHorizon] = useState<"3" | "6" | "12">("6");
 
   const cash = parseBrazilianMoney(cashPrice);
   const total = parseBrazilianMoney(installmentTotal);
   const count = Number(installments);
-  const valid = cash !== null && cash > 0 && cash <= 10000000 &&
-    Number.isInteger(count) && count >= 1 && count <= 48 &&
-    (mode === "cash" || (total !== null && total > 0 && total <= 10000000));
-  const cashAmount = cash ?? 0;
-  const totalAmount = total ?? 0;
+  const validCash = cash !== null && cash > 0 && cash <= 10000000;
+  const validInstallments = total !== null && total > 0 && total <= 10000000 &&
+    Number.isInteger(count) && count >= 2 && count <= 48;
+  const monthlyPayment = validInstallments ? total / count : 0;
+  const extraCost = validCash && validInstallments ? total - cash : 0;
 
   const history = useMemo(() => {
-    const now = new Date();
-    const months = Array.from({ length: 3 }, (_, index) => {
-      const date = new Date(now.getFullYear(), now.getMonth() - 3 + index, 1);
-      return { key: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0"), income: 0, expenses: 0, entries: 0 };
+    const [year, month] = selectedMonth.split("-").map(Number);
+    const selectedDate = new Date(year, month - 1, 1);
+    const buckets = Array.from({ length: 3 }, (_, index) => {
+      const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 2 + index, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      return { key, income: 0, expenses: 0, count: 0 };
     });
-    const map = new Map(months.map(month => [month.key, month]));
+    const map = new Map(buckets.map(item => [item.key, item]));
     transactions.forEach(item => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(item.date || "")) return;
       const bucket = map.get(item.date.slice(0, 7));
-      const value = Number(item.amount);
-      if (!bucket || !Number.isFinite(value) || value < 0) return;
-      if (item.type === "income") bucket.income += value;
-      else if (item.type === "expense") bucket.expenses += value;
+      const amount = Number(item.amount);
+      if (!bucket || !Number.isFinite(amount) || amount < 0) return;
+      if (item.type === "income") bucket.income += amount;
+      else if (item.type === "expense") bucket.expenses += amount;
       else return;
-      bucket.entries += 1;
+      bucket.count += 1;
     });
-    const populated = months.filter(month => month.entries > 0);
-    const income = populated.length ? populated.reduce((sum, month) => sum + month.income, 0) / populated.length : 0;
-    const expenses = populated.length ? populated.reduce((sum, month) => sum + month.expenses, 0) / populated.length : 0;
-    const currentKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0");
-    const current = transactions.filter(item =>
-      item.date?.startsWith(currentKey) &&
-      /^\d{4}-\d{2}-\d{2}$/.test(item.date) &&
-      Number.isFinite(Number(item.amount)) && Number(item.amount) >= 0 &&
-      (item.type === "income" || item.type === "expense")
-    );
-    const currentIncome = current.filter(item => item.type === "income").reduce((sum, item) => sum + Number(item.amount), 0);
-    const currentExpenses = current.filter(item => item.type === "expense").reduce((sum, item) => sum + Number(item.amount), 0);
-    return { income, expenses, margin: income - expenses, populated: populated.length, currentIncome, currentExpenses, currentEntries: current.length };
-  }, [transactions]);
+    const populated = buckets.filter(item => item.count > 0);
+    const averageMargin = populated.length
+      ? populated.reduce((sum, item) => sum + item.income - item.expenses, 0) / populated.length
+      : 0;
+    return { averageMargin, months: populated.length, buckets };
+  }, [transactions, selectedMonth]);
 
-  const monthlyPayment = mode === "cash" ? cashAmount : totalAmount / count;
-  const finalCost = mode === "cash" ? cashAmount : totalAmount;
-  const extraCost = mode === "installment" ? Math.max(0, totalAmount - cashAmount) : 0;
-  const months = Number(horizon);
-  const projectedBaseline = history.margin * months;
-  const installmentMonthsInHorizon = Math.min(months, count);
-  const projectedPurchase = projectedBaseline - (mode === "cash" ? cashAmount : monthlyPayment * installmentMonthsInHorizon);
-  const currentMonthImpact = history.currentIncome - history.currentExpenses - monthlyPayment;
-  const hasData = history.populated > 0;
-  const projectedPositive = hasData && projectedPurchase >= 0;
+  const hasInputs = validCash && validInstallments;
+  const marginPositive = history.months > 0 && history.averageMargin > 0;
+  const installmentFits = marginPositive && monthlyPayment <= history.averageMargin;
+  const installmentShare = marginPositive ? monthlyPayment / history.averageMargin * 100 : null;
+  const cashEquivalentMonths = marginPositive && cash !== null ? cash / history.averageMargin : null;
 
   return <section className="panel purchase-simulator">
-    <div className="insight-title"><div className="ai-icon"><Calculator size={18}/></div><div><h2>Simulador de decisões inteligentes</h2><p>Compare o custo e o impacto estimado da compra</p></div></div>
-    <div className="simulator-fields">
-      <label>Preço à vista (R$)<input inputMode="decimal" value={cashPrice} onChange={event => { setCashPrice(event.target.value); if (mode === "installment" && installmentTotal === cashPrice) setInstallmentTotal(event.target.value); }} placeholder="Ex.: 1.500,00"/></label>
-      <label>Forma de pagamento<select value={mode} onChange={event => setMode(event.target.value as "cash" | "installment")}><option value="cash">À vista</option><option value="installment">Parcelado</option></select></label>
-      {mode === "installment" && <>
-        <label>Total final parcelado (R$)<input inputMode="decimal" value={installmentTotal} onChange={event => setInstallmentTotal(event.target.value)} placeholder="Total com juros"/></label>
-        <label>Número de parcelas<select value={installments} onChange={event => setInstallments(event.target.value)}>{[2,3,4,5,6,8,10,12,18,24,36,48].map(value => <option key={value} value={value}>{value}x</option>)}</select></label>
-      </>}
-      <label>Período da projeção<select value={horizon} onChange={event => setHorizon(event.target.value as "3" | "6" | "12")}><option value="3">3 meses</option><option value="6">6 meses</option><option value="12">12 meses</option></select></label>
+    <div className="insight-title"><div className="ai-icon"><Calculator size={18}/></div><div><h2>Simulador inteligente de compra</h2><p>Descubra quanto a compra custa e o peso das parcelas no seu orçamento.</p></div></div>
+
+    <div className="simulator-howto">
+      <strong>Como preencher</strong>
+      <p>1. Informe o preço à vista. 2. Informe o valor total que pagaria parcelado. 3. Escolha em quantas vezes.</p>
     </div>
-    {!valid ? <p className="simulator-warning"><AlertTriangle size={16}/> Informe valores válidos. Use, por exemplo, 1.500,00 e confira o total parcelado.</p> : <>
+
+    <div className="simulator-fields">
+      <label>1. Preço à vista<input inputMode="decimal" value={cashPrice} onChange={event => setCashPrice(event.target.value)} placeholder="Ex.: 1.500,00"/></label>
+      <label>2. Total parcelado<input inputMode="decimal" value={installmentTotal} onChange={event => setInstallmentTotal(event.target.value)} placeholder="Ex.: 1.680,00"/></label>
+      <label>3. Quantidade de parcelas<select value={installments} onChange={event => setInstallments(event.target.value)}>{[2,3,4,5,6,8,10,12,18,24,36,48].map(value => <option key={value} value={value}>{value} vezes</option>)}</select></label>
+    </div>
+
+    {!validCash || !validInstallments ? <div className="simulator-verdict simulator-caution"><Info size={18}/><div><strong>Preencha os três campos para ver a análise</strong><p>Use o preço à vista e o valor total de todas as parcelas (não o valor de cada parcela). Exemplo: à vista R$ 1.500; parcelado R$ 1.680 em 12 vezes.</p></div></div> : <>
       <div className="simulator-results">
-        <div><span>{mode === "cash" ? "Desembolso à vista" : "Parcela mensal"}</span><strong>{formatMoney(monthlyPayment)}</strong></div>
-        <div><span>Custo total da compra</span><strong>{formatMoney(finalCost)}</strong></div>
-        {mode === "installment" && <div><span>Juros / custo extra informado</span><strong className={extraCost > 0 ? "simulator-negative" : "simulator-positive"}>{formatMoney(extraCost)}</strong></div>}
-        <div><span>Resultado projetado em {months} meses</span><strong className={projectedPurchase < 0 ? "simulator-negative" : "simulator-positive"}>{hasData ? formatMoney(projectedPurchase) : "Sem histórico"}</strong></div>
+        <div><span>Valor de cada parcela</span><strong>{formatMoney(monthlyPayment)}</strong></div>
+        <div><span>Total a mais no parcelamento</span><strong className={extraCost > 0 ? "simulator-negative" : "simulator-positive"}>{formatMoney(extraCost)}</strong></div>
+        <div><span>Percentual a mais sobre o preço à vista</span><strong>{cash && cash > 0 ? `${(extraCost / cash * 100).toLocaleString("pt-BR", { maximumFractionDigits: 1 })}%` : "—"}</strong></div>
       </div>
-      <div className={projectedPositive ? "simulator-verdict simulator-ok" : "simulator-verdict simulator-caution"}>
-        {projectedPositive ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>}
-        <div><strong>{!hasData ? "Ainda faltam dados históricos" : projectedPositive ? "A projeção contábil fica positiva" : "A compra pode pressionar o resultado projetado"}</strong>
-          <p>{!hasData ? "São necessários registros em meses anteriores para estimar uma margem mensal." : "A projeção usa " + history.populated + " mês(es) anterior(es) com lançamentos. Resultado positivo não comprova que há dinheiro disponível nem considera todas as contas futuras."}</p>
+      {extraCost < 0 && <p className="simulator-warning"><AlertTriangle size={16}/> O total parcelado informado está abaixo do preço à vista. Confira os valores.</p>}
+      <div className={installmentFits ? "simulator-verdict simulator-ok" : "simulator-verdict simulator-caution"}>
+        {installmentFits ? <CheckCircle2 size={18}/> : <AlertTriangle size={18}/>}
+        <div><strong>{!marginPositive ? "Ainda não dá para avaliar o peso no orçamento" : installmentFits ? "A parcela cabe na margem média registrada" : "A parcela supera sua margem média registrada"}</strong>
+          <p>{!marginPositive ? "Não há margem mensal positiva suficiente nos lançamentos dos últimos meses analisados. Isso não significa que você não possa comprar; faltam dados para uma avaliação confiável." : `A parcela de ${formatMoney(monthlyPayment)} representa ${installmentShare!.toLocaleString("pt-BR", { maximumFractionDigits: 1 })}% da margem média mensal de ${formatMoney(history.averageMargin)}.`}</p>
         </div>
       </div>
       <div className="decision-comparison">
-        <div><span><TrendingUp size={14}/> Margem média mensal registrada</span><strong>{hasData ? formatMoney(history.margin) : "Sem histórico"}</strong></div>
-        <div><span><CalendarClock size={14}/> Resultado parcial do mês após a compra</span><strong className={currentMonthImpact < 0 ? "simulator-negative" : "simulator-positive"}>{formatMoney(currentMonthImpact)}</strong></div>
+        <div><span><TrendingUp size={14}/> Margem média mensal registrada</span><strong>{history.months ? formatMoney(history.averageMargin) : "Sem histórico"}</strong></div>
+        <div><span>Preço à vista em meses dessa margem</span><strong>{cashEquivalentMonths !== null ? `${cashEquivalentMonths.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} meses` : "Sem dados suficientes"}</strong></div>
       </div>
-      <p className="simulator-disclaimer">Base: {history.currentEntries} lançamento(s) no mês atual e média dos 3 meses completos anteriores que tenham registros. Meses sem lançamentos não entram na média; os registros podem estar incompletos. A projeção não consulta saldo bancário, faturas futuras, parcelas antigas não cadastradas ou condições completas do contrato. Confira reserva de emergência e vencimentos.</p>
     </>}
+    <p className="simulator-disclaimer">Análise de {labelMonth(selectedMonth)}. A média considera até 3 meses terminando no período selecionado, somente meses com lançamentos. É uma referência baseada nos registros, não consulta seu saldo bancário nem considera contas futuras, outras parcelas ou reserva de emergência.</p>
   </section>;
 }
