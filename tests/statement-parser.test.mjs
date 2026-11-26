@@ -17,6 +17,9 @@ test("filters consolidated totals and balances, not individual operations", () =
   assert.equal(isStatementSummaryLine("Saldo final 0,05"), true);
   assert.equal(isStatementSummaryLine("Total de créditos 2.426,40"), true);
   assert.equal(isStatementSummaryLine("PIX recebido Maria 400,00"), false);
+  assert.equal(isStatementSummaryLine("IOF sobre operação 2,40"), false);
+  assert.equal(isStatementSummaryLine("Encargos por atraso 12,00"), false);
+  assert.equal(isStatementSummaryLine("Total de encargos 12,00"), true);
 });
 
 test("reconciles a bank statement using opening balance, credits, debits and closing balance", () => {
@@ -39,6 +42,8 @@ test("reconciles a bank statement using opening balance, credits, debits and clo
 test("normalizes descriptions consistently for duplicate checks", () => {
   assert.equal(normalizeStatementDescription("  PÃO & Café  "), "pao cafe");
   assert.equal(normalizeStatementDescription("Pao cafe"), "pao cafe");
+  const { buildStatementTransactionKey } = await import("../src/lib/statement-parser.js");
+  assert.equal(buildStatementTransactionKey({ title: "PÃO & Café", date: "2026-08-10", amount: 12.5, type: "expense" }), buildStatementTransactionKey({ title: "Pao cafe", date: "2026-08-10", amount: 12.5, type: "expense" }));
 });
 
 test("flags PIX and bank transfers for manual review", () => {
