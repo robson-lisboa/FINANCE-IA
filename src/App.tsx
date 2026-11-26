@@ -116,6 +116,12 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const [cloudLoaded, setCloudLoaded] = useState(false);
   const [cloudBusy, setCloudBusy] = useState(false);
   const [cloudError, setCloudError] = useState("");
+  const notificationStorageKey = "finance-ia-notifications-read-" + session.user.id;
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [readNotifications, setReadNotifications] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem(notificationStorageKey) || "[]") as string[]; }
+    catch { return []; }
+  });
 
   useEffect(() => {
     const timer = window.setInterval(() => setCurrentTime(new Date()), 60_000);
@@ -311,6 +317,25 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     URL.revokeObjectURL(url);
   };
 
+  const notifications = useMemo(() => {
+    const monthItems = transactions.filter(t => t.date.startsWith(transactionMonth));
+    const income = monthItems.filter(t => t.type === "income").reduce((sum,t) => sum + Number(t.amount || 0), 0);
+    const expenses = monthItems.filter(t => t.type === "expense").reduce((sum,t) => sum + Number(t.amount || 0), 0);
+    const alerts: {id:string; title:string; message:string; level:"warning"|"danger"|"info"}[] = [];
+    if (expenses > 0 && income === 0) alerts.push({id:transactionMonth+"-no-income",title:"Despesas sem receita cadastrada",message:"Há despesas neste mês, mas nenhuma receita registrada. Confira se falta lançar sua entrada.",level:"info"});
+    if (income > 0 && expenses > income) alerts.push({id:transactionMonth+"-negative",title:"Despesas acima das receitas",message:"As despesas ultrapassaram as receitas registradas neste mês.",level:"danger"});
+    else if (income > 0 && expenses >= income * .8) alerts.push({id:transactionMonth+"-high-expense",title:"Atenção ao limite do mês",message:"Você já comprometeu pelo menos 80% das receitas com despesas.",level:"warning"});
+    const largest = monthItems.filter(t=>t.type==="expense").sort((x,y)=>y.amount-x.amount)[0];
+    if (largest && income > 0 && largest.amount >= income * .3) alerts.push({id:transactionMonth+"-large-"+largest.id,title:"Despesa de valor elevado",message:largest.title+" representa "+Math.round(largest.amount/income*100)+"% das receitas do mês.",level:"warning"});
+    const byTitle = new Map<string, number>();
+    monthItems.filter(t=>t.type==="expense").forEach(t=>{const key=t.title.trim().toLocaleLowerCase("pt-BR");byTitle.set(key,(byTitle.get(key)||0)+1);});
+    const repeated = [...byTitle.entries()].find(([,count])=>count>=3);
+    if(repeated) alerts.push({id:transactionMonth+"-repeat-"+repeated[0],title:"Despesa recorrente identificada",message:"“"+monthItems.find(t=>t.title.trim().toLocaleLowerCase("pt-BR")===repeated[0])?.title+"” aparece "+repeated[1]+" vezes neste mês. Confira se está correto.",level:"info"});
+    return alerts;
+  },[transactions,transactionMonth]);
+  const unreadNotifications = notifications.filter(item=>!readNotifications.includes(item.id)).length;
+  useEffect(()=>{localStorage.setItem(notificationStorageKey,JSON.stringify(readNotifications));},[readNotifications,notificationStorageKey]);
+  const markNotificationRead = (id:string) => setReadNotifications(current=>current.includes(id)?current:[...current,id]);
   const formatMoney = (value: number) => money(value, settings.currency);
   const savingsRate = monthlyTotals.income > 0 ? (monthlyTotals.balance / monthlyTotals.income) * 100 : null;
 
@@ -365,7 +390,14 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </div>
           <div className="topbar-actions">
             <label className="month-filter-control global-month-filter"><CalendarDays size={16}/><span>Período</span><select aria-label="Selecionar mês do painel" value={transactionMonth} onChange={e => setTransactionMonth(e.target.value)}>{availableTransactionMonths.map(month => <option key={month} value={month}>{monthOptionLabel(month)}</option>)}</select></label>
-            <button className="icon-btn notification-btn" aria-label="Notificações"><Bell size={18}/><i/></button>
+            <div className="notification-wrap">
+              <button type="button" className={`icon-btn notification-btn ${notificationsOpen ? "is-open" : ""}`} aria-label={`Notificações: ${unreadNotifications} não lidas`} aria-expanded={notificationsOpen} onClick={()=>setNotificationsOpen(open=>!open)}><Bell size={18}/>{unreadNotifications>0 && <i/>}<span className="notification-count">{unreadNotifications>99?"99+":unreadNotifications}</span></button>
+              {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Central de notificações">
+                <div className="notification-popover-head"><div><strong>Notificações</strong><small>{unreadNotifications} não lida(s) · {monthOptionLabel(transactionMonth)}</small></div><button type="button" className="text-btn" onClick={()=>setReadNotifications(current=>[...new Set([...current,...notifications.map(item=>item.id)])])} disabled={unreadNotifications===0}>Marcar todas como lidas</button></div>
+                <div className="notification-items">{notifications.length===0?<div className="notification-empty"><CheckCircle2 size={21}/><strong>Tudo em ordem por aqui</strong><span>Quando seus lançamentos indicarem algo que merece atenção, o aviso aparecerá aqui.</span></div>:notifications.map(item=><button type="button" key={item.id} className={`notification-item ${item.level} ${readNotifications.includes(item.id)?"read":""}`} onClick={()=>markNotificationRead(item.id)}><span className="notification-item-icon">{item.level==="danger"?"!":item.level==="warning"?"⚠":"i"}</span><span className="notification-item-copy"><strong>{item.title}</strong><small>{item.message}</small><em>{readNotifications.includes(item.id)?"Lida · toque para marcar como não lida":"Nova · toque para marcar como lida"}</em></span></button>)}</div>
+                <div className="notification-popover-foot"><span>Alertas calculados pelos lançamentos cadastrados.</span><button type="button" onClick={()=>setNotificationsOpen(false)}>Fechar</button></div>
+              </div>}
+            </div>
             <button className="primary-btn top-add" onClick={openNewTransaction}><Plus size={17}/> Novo lançamento</button>
           </div>
         </header>
