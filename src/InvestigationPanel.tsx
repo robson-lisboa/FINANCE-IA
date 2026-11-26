@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { filterMonthToDate } from "./lib/financial-core";
+import { filterMonthToDate, filterRealizedTransactions } from "./lib/financial-core";
 import { Search, ChevronDown, ChevronUp, Microscope, ReceiptText, TrendingUp, Repeat2, Coins } from "lucide-react";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
@@ -18,7 +18,7 @@ export default function InvestigationPanel({ transactions, formatMoney, selected
     const currentKey = selectedMonth;
     const previousKey = key(new Date(year, month - 2, 1));
     const selectedLabel = selectedDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
-    const expenses = transactions.filter(t => t.type === "expense" && /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(t.amount) && t.amount > 0);
+    const expenses = filterRealizedTransactions(transactions).filter(t => t.type === "expense" && Number.isFinite(t.amount) && t.amount > 0);
     const current = filterMonthToDate(expenses, currentKey);
     const previous = expenses.filter(t => t.date.startsWith(previousKey) && (!isCurrentMonth || Number(t.date.slice(8, 10)) <= now.getDate()));
     const result: Finding[] = [];
