@@ -48,7 +48,7 @@ app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
   if (!groqKey) return res.status(503).json({ error: "A inteligência artificial não está configurada no servidor." });
-  const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\\d{4}-(0[1-9]|1[0-2])$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
+  const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
   if (!selectedMonth) return res.status(400).json({ error: "Selecione um mês válido para analisar." });
   if (!rateLimit(req.user.id)) return res.status(429).json({ error: "Limite temporário de análises atingido. Aguarde um minuto." });
   try {
@@ -104,7 +104,7 @@ Lançamentos disponíveis (até 250, dados mais recentes): ${JSON.stringify(rele
     const start=cleaned.indexOf("{"), end=cleaned.lastIndexOf("}");
     const parsed=JSON.parse(start>=0&&end>start?cleaned.slice(start,end+1):cleaned);
     const alerts=Array.isArray(parsed.alerts)?parsed.alerts.slice(0,5).filter(item=>item&&typeof item.title==="string"&&typeof item.message==="string"&&typeof item.evidence==="string"&&typeof item.action==="string").map((item,index)=>({
-      id:selectedMonth+"-"+index+"-"+item.title.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").slice(0,36),
+      id:selectedMonth+"-"+index+"-"+item.title.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").slice(0,36),
       title:item.title.slice(0,100),severity:["critical","warning","info"].includes(item.severity)?item.severity:"info",
       message:item.message.slice(0,500),evidence:item.evidence.slice(0,300),action:item.action.slice(0,300)
     })):[];
