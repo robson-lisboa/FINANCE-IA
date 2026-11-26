@@ -86,27 +86,33 @@ function isBankStatementSummary(text: string): boolean {
 }
 
 function parseRows(text: string): InvoiceRow[] {
-  const lines = text.replace(/[\u00a0]/g," ").split(/[\r\n]+/).map(line => line.replace(/\s+/g," ").trim()).filter(Boolean);
+  const lines = text.replace(/[\\u00a0]/g, " ").split(/[\\r\\n]+/).map(line => line.replace(/\\s+/g, " ").trim()).filter(Boolean);
   const referenceDate = detectInvoiceReferenceDate(text);
   const rows: InvoiceRow[] = [], seen = new Set<string>();
   for (const line of lines) {
-    if (/\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|pagamento recebido|pagamento efetuado|limite total|limite disponivel|limite disponível|limite utilizado|encargos|juros|iof|anuidade|valor minimo|valor mínimo|resumo da fatura|melhor dia de compra|vencimento)\b/i.test(line)) continue;
-    if (/\b(estorno|crédito|credito|pagamento recebido|pagamento efetuado)\b/i.test(line)) continue;
+    if (/\\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|saldo disponível|saldo disponivel|saldo final|saldo inicial|limite total|limite disponivel|limite disponível|limite utilizado|encargos|iof|anuidade|valor minimo|valor mínimo|resumo da fatura|melhor dia de compra|vencimento|total de creditos|total de debitos)\\b/i.test(line)) continue;
     const date = parseBrazilianDate(line, referenceDate);
     if (!date) continue;
-    const amountMatches = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})\b/g)];
+    const amountMatches = [...line.matchAll(/(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+,\\d{2})/g)];
     if (!amountMatches.length) continue;
-    const amount = Number(amountMatches[amountMatches.length-1][1].replace(/\./g,"").replace(",","."));
+    const match = amountMatches[amountMatches.length - 1];
+    const amount = Number(match[1].replace(/\\./g, "").replace(",", "."));
     if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) continue;
-    const title = line.replace(/\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b/,"").replace(/(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}\b/g,"").replace(/\s+/g," ").trim().replace(/^[\-–|:]+|[\-–|:]+$/g,"");
+    const beforeAmount = line.slice(0, match.index ?? 0);
+    const afterAmount = line.slice((match.index ?? 0) + match[0].length);
+    const income = /\\b(sal[aá]rio|proventos|recebido|recebimento|dep[oó]sito recebido|pix recebido|transfer[eê]ncia recebida|estorno|reembolso|cashback|rendimento|cr[eé]dito)\\b/i.test(line)
+      || /\\+\\s*$/.test(beforeAmount) || /^\\s*C(?:R[EÉ]DITO)?\\b/i.test(afterAmount);
+    const title = line.replace(/\\b\\d{1,2}[/.-]\\d{1,2}(?:[/.-]\\d{2,4})?\\b/, "").replace(/(?:R\\$\\s*)?(?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2}/g, "").replace(/\\s+/g, " ").trim().replace(/^[\\-–|:]+|[\\-–|:]+$/g, "");
     if (title.length < 3 || /cartão|fatura|titular|você pagou|compras nacionais/i.test(title)) continue;
-    const key = [title.toLowerCase(),date,amount.toFixed(2)].join("|");
+    const type = income ? "income" : "expense";
+    const key = [type, title.toLowerCase(), date, amount.toFixed(2)].join("|");
     if (seen.has(key)) continue;
     seen.add(key);
-    rows.push({ title:title.slice(0,100), date, amount, category:categoryFor(title), type: income ? "income" : "expense" });
+    rows.push({ title: title.slice(0, 100), date, amount, category: categoryFor(title), type });
   }
   return rows;
 }
+
 async function extractFile(file: File, setProgress: (value: string) => void): Promise<string> {
   if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
     const data = new Uint8Array(await file.arrayBuffer());
