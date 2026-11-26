@@ -212,7 +212,7 @@ RECONHECIMENTO DE INTENÇÃO:
 
 REGRAS DE CONFIABILIDADE:
 - Use exclusivamente os lançamentos e metas fornecidos nesta mensagem. Nunca invente valores, categorias, datas, saldos, receitas, dívidas ou movimentações.\n- Separe lançamentos realizados (data até ${todayKey}) de lançamentos agendados (data futura). Nos totais e diagnósticos, use apenas realizados; apresente os agendados à parte como previsão.
-- Considere que a lista contém no máximo 120 lançamentos recentes; nunca diga que analisou todo o histórico se ele não estiver presente.
+- Considere que os dados enviados contêm no máximo 500 lançamentos recentes; nunca diga que analisou todo o histórico se ele não estiver presente.
 - Antes de concluir, confira os valores, a quantidade de registros e o período coberto. Faça as contas com cuidado e apresente valores em reais (R$).
 - Identifique receitas e despesas pelo campo "type", sem presumir valores que não estejam claros. Se houver dúvida sobre o significado de um tipo, informe a limitação.
 - Para agrupar gastos, use "category". Quando estiver vazio, use o título apenas como classificação provisória e deixe isso claro. Não misture receitas com despesas.
@@ -253,8 +253,11 @@ SEGURANÇA:
 PERÍODO PRINCIPAL SELECIONADO: ${selectedMonth || "não informado"}.
 Use os lançamentos do mês selecionado como base principal para totais, categorias e recomendações. Nunca some automaticamente valores de outros meses a esse período. Quando a pergunta pedir comparação ou recorrência, use os outros meses disponíveis, agrupe cada mês separadamente e mostre os períodos lado a lado.
 
-LANÇAMENTOS DISPONÍVEIS (até 500 registros mais recentes do período aplicável; se a resposta exigir histórico além dessa amostra, informe a limitação):
-${JSON.stringify(scopedTransactions)}
+LANÇAMENTOS REALIZADOS (até 500 registros recentes; usar nos totais):
+${JSON.stringify(realizedTransactions)}
+
+LANÇAMENTOS AGENDADOS (não somar ao realizado; apresentar separadamente):
+${JSON.stringify(scheduledTransactions)}
 
 CONTEXTO: ${selectedMonth ? "a seleção ativa é " + selectedMonth + "; não misture meses em totais do período." : "não há mês selecionado."}
 
