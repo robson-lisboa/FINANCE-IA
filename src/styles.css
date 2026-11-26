@@ -647,3 +647,41 @@
 .waste-purchase>b{font-size:10px;white-space:nowrap}
 .waste-selection-total{display:flex;justify-content:space-between;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:10px;margin-top:4px;font-size:10px;color:var(--muted)}
 .waste-selection-total strong{color:var(--text);font-size:12px}
+
+
+/* Filtro mensal dos lançamentos */
+.month-filter-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid var(--border, #303950);
+  border-radius: 10px;
+  color: var(--muted, #9aa5bb);
+  background: var(--panel, #151c2d);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.month-filter-control select {
+  min-width: 145px;
+  max-width: 210px;
+  border: 0;
+  outline: 0;
+  color: var(--text, #f4f6fb);
+  background: transparent;
+  font: inherit;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+@media (max-width: 640px) {
+  .month-filter-control {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .month-filter-control select {
+    flex: 1;
+    min-width: 0;
+    text-align: right;
+  }
+}
