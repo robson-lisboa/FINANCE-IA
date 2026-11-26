@@ -879,3 +879,47 @@
 .evolution-legend span{display:flex;align-items:center;gap:5px}
 .evolution-legend i{width:7px;height:7px;border-radius:2px}
 @media(max-width:520px){.evolution-breakdown{grid-template-columns:1fr}.evolution-breakdown>div{padding:10px}.evolution-bars{gap:3px}.evolution-bar-pair{gap:2px}.evolution-bar-pair i{width:7px}.evolution-month>small{font-size:7px}}
+
+
+/* Dashboard adaptativo: muda a composição e a prioridade dos módulos */
+.app-shell[class*="health-"] .main-content{transition:background-color .2s ease}
+.dashboard-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:0}
+.dashboard-layout>.page-heading{grid-area:heading}
+.dashboard-layout>.health-guidance{grid-area:guidance}
+.dashboard-layout>.financial-evolution{grid-area:evolution}
+.dashboard-layout>.stats-grid{grid-area:stats}
+.dashboard-layout>.content-grid{grid-area:insights}
+.dashboard-layout>.lower-grid{grid-area:activity}
+.dashboard-critical{grid-template-areas:"heading" "guidance" "stats" "insights" "activity" "evolution"}
+.dashboard-attention{grid-template-areas:"heading" "guidance" "stats" "evolution" "insights" "activity"}
+.dashboard-recovery{grid-template-areas:"heading" "guidance" "evolution" "stats" "insights" "activity"}
+.dashboard-good{grid-template-areas:"heading" "stats" "guidance" "evolution" "insights" "activity"}
+.dashboard-excellent{grid-template-areas:"heading" "guidance" "evolution" "stats" "insights" "activity"}
+.dashboard-unknown{grid-template-areas:"heading" "guidance" "stats" "activity" "evolution" "insights"}
+.dashboard-layout>.content-grid,.dashboard-layout>.lower-grid{width:100%}
+.dashboard-critical{background:linear-gradient(180deg,rgba(239,107,117,.075),transparent 460px)}
+.dashboard-critical .health-guidance{background:linear-gradient(115deg,rgba(239,107,117,.2),var(--panel));border-color:rgba(239,107,117,.55);box-shadow:0 12px 35px rgba(239,107,117,.08)}
+.dashboard-critical .health-guidance-mark{background:rgba(239,107,117,.18);color:#ef6b75}
+.dashboard-critical .stat-card:first-child{border-color:rgba(239,107,117,.55);background:linear-gradient(145deg,rgba(239,107,117,.13),var(--panel))}
+.dashboard-critical .transactions-panel{border-top:3px solid #ef6b75}
+.dashboard-attention{background:linear-gradient(180deg,rgba(217,173,82,.065),transparent 430px)}
+.dashboard-attention .health-guidance{background:linear-gradient(115deg,rgba(217,173,82,.16),var(--panel));border-color:rgba(217,173,82,.42)}
+.dashboard-attention .stat-card:nth-child(4){border-color:rgba(217,173,82,.45)}
+.dashboard-recovery{background:linear-gradient(180deg,rgba(229,163,77,.075),transparent 480px)}
+.dashboard-recovery .health-guidance{background:linear-gradient(115deg,rgba(53,201,154,.14),rgba(229,163,77,.12),var(--panel));border-color:rgba(53,201,154,.4)}
+.dashboard-recovery .financial-evolution{border-color:rgba(53,201,154,.45);box-shadow:0 12px 32px rgba(53,201,154,.06)}
+.dashboard-good{background:linear-gradient(180deg,rgba(105,185,139,.055),transparent 420px)}
+.dashboard-good .health-guidance{background:linear-gradient(115deg,rgba(105,185,139,.13),var(--panel));border-color:rgba(105,185,139,.38)}
+.dashboard-excellent{background:radial-gradient(ellipse at 50% 0%,rgba(53,201,154,.13),transparent 48%)}
+.dashboard-excellent .health-guidance{background:linear-gradient(110deg,rgba(53,201,154,.18),rgba(53,201,154,.045),var(--panel));border-color:rgba(53,201,154,.48)}
+.dashboard-excellent .financial-evolution{border-color:rgba(53,201,154,.38);box-shadow:0 14px 38px rgba(53,201,154,.075)}
+.dashboard-excellent .stat-card{background:linear-gradient(145deg,rgba(53,201,154,.075),var(--panel))}
+.dashboard-unknown{background:linear-gradient(180deg,rgba(129,144,168,.06),transparent 420px)}
+.dashboard-unknown .health-guidance{background:repeating-linear-gradient(135deg,rgba(129,144,168,.07),rgba(129,144,168,.07) 9px,transparent 9px,transparent 18px),var(--panel)}
+.dashboard-layout .health-guidance{min-height:92px}
+.dashboard-layout .financial-evolution{margin-top:0}
+@media(max-width:760px){
+ .dashboard-layout{gap:0}
+ .dashboard-layout>.content-grid,.dashboard-layout>.lower-grid{margin-top:12px}
+ .dashboard-layout>.stats-grid{margin-bottom:12px}
+}
