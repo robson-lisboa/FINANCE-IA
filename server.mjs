@@ -16,6 +16,11 @@ app.set("trust proxy", 1);
 app.use(express.json({ limit: "64kb" }));
 
 const usage = new Map();
+function saoPauloDateKey() {
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(new Date());
+  const part = type => parts.find(item => item.type === type)?.value || "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
 function rateLimit(userId) {
   const now = Date.now();
   const recent = (usage.get(userId) || []).filter(time => now - time < 60_000);
@@ -103,7 +108,7 @@ app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
       item && typeof item.title === "string" && typeof item.date === "string" &&
       Number.isFinite(Number(item.amount)) && ["income", "expense"].includes(item.type)
     );
-    const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const todayKey = saoPauloDateKey();
     const relevant = transactions.filter(item => item.date.slice(0, 7) <= selectedMonth).slice(0, 500);
     const realizedRows = relevant.filter(item => item.date <= todayKey);
     const scheduledRows = relevant.filter(item => item.date > todayKey);
