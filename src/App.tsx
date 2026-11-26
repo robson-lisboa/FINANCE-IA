@@ -401,10 +401,11 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <p>Organize suas finanças com mais clareza.</p>
             <button type="button" className="help-link" onClick={() => setHelpOpen(true)}>Ver dicas <span>→</span></button>
           </div>
-          <a className={`nav-item muted ${activePage === "profile" ? "active" : ""}`} href="#profile" onClick={() => { setActivePage("profile"); setMenuOpen(false); }}><Activity size={18}/> Meu perfil</a>
           <div className="profile">
-            <div className="avatar">R</div>
-            <div className="profile-text"><strong>{session.user.email || "Minha conta"}</strong><small>Conta sincronizada</small></div>
+            <a className="profile-link" href="#profile" onClick={() => { setActivePage("profile"); setMenuOpen(false); }}>
+              <div className="avatar">R</div>
+              <div className="profile-text"><small>Meu perfil</small><strong>{session.user.email || "Minha conta"}</strong></div>
+            </a>
             <button className="profile-signout" onClick={onSignOut} title="Sair da conta">Sair</button>
           </div>
         </div>
