@@ -1169,3 +1169,11 @@
 .transaction-totals .scheduled-total strong{color:var(--muted)}
 .transaction-totals .insight-disclaimer{margin:0;padding-top:7px}
 
+
+.invoice-total-preview { width:100%; color:var(--text,#f4f5fa); text-align:left; cursor:pointer; font:inherit; }
+.invoice-total-preview:hover { border-color:var(--accent,#9a8cff); }
+.invoice-total-preview > span { display:flex; flex-direction:column; gap:4px; }
+.invoice-total-preview small { color:var(--muted,#929bb0); font-size:11px; }
+.invoice-statement-total { display:flex; justify-content:space-between; align-items:center; gap:12px; padding:10px 14px; border:1px solid var(--border,#303950); border-radius:10px; }
+.invoice-statement-total span,.invoice-reconciliation { color:var(--muted,#929bb0); font-size:12px; }
+.invoice-reconciliation { margin:8px 2px 12px; line-height:1.5; }
