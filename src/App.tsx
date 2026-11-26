@@ -360,12 +360,14 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const previousMonthBalance = previousMonthTotals.income - previousMonthTotals.expenses;
   const financialHealth = (() => {
     if (monthlyTotals.count < 3 || monthlyTotals.income <= 0) return { status: "unknown", label: "Dados insuficientes", color: "#8190a8", description: "Cadastre receitas e despesas para um diagnóstico confiável." };
-    if (monthlyTotals.balance < 0) return { status: "critical", label: "Saúde crítica", color: "#ef6b75", description: "As despesas estão acima das receitas registradas." };
-    if (previousMonthTotals.income > 0 && previousMonthBalance < 0 && monthlyTotals.balance >= 0) return { status: "recovery", label: "Em recuperação", color: "#e5a34d", description: "O resultado melhorou e saiu do negativo em relação ao mês anterior." };
     const rate = (monthlyTotals.balance / monthlyTotals.income) * 100;
-    if (rate >= 20) return { status: "excellent", label: "Saúde excelente", color: "#35c99a", description: "Você está mantendo uma boa margem entre receitas e despesas." };
-    if (rate >= 10) return { status: "good", label: "Saúde boa", color: "#69b98b", description: "Seu resultado está positivo. Continue acompanhando os gastos." };
-    return { status: "attention", label: "Atenção ao orçamento", color: "#d9ad52", description: "Sua margem está positiva, mas merece acompanhamento." };
+    const hasPrevious = previousMonthTotals.income > 0 || previousMonthTotals.expenses > 0;
+    const improvingFromDeficit = hasPrevious && previousMonthBalance < 0 && monthlyTotals.balance > previousMonthBalance;
+    if (improvingFromDeficit) return { status: "recovery", label: "Em recuperação", color: "#d99a45", description: monthlyTotals.balance >= 0 ? "Você saiu do resultado negativo. Preserve esse avanço e acompanhe os próximos meses." : "O resultado ainda está negativo, mas melhorou em relação ao mês anterior. Continue reduzindo a diferença entre receitas e despesas." };
+    if (monthlyTotals.balance < 0) return { status: "critical", label: "Saúde crítica", color: "#e45f6d", description: "As despesas superam as receitas registradas. O foco agora é recuperar o equilíbrio." };
+    if (rate >= 20) return { status: "excellent", label: "Saúde excelente", color: "#20ad82", description: "Sua margem está forte. Você pode fortalecer sua reserva e avançar nas metas." };
+    if (rate >= 10) return { status: "good", label: "Saúde boa", color: "#49a879", description: "Seu resultado está positivo e com uma margem saudável. Continue acompanhando os gastos." };
+    return { status: "attention", label: "Atenção ao orçamento", color: "#c99536", description: "Seu resultado está positivo, mas a margem está apertada. Observe despesas e compromissos próximos." };
   })();
 
   if (!cloudLoaded) {
@@ -567,15 +569,15 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 12, right: 8, left: -18, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={settings.customAccent || ACCENT_COLORS[settings.accent]} stopOpacity={0.28}/><stop offset="95%" stopColor={settings.customAccent || ACCENT_COLORS[settings.accent]} stopOpacity={0}/></linearGradient>
-                    <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#35c99a" stopOpacity={0.16}/><stop offset="95%" stopColor="#35c99a" stopOpacity={0}/></linearGradient>
+                    <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={financialHealth.color} stopOpacity={0.30}/><stop offset="95%" stopColor={financialHealth.color} stopOpacity={0}/></linearGradient>
+                    <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e45f6d" stopOpacity={0.16}/><stop offset="95%" stopColor="#e45f6d" stopOpacity={0}/></linearGradient>
                   </defs>
                   <CartesianGrid stroke="#242b3d" strokeDasharray="4 5" vertical={false}/>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 12 }}/>
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 11 }} tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: settings.currency, notation: "compact", maximumFractionDigits: 1 }).format(v)}/>
                   <Tooltip contentStyle={{ background: "#151c2d", border: "1px solid #303950", borderRadius: 12, color: "#f4f6fb" }} formatter={(value) => formatMoney(Number(value))}/>
-                  <Area type="monotone" dataKey="income" name="Receitas" stroke={settings.customAccent || ACCENT_COLORS[settings.accent]} strokeWidth={2.5} fill="url(#incomeFill)"/>
-                  <Area type="monotone" dataKey="expenses" name="Despesas" stroke="#35c99a" strokeWidth={2.5} fill="url(#expenseFill)"/>
+                  <Area type="monotone" dataKey="income" name="Receitas" stroke={financialHealth.color} strokeWidth={2.5} fill="url(#incomeFill)"/>
+                  <Area type="monotone" dataKey="expenses" name="Despesas" stroke="#e45f6d" strokeWidth={2.5} fill="url(#expenseFill)"/>
                 </AreaChart>
               </ResponsiveContainer>
             </div>
