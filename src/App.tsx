@@ -501,7 +501,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </div>
           </section>
         ) : activePage === "transactions" ? (
-          <section className={`page-section dashboard-layout dashboard-${financialHealth.status}`}>
+          <section className="page-section">
             <div className="page-heading">
               <div><p className="eyebrow">CONTROLE DE MOVIMENTAÇÕES</p><h1>Lançamentos</h1><p className="muted-text">Consulte, pesquise e organize todas as suas receitas e despesas.</p></div>
               <div className="transaction-actions"><button className="outline-btn" onClick={() => setInvoiceOpen(true)}><FileText size={16}/> Importar fatura</button> <button className="primary-btn" onClick={openNewTransaction}><Plus size={16}/> Novo lançamento</button></div>
@@ -534,7 +534,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <GoalsManager session={session} balance={totals.balance} formatMoney={formatMoney}/>
         ) : (
         <>
-        <section className="page-section">
+        <section className={`page-section dashboard-layout dashboard-${financialHealth.status}`}>
         <section className="page-heading">
           <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>Visão geral</h1><p className="muted-text">Acompanhe sua vida financeira em {monthOptionLabel(transactionMonth)}.</p></div>
           <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
