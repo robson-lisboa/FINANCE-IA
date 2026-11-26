@@ -322,6 +322,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const [notificationSummary,setNotificationSummary] = useState("");
   const [notificationsLoading,setNotificationsLoading] = useState(false);
   const [notificationError,setNotificationError] = useState("");
+  const [notificationRefresh,setNotificationRefresh] = useState(0);
   const transactionFingerprint = useMemo(()=>transactions.map(t=>[t.id,t.date,t.amount,t.type,t.title,t.category].join("|")).join(";"),[transactions]);
   const unreadNotifications = notifications.filter(item=>!readNotifications.includes(item.id)).length;
   useEffect(()=>{localStorage.setItem(notificationStorageKey,JSON.stringify(readNotifications));},[readNotifications,notificationStorageKey]);
@@ -336,8 +337,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       .catch(error=>{if(!controller.signal.aborted)setNotificationError(error instanceof Error?error.message:"Não foi possível analisar agora.");})
       .finally(()=>{if(!controller.signal.aborted)setNotificationsLoading(false);});
     return ()=>controller.abort();
-  },[notificationsOpen,transactionMonth,transactionFingerprint,session.access_token]);
-  const markNotificationRead = (id:string) => setReadNotifications(current=>current.includes(id)?current:[...current,id]);
+  },[notificationsOpen,transactionMonth,transactionFingerprint,session.access_token,notificationRefresh]);
+  const markNotificationRead = (id:string) => setReadNotifications(current=>current.includes(id)?current.filter(value=>value!==id):[...current,id]);
   const formatMoney = (value: number) => money(value, settings.currency);
   const savingsRate = monthlyTotals.income > 0 ? (monthlyTotals.balance / monthlyTotals.income) * 100 : null;
 
@@ -397,7 +398,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               {notificationsOpen && <div className="notification-popover" role="dialog" aria-label="Central de notificações">
                 <div className="notification-popover-head"><div><strong>Notificações</strong><small>{unreadNotifications} não lida(s) · {monthOptionLabel(transactionMonth)}</small></div><button type="button" className="text-btn" onClick={()=>setReadNotifications(current=>[...new Set([...current,...notifications.map(item=>item.id)])])} disabled={unreadNotifications===0||notificationsLoading}>Marcar todas como lidas</button></div>
                 <div className="notification-ai-summary"><Sparkles size={15}/><span>{notificationSummary||"A IA vai examinar seus lançamentos e procurar sinais que merecem atenção."}</span></div>
-                {notificationError && <div className="notification-error" role="alert"><span>{notificationError}</span><button type="button" onClick={()=>setNotificationsOpen(false)}>Fechar e tentar novamente</button></div>}
+                {notificationError && <div className="notification-error" role="alert"><span>{notificationError}</span><button type="button" onClick={()=>setNotificationRefresh(value=>value+1)}>Tentar novamente</button></div>}
                 <div className="notification-items">{notificationsLoading?<div className="notification-empty"><span className="notification-ai-spinner"/><strong>Analisando suas finanças...</strong><span>A IA está comparando seus lançamentos e procurando padrões.</span></div>:notificationError?null:notifications.length===0?<div className="notification-empty"><CheckCircle2 size={21}/><strong>Nenhum alerta relevante encontrado</strong><span>A IA não identificou sinais que justifiquem um alerta nos registros disponíveis deste mês.</span></div>:notifications.map(item=><button type="button" key={item.id} className={`notification-item ${item.severity} ${readNotifications.includes(item.id)?"read":""}`} onClick={()=>markNotificationRead(item.id)}><span className="notification-item-icon">{item.severity==="critical"?"!":item.severity==="warning"?"⚠":"i"}</span><span className="notification-item-copy"><strong>{item.title}</strong><small>{item.message}</small><small className="notification-evidence"><b>O que a IA observou:</b> {item.evidence}</small><small className="notification-action"><b>Próxima ação:</b> {item.action}</small><em>{readNotifications.includes(item.id)?"Lida · toque para marcar como não lida":"Nova · toque para marcar como lida"}</em></span></button>)}</div>
                 <div className="notification-popover-foot"><span>IA analisa até 250 lançamentos da sua conta.</span><button type="button" onClick={()=>setNotificationsOpen(false)}>Fechar</button></div>
               </div>}
