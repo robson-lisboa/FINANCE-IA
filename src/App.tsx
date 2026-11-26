@@ -188,7 +188,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   }, [transactions]);
 
   const availableTransactionMonths = useMemo(() => {
-    const keys = new Set(transactions.filter(t => /^\\d{4}-\\d{2}-\\d{2}$/.test(t.date)).map(t => t.date.slice(0, 7)));
+    const keys = new Set(transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date)).map(t => t.date.slice(0, 7)));
     const current = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}`;
     keys.add(current);
     return [...keys].sort((a, b) => b.localeCompare(a));
