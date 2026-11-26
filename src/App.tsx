@@ -586,7 +586,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
         {settings.widgets.stats && <section className="stats-grid">
           <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail={`Realizado até hoje · ${monthOptionLabel(transactionMonth)}${monthlyTotals.scheduledCount ? ` · ${formatMoney(monthlyTotals.scheduledIncome - monthlyTotals.scheduledExpenses)} agendado` : ""}`} />
-          <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail={`Receitas realizadas${monthlyTotals.scheduledIncome ? ` · ${formatMoney(monthlyTotals.scheduledIncome)} agendadas` : ""}`} />
+          <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail={`Entradas realizadas${monthlyTotals.scheduledIncome ? ` · ${formatMoney(monthlyTotals.scheduledIncome)} agendadas` : ""}`} />
           <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail={`Despesas realizadas${monthlyTotals.scheduledExpenses ? ` · ${formatMoney(monthlyTotals.scheduledExpenses)} agendadas` : ""}`} />
           <StatCard title="Taxa de economia" value={savingsRate === null ? "—" : `${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail={`Resultado sobre receitas · ${monthOptionLabel(transactionMonth)}`} />
         </section>}
