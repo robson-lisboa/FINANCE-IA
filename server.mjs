@@ -8,6 +8,7 @@ const root = path.dirname(fileURLToPath(import.meta.url));
 const dist = path.join(root, "dist");
 const supabaseUrl = (process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "").replace(/\/$/, "");
 const supabaseKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 const groqKey = process.env.GROQ_API_KEY;
 const model = process.env.GROQ_MODEL || "openai/gpt-oss-120b";
 
@@ -44,6 +45,37 @@ async function verifyUser(req, res, next) {
 }
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+
+app.delete("/api/account", verifyUser, async (req, res) => {
+  if (!serviceRoleKey) return res.status(503).json({ error: "A exclusão segura ainda não foi habilitada pelo administrador." });
+  try {
+    const userId = encodeURIComponent(req.user.id);
+    const adminHeaders = { apikey: serviceRoleKey, Authorization: "Bearer " + serviceRoleKey };
+    for (const table of ["transactions", "financial_goals"]) {
+      const response = await fetch(supabaseUrl + "/rest/v1/" + table + "?user_id=eq." + userId, {
+        method: "DELETE",
+        headers: adminHeaders
+      });
+      if (!response.ok) {
+        console.error("account_data_delete_error", table, response.status);
+        return res.status(502).json({ error: "Não foi possível excluir todos os dados da conta. A conta não foi removida." });
+      }
+    }
+    const deleted = await fetch(supabaseUrl + "/auth/v1/admin/users/" + userId, {
+      method: "DELETE",
+      headers: adminHeaders
+    });
+    if (!deleted.ok) {
+      console.error("account_auth_delete_error", deleted.status);
+      return res.status(502).json({ error: "Os dados foram removidos, mas não foi possível concluir a exclusão da conta. Entre em contato com o suporte." });
+    }
+    return res.json({ success: true });
+  } catch (error) {
+    console.error("account_delete_error", error instanceof Error ? error.message : "unknown");
+    return res.status(503).json({ error: "Não foi possível concluir a exclusão agora. Tente novamente." });
+  }
+});
+
 
 
 app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
