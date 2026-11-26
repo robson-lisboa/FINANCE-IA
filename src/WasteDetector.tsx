@@ -83,7 +83,7 @@ export default function WasteDetector({ transactions, formatMoney, selectedMonth
           </div>
         </div>
       ) : (
-        <>
+        <div className="waste-analysis-content">
           <div className="waste-kpis">
             <div>
               <span>Total de despesas do período</span>
@@ -183,7 +183,7 @@ export default function WasteDetector({ transactions, formatMoney, selectedMonth
             <ShieldCheck size={13} />
             A economia é uma simulação, não uma garantia. O detector não classifica automaticamente uma despesa como desperdício e não altera nem exclui seus lançamentos.
           </p>
-        </>
+        </div>
       )}
     </section>
   );
