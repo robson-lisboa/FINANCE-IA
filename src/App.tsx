@@ -9,6 +9,7 @@ import FinancialEvolution from "./FinancialEvolution";
 import PlanningCenter from "./PlanningCenter";
 import ProactiveAdvisor from "./ProactiveAdvisor";
 import { parseBrazilianMoney } from "./lib/money-core.js";
+import { filterRealizedTransactions, filterScheduledTransactions } from "./lib/financial-core";
 import { DEFAULT_SETTINGS, readSettings, type AppSettings } from "./lib/preferences.js";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, fetchPersonalProfile, type AuthSession, type PersonalProfile } from "./lib/supabase";
 import {
@@ -211,8 +212,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   }, []);
 
   const totals = useMemo(() => {
-    const income = transactions.filter(t => t.type === "income").reduce((sum, t) => sum + t.amount, 0);
-    const expenses = transactions.filter(t => t.type === "expense").reduce((sum, t) => sum + t.amount, 0);
+    const realized = filterRealizedTransactions(transactions);
+    const income = realized.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenses = realized.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     return { income, expenses, balance: income - expenses };
   }, [transactions]);
 
@@ -237,20 +239,18 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     .sort((a, b) => b.date.localeCompare(a.date)), [transactions, transactionMonth, filter, search]);
 
   const monthlyTotals = useMemo(() => {
-    const now = new Date();
-    const isCurrentMonth = transactionMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const cutoff = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-    const current = transactions.filter(t => t.date.startsWith(transactionMonth) && (!isCurrentMonth || t.date.slice(0, 10) <= cutoff));
-    const income = current.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
-    const expenses = current.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
-    return { income, expenses, balance: income - expenses, count: current.length };
+    const selected = transactions.filter(t => t.date.startsWith(transactionMonth));
+    const realized = filterRealizedTransactions(selected);
+    const scheduled = filterScheduledTransactions(selected);
+    const income = realized.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
+    const expenses = realized.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
+    const scheduledIncome = scheduled.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
+    const scheduledExpenses = scheduled.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
+    return { income, expenses, balance: income - expenses, count: realized.length, scheduledCount: scheduled.length, scheduledIncome, scheduledExpenses };
   }, [transactions, transactionMonth]);
 
   const expenseByCategory = useMemo(() => {
-    const now = new Date();
-    const isCurrentMonth = transactionMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const cutoff = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-    const totalsByCategory = transactions.filter(t => t.type === "expense" && t.date.startsWith(transactionMonth) && (!isCurrentMonth || t.date.slice(0, 10) <= cutoff)).reduce<Record<string, number>>((acc, t) => {
+    const totalsByCategory = filterRealizedTransactions(transactions).filter(t => t.type === "expense" && t.date.startsWith(transactionMonth)).reduce<Record<string, number>>((acc, t) => {
       acc[t.category || "Sem categoria"] = (acc[t.category || "Sem categoria"] || 0) + Number(t.amount);
       return acc;
     }, {});
@@ -273,15 +273,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     });
 
     const totalsByMonth = new Map(months.map(month => [month.key, month]));
-    const now = new Date();
-    const isCurrentSelectedMonth = transactionMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
-    transactions.forEach(transaction => {
-      if (!transaction.date || !/^\d{4}-\d{2}-\d{2}$/.test(transaction.date)) return;
+    filterRealizedTransactions(transactions).forEach(transaction => {
       const month = totalsByMonth.get(transaction.date.slice(0, 7));
       const amount = Number(transaction.amount);
       if (!month || !Number.isFinite(amount) || amount < 0) return;
-      if (isCurrentSelectedMonth && transaction.date.slice(0, 7) === transactionMonth && transaction.date > todayKey) return;
       if (transaction.type === "income") month.income += amount;
       if (transaction.type === "expense") month.expenses += amount;
     });
@@ -556,7 +551,11 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                   </div>
                 ))}
               </div>
-              <div className="category-footer"><span>{filtered.length} lançamento(s) exibido(s) · {monthOptionLabel(transactionMonth)}{(search.trim() || filter !== "all") ? " · Resultado da seleção" : " · Resultado do mês"}</span><strong>{formatMoney(filtered.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
+              <div className="transaction-totals">
+                <div className="category-footer"><span>Resultado realizado · {monthOptionLabel(transactionMonth)} · {filtered.filter(t => t.date <= today).length} lançamento(s)</span><strong>{formatMoney(filtered.filter(t => t.date <= today).reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
+                <div className="category-footer scheduled-total"><span>Resultado agendado · {monthOptionLabel(transactionMonth)} · {filtered.filter(t => t.date > today).length} lançamento(s)</span><strong>{formatMoney(filtered.filter(t => t.date > today).reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
+                <p className="insight-disclaimer">{filtered.length} lançamento(s) exibido(s). O realizado considera datas até hoje; o agendado considera datas futuras. Busca e abas afetam os dois totais.</p>
+              </div>
             </div>
           </section>
         ) : activePage === "insights" ? (
@@ -586,9 +585,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <FinancialEvolution transactions={transactions} selectedMonth={transactionMonth} formatMoney={formatMoney}/>
 
         {settings.widgets.stats && <section className="stats-grid">
-          <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail={`Receitas menos despesas · ${monthOptionLabel(transactionMonth)}`} />
-          <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail={`Entradas em ${monthOptionLabel(transactionMonth)}`} />
-          <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail={`Saídas em ${monthOptionLabel(transactionMonth)}`} />
+          <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail={`Realizado até hoje · ${monthOptionLabel(transactionMonth)}${monthlyTotals.scheduledCount ? ` · ${formatMoney(monthlyTotals.scheduledIncome - monthlyTotals.scheduledExpenses)} agendado` : ""}`} />
+          <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail={`Receitas realizadas${monthlyTotals.scheduledIncome ? ` · ${formatMoney(monthlyTotals.scheduledIncome)} agendadas` : ""}`} />
+          <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail={`Despesas realizadas${monthlyTotals.scheduledExpenses ? ` · ${formatMoney(monthlyTotals.scheduledExpenses)} agendadas` : ""}`} />
           <StatCard title="Taxa de economia" value={savingsRate === null ? "—" : `${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail={`Resultado sobre receitas · ${monthOptionLabel(transactionMonth)}`} />
         </section>}
 
