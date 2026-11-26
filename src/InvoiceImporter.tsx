@@ -268,11 +268,11 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   return <div className="modal-backdrop" onMouseDown={e => { if (e.target === e.currentTarget && !busy) onClose(); }}>
     <section className="modal invoice-modal" role="dialog" aria-modal="true" aria-labelledby="invoice-title">
       <div className="modal-heading">
-        <div><span className="eyebrow">IMPORTAÇÃO INTELIGENTE</span><h2 id="invoice-title">Ler fatura do cartão</h2></div>
+        <div><span className="eyebrow">IMPORTAÇÃO INTELIGENTE</span><h2 id="invoice-title">Importar extrato ou fatura</h2></div>
         <button type="button" className="icon-btn" onClick={onClose} disabled={busy} aria-label="Fechar"><X size={19}/></button>
       </div>
       {done ? <div className="invoice-success"><CheckCircle2 size={32}/><strong>Fatura importada!</strong><p>Os lançamentos revisados foram adicionados à sua conta.</p><button className="primary-btn" onClick={onClose}>Concluir</button></div> : <>
-        <p className="muted-text">Envie o PDF ou uma foto da fatura. A leitura é feita no seu navegador; o arquivo não é enviado para um serviço externo de OCR.</p>
+        <p className="muted-text">Envie um PDF ou imagem, ou cole o texto do extrato/fatura. A leitura de arquivos é feita no navegador; o documento não é enviado para um serviço externo de OCR.</p>
         <div className="invoice-audit">
           <div className="invoice-audit-heading"><strong>Ou cole o texto do extrato</strong></div>
           <p className="muted-text">Não consegue anexar o PDF? Abra o extrato no banco, copie o texto e cole aqui. Você pode enviar em partes.</p>
