@@ -343,6 +343,29 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const markNotificationRead = (id:string) => setReadNotifications(current=>current.includes(id)?current.filter(value=>value!==id):[...current,id]);
   const formatMoney = (value: number) => money(value, settings.currency);
   const savingsRate = monthlyTotals.income > 0 ? (monthlyTotals.balance / monthlyTotals.income) * 100 : null;
+  const previousMonthKey = (() => {
+    const [year, month] = transactionMonth.split("-").map(Number);
+    const date = new Date(year, month - 2, 1);
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+  })();
+  const previousMonthTotals = transactions.filter(t => t.date.startsWith(previousMonthKey)).reduce(
+    (totals, transaction) => {
+      if (transaction.type === "income") totals.income += Number(transaction.amount) || 0;
+      if (transaction.type === "expense") totals.expenses += Number(transaction.amount) || 0;
+      return totals;
+    },
+    { income: 0, expenses: 0 }
+  );
+  const previousMonthBalance = previousMonthTotals.income - previousMonthTotals.expenses;
+  const financialHealth = (() => {
+    if (monthlyTotals.count < 3 || monthlyTotals.income <= 0) return { status: "unknown", label: "Dados insuficientes", color: "#8190a8", description: "Cadastre receitas e despesas para um diagnóstico confiável." };
+    if (monthlyTotals.balance < 0) return { status: "critical", label: "Saúde crítica", color: "#ef6b75", description: "As despesas estão acima das receitas registradas." };
+    if (previousMonthTotals.income > 0 && previousMonthBalance < 0 && monthlyTotals.balance >= 0) return { status: "recovery", label: "Em recuperação", color: "#e5a34d", description: "O resultado melhorou e saiu do negativo em relação ao mês anterior." };
+    const rate = (monthlyTotals.balance / monthlyTotals.income) * 100;
+    if (rate >= 20) return { status: "excellent", label: "Saúde excelente", color: "#35c99a", description: "Você está mantendo uma boa margem entre receitas e despesas." };
+    if (rate >= 10) return { status: "good", label: "Saúde boa", color: "#69b98b", description: "Seu resultado está positivo. Continue acompanhando os gastos." };
+    return { status: "attention", label: "Atenção ao orçamento", color: "#d9ad52", description: "Sua margem está positiva, mas merece acompanhamento." };
+  })();
 
   if (!cloudLoaded) {
     return <main className="auth-screen"><section className="auth-card"><div className="auth-brand"><span><Activity size={23}/></span><div><strong>FINANCE <b>IA</b></strong><small>CONTROLE FINANCEIRO PESSOAL</small></div></div><h1 className="auth-heading">Conectando sua conta</h1><p className="auth-footnote">{cloudBusy ? "Carregando seus dados protegidos..." : cloudError || "Aguardando sincronização."}</p>{cloudError && <button className="primary-btn auth-submit" onClick={() => window.location.reload()}>Tentar novamente</button>}</section></main>;
@@ -350,8 +373,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
   return (
     <div
-      className={`app-shell ${settings.theme === "light" ? "theme-light" : ""} density-${settings.density} font-${settings.fontScale}`}
-      style={{ "--accent": settings.customAccent || ACCENT_COLORS[settings.accent], "--accent-soft": `color-mix(in srgb, ${settings.customAccent || ACCENT_COLORS[settings.accent]} 18%, transparent)` } as React.CSSProperties}
+      className={`app-shell health-${financialHealth.status} ${settings.theme === "light" ? "theme-light" : ""} density-${settings.density} font-${settings.fontScale}`}
+      style={{ "--accent": financialHealth.status === "unknown" ? (settings.customAccent || ACCENT_COLORS[settings.accent]) : financialHealth.color, "--accent-soft": `color-mix(in srgb, ${financialHealth.status === "unknown" ? (settings.customAccent || ACCENT_COLORS[settings.accent]) : financialHealth.color} 18%, transparent)`, "--health-tint": `color-mix(in srgb, ${financialHealth.color} 5%, transparent)` } as React.CSSProperties}
     >
       <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
         <div className="brand">
@@ -392,7 +415,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
-            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", profile: "Meu perfil", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span></div></div>
+            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", profile: "Meu perfil", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span><span className="health-status-pill" title={financialHealth.description}><i/> {financialHealth.label}</span></div></div>
           </div>
           <div className="topbar-actions">
             <label className="month-filter-control global-month-filter"><CalendarDays size={16}/><span>Período</span><select aria-label="Selecionar mês do painel" value={transactionMonth} onChange={e => setTransactionMonth(e.target.value)}>{availableTransactionMonths.map(month => <option key={month} value={month}>{monthOptionLabel(month)}</option>)}</select></label>
