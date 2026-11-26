@@ -816,3 +816,15 @@
 .profile-feedback.success{color:#35c99a}.profile-feedback.error{color:#f07883}
 .profile-privacy{margin:15px 0 0;color:var(--muted);font-size:9px;line-height:1.55}
 @media(max-width:600px){.profile-fields{grid-template-columns:1fr}.profile-save-row{align-items:flex-start;flex-direction:column}.profile-save-row .primary-btn{width:100%}}
+
+
+/* Finance IA Adaptativo: identidade visual acompanha a saúde financeira */
+.app-shell[class*="health-"] .main-content{background:linear-gradient(135deg,var(--health-tint,transparent),transparent 42%)}
+.app-shell[class*="health-"] .stat-card,.app-shell[class*="health-"] .panel{border-color:color-mix(in srgb,var(--accent) 22%,var(--line))}
+.app-shell[class*="health-"] .insight-panel{background:linear-gradient(145deg,color-mix(in srgb,var(--accent) 12%,var(--panel)),var(--panel))}
+.app-shell[class*="health-"] .insight-highlight{border-color:color-mix(in srgb,var(--accent) 32%,var(--line));background:color-mix(in srgb,var(--accent) 9%,var(--panel2))}
+.app-shell[class*="health-"] .ai-icon,.app-shell[class*="health-"] .settings-preview-icon{background:var(--accent-soft);color:var(--accent)}
+.health-status-pill{display:inline-flex!important;align-items:center;gap:6px;margin-left:10px;padding:5px 9px;border:1px solid color-mix(in srgb,var(--accent) 38%,transparent);border-radius:999px;background:var(--accent-soft);color:var(--accent)!important;font:700 9px 'DM Sans',sans-serif;vertical-align:middle}
+.health-status-pill i{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.theme-light .app-shell[class*="health-"] .insight-panel{background:color-mix(in srgb,var(--accent) 5%,#fff)}
+@media(max-width:520px){.health-status-pill{margin:7px 0 0;font-size:8px}.welcome .health-status-pill{display:flex!important;width:max-content}}
