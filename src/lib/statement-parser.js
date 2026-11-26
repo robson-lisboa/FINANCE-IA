@@ -5,7 +5,7 @@ export function normalizeStatementDescription(value) {
 }
 
 export function isPotentialTransferMovement(value) {
-  return /\\b(pix (?:enviado|recebido)|transferencia|ted|doc)\\b/.test(normalize(String(value ?? "")));
+  return /\b(pix (?:enviado|recebido)|transferencia|ted|doc)\b/.test(normalize(String(value ?? "")));
 }
 
 export function classifyStatementMovement(line, amountEndIndex) {
