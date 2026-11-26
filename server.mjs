@@ -141,8 +141,9 @@ Regras obrigatórias:
 - Português brasileiro, claro e conciso. Não dê recomendação de investimento.
 Perfil informado pelo usuário: ${JSON.stringify(personalProfile)}. Se campos estiverem vazios, não tente adivinhar.
 Mês: ${selectedMonth}
-Resumo calculado pelo servidor para conferência: ${JSON.stringify({income,expenses,result:income-expenses,count:monthRows.length,previousMonths})}
-Lançamentos disponíveis (até 250, dados mais recentes): ${JSON.stringify(relevant)}`;
+Resumo calculado pelo servidor para conferência: ${JSON.stringify({income,expenses,result:income-expenses,count:monthRows.length,scheduledIncome,scheduledExpenses,scheduledCount:monthScheduledRows.length,previousMonths})}
+Lançamentos realizados disponíveis: ${JSON.stringify(realizedRows)}
+Lançamentos agendados (não incluir nos totais realizados): ${JSON.stringify(scheduledRows)}`;
     const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method:"POST",
       headers:{"Content-Type":"application/json",Authorization:"Bearer "+groqKey},
@@ -187,7 +188,7 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
     ]);
     const goals = goalsResponse.ok ? await goalsResponse.json() : [];
     const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\d{4}-\d{2}$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
-    const todayKey = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Sao_Paulo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const todayKey = saoPauloDateKey();
     const scopedTransactions = safeTransactions.filter(item => !selectedMonth || (typeof item.date === "string" && item.date.slice(0, 7) <= selectedMonth)).slice(0, 500);
     const realizedTransactions = scopedTransactions.filter(item => typeof item.date === "string" && item.date <= todayKey);
     const scheduledTransactions = scopedTransactions.filter(item => typeof item.date === "string" && item.date > todayKey);
