@@ -9,7 +9,12 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
     const now = new Date();
     const [year, monthNumber] = selectedMonth.split("-").map(Number);
     const isCurrentMonth = year === now.getFullYear() && monthNumber === now.getMonth() + 1;
-    const month = transactions.filter(t => t.date.startsWith(selectedMonth) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
+    const todayKey = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
+    const currentMonthKey = todayKey.slice(0, 7);
+    const includeOnlyRealized = selectedMonth >= currentMonthKey;
+    const selectedTransactions = transactions.filter(t => t.date.startsWith(selectedMonth) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
+    const scheduledCount = selectedTransactions.filter(t => t.date > todayKey).length;
+    const month = selectedTransactions.filter(t => !includeOnlyRealized || t.date <= todayKey);
     const income = month.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = month.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenseEntries = month.filter(t => t.type === "expense");
@@ -57,7 +62,7 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
         evidence += ` A projeção de fechamento foi omitida: são necessários ao menos 5 despesas distribuídas em 3 dias diferentes para reduzir o risco de um alerta baseado em poucos registros.`;
       }
     }
-    return { level, title, action, evidence, income, expenses, count: month.length, top, share };
+    return { level, title, action, evidence, income, expenses, count: month.length, scheduledCount, top, share };
   }, [transactions, formatMoney, selectedMonth]);
 
   return <section className={`panel proactive-advisor ${result.level}`}>
@@ -67,6 +72,6 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
       <div><span className="insight-label">RECOMENDAÇÃO PRINCIPAL</span><h3>{result.title}</h3><p>{result.action}</p></div>
     </div>
     <div className="proactive-evidence"><strong><CheckCircle2 size={14}/> Evidência</strong><p>{result.evidence}</p></div>
-    <div className="proactive-footer"><span>{result.count} lançamento(s) no período selecionado</span><span>Não representa saldo bancário</span></div>
+    <div className="proactive-footer"><span>{result.count} lançamento(s) realizado(s){result.scheduledCount > 0 ? ` · ${result.scheduledCount} agendado(s), fora do resultado` : ""}</span><span>Não representa saldo bancário</span></div>
   </section>;
 }
