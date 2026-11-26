@@ -34,7 +34,7 @@ export function classifyStatementMovement(line, amountEndIndex) {
 }
 
 export function isStatementSummaryLine(line) {
-  return /\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|saldo final|saldo inicial|saldo do dia|saldo atual|limite total|limite disponivel|limite utilizado|encargos|iof|anuidade|resumo da fatura|vencimento|total de creditos|total de debitos|total do dia|subtotal)\b/i.test(normalize(line));
+  return /\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|saldo final|saldo inicial|saldo do dia|saldo atual|limite total|limite disponivel|limite utilizado|resumo da fatura|vencimento|total de creditos|total de debitos|total do dia|subtotal|total de encargos|total de iof)\b/i.test(normalize(line));
 }
 
 
