@@ -62,10 +62,10 @@ export default function FinancialTimeMachine({ transactions, formatMoney }: Prop
         <div><span>Com a economia adicional</span><strong className={improved < 0 ? "time-negative" : "time-positive"}>{formatMoney(improved)}</strong><small>Após considerar a despesa inesperada informada</small></div>
       </div>
       <div className="time-machine-delta"><Sparkles size={17}/><div><strong>Impacto da sua mudança: {formatMoney(scenarioDifference)}</strong><p>Economizar {formatMoney(adjustment)} a mais por mês representa {formatMoney(adjustment * months)} no período. A despesa inesperada de {formatMoney(shock)} é aplicada uma única vez.</p></div></div>
-      <div className="time-machine-details"><div><span>Receitas projetadas</span><b>{formatMoney(futureIncome)}</b></div><div><span>Despesas projetadas, incluindo imprevisto</span><b>{formatMoney(futureExpenses)}</b></div><div><span>Meses com dados usados</span><b>{history.months} de até 6</b></div></div>
+      <div className="time-machine-details"><div><span>Receitas projetadas</span><b>{formatMoney(futureIncome)}</b></div><div><span>Despesas projetadas, incluindo imprevisto</span><b>{formatMoney(futureExpenses)}</b></div><div><span>Meses com lançamentos usados</span><b>{history.months} de até 6</b></div></div>
       {history.net < 0 && <p className="time-machine-warning"><TrendingDown size={15}/> Seu histórico indica despesas médias maiores que receitas. O cenário futuro mantém esse padrão, a menos que você ajuste receitas ou despesas.</p>}
       {history.net >= 0 && <p className="time-machine-warning positive"><TrendingUp size={15}/> O resultado é uma projeção contábil baseada nos registros, não representa saldo bancário ou dinheiro garantido disponível.</p>}
-      <p className="insight-disclaimer">Modelo simplificado: usa a média dos até seis meses completos anteriores que tenham registros. Meses sem lançamentos ficam fora da média, mas isso não comprova que os demais meses estejam completos. Não prevê inflação, juros, impostos, sazonalidade, mudanças de renda nem compromissos não cadastrados.</p>
+      <p className="insight-disclaimer">Modelo simplificado: usa a média dos até seis meses completos anteriores que tenham lançamentos. Meses sem registros ficam fora da média e podem representar ausência de cadastro, não necessariamente gasto zero; por isso, a amostra pode não representar todos os meses. Não prevê inflação, juros, impostos, sazonalidade, mudanças de renda nem compromissos não cadastrados.</p>
     </>}
   </section>;
 }
