@@ -5,7 +5,7 @@ export function classifyStatementMovement(line, amountEndIndex) {
   const after = line.slice(amountEndIndex);
   const normalized = normalize(line);
   if (/\s*-$/.test(after) || /-\s*$/.test(before) || /(?:^|\s)D(?:EBITO|ÉBITO)?(?:\s|$)/i.test(after)) return "expense";
-  if (/\s*\+$/.test(after) || /\+\s*$/.test(before) || /(?:^|\s)C(?:REDITO|CRÉDITO)(?:\s|$)/i.test(after)) return "income";
+  if (/\s*\+$/.test(after) || /\+\s*$/.test(before) || /(?:^|\s)C(?:REDITO|CRÉDITO)?(?:\s|$)/i.test(after)) return "income";
   if (/\b(salario|proventos|recebido|recebimento|deposito recebido|pix recebido|transferencia recebida|estorno|reembolso|cashback|rendimento|credito)\b/.test(normalized)) return "income";
   if (/\b(pix enviado|transferencia enviada|pagamento|compra|debito|saque|tarifa|boleto pago|conta paga)\b/.test(normalized)) return "expense";
   return "expense";
