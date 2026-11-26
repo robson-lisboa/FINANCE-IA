@@ -204,7 +204,6 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     .filter(t => `${t.title} ${t.category}`.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => b.date.localeCompare(a.date)), [transactions, transactionMonth, filter, search]);
 
-  const currentMonthKey = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}`;
   const monthlyTotals = useMemo(() => {
     const current = transactions.filter(t => t.date.startsWith(transactionMonth));
     const income = current.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
