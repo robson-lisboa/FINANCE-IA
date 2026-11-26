@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { filterMonthToDate } from "./lib/financial-core";
 import { Activity, AlertTriangle, CheckCircle2, ChevronDown, ChevronUp, Radar, Search, ShieldCheck, Sparkles } from "lucide-react";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
@@ -20,7 +21,7 @@ export default function CentralIntelligence({ transactions, formatMoney, selecte
     const [selectedYear, selectedMonthNumber] = selectedMonth.split("-").map(Number);
     const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonthNumber === now.getMonth() + 1;
     const monthKey = selectedMonth;
-    const current = valid.filter(t => t.date.startsWith(monthKey));
+    const current = filterMonthToDate(valid, monthKey);
     const income = current.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = current.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     const findings: Finding[] = [];
