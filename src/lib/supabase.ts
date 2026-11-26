@@ -140,6 +140,25 @@ export async function signUp(email: string, password: string): Promise<{ session
   return { session: null, needsEmailConfirmation: true };
 }
 
+
+export async function requestPasswordRecovery(email: string): Promise<void> {
+  ensureConfigured();
+  await authRequest<unknown>("recover?redirect_to=" + encodeURIComponent(window.location.origin), { email });
+}
+
+export async function updatePasswordWithRecoveryToken(accessToken: string, password: string): Promise<void> {
+  ensureConfigured();
+  const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY!, Authorization: "Bearer " + accessToken },
+    body: JSON.stringify({ password }),
+  });
+  if (!response.ok) {
+    const result = await response.json().catch(() => ({}));
+    throw new Error(String(result.msg || result.message || result.error_description || "Não foi possível atualizar a senha. Solicite um novo link de recuperação."));
+  }
+}
+
 export async function signOut(session: AuthSession): Promise<void> {
   try {
     await fetch(SUPABASE_URL + "/auth/v1/logout", {
