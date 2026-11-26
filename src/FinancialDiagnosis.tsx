@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, Lightbulb, ShieldAlert, TrendingDown, TrendingUp, Wallet } from "lucide-react";
+import { filterMonthToDate } from "./lib/financial-core";
 import FinancialAssistant from "./FinancialAssistant";
 import InvestigationPanel from "./InvestigationPanel";
 import CentralIntelligence from "./CentralIntelligence";
@@ -17,7 +18,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     const previousKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
     const valid = transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)));
     const sum = (items: Transaction[], type: "income" | "expense") => items.filter(t => t.type === type).reduce((total, t) => total + Number(t.amount), 0);
-    const current = valid.filter(t => t.date.startsWith(currentKey));
+    const current = filterMonthToDate(valid, currentKey);
     const previous = valid.filter(t => t.date.startsWith(previousKey) && (!isCurrentMonth || Number(t.date.slice(8, 10)) <= now.getDate()));
     const currentIncome = sum(current, "income");
     const currentExpenses = sum(current, "expense");
