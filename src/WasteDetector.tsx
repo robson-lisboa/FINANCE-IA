@@ -79,8 +79,8 @@ export default function WasteDetector({ transactions, formatMoney, selectedMonth
         <div className="time-machine-empty">
           <Search size={22} />
           <div>
-            <strong>Não encontrei despesas neste mês</strong>
-            <p>O detector acompanha o mês selecionado no painel. Escolha outro mês ou cadastre despesas em Lançamentos para começar a simulação.</p>
+            <strong>Não encontrei despesas realizadas neste mês</strong>
+            <p>O detector considera somente despesas com data até hoje. Despesas futuras agendadas aparecem identificadas acima, mas não entram na simulação.</p>
           </div>
         </div>
       ) : (
