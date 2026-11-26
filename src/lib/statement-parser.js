@@ -1,5 +1,13 @@
 const normalize = value => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
+export function normalizeStatementDescription(value) {
+  return normalize(String(value ?? "")).replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+export function isPotentialTransferMovement(value) {
+  return /\\b(pix (?:enviado|recebido)|transferencia|ted|doc)\\b/.test(normalize(String(value ?? "")));
+}
+
 export function classifyStatementMovement(line, amountEndIndex) {
   const before = line.slice(0, amountEndIndex);
   const after = line.slice(amountEndIndex);
