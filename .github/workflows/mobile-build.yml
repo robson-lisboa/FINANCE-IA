@@ -1,4 +1,4 @@
-name: Build mobile apps
+name: Build Android app
 
 on:
   workflow_dispatch:
@@ -30,9 +30,12 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - uses: android-actions/setup-android@v3
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: "platform-tools,platforms;android-36,build-tools;36.0.0"
       - name: Install dependencies
-        run: npm install
+        run: npm install --no-audit --no-fund
       - name: Build web app
         run: npm run build
       - name: Generate Android project
@@ -42,37 +45,10 @@ jobs:
       - name: Build installable APK
         working-directory: android
         run: ./gradlew assembleDebug
-      - uses: actions/upload-artifact@v4
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
         with:
           name: finance-ia-android-debug-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
-          if-no-files-found: error
-          retention-days: 14
-
-  ios:
-    name: iOS Simulator build
-    runs-on: macos-26
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - name: Install dependencies
-        run: npm install
-      - name: Build web app
-        run: npm run build
-      - name: Generate iOS project
-        run: npx cap add ios
-      - name: Sync native project
-        run: npx cap sync ios
-      - name: Build iOS Simulator app
-        run: xcodebuild -project ios/App/App.xcodeproj -scheme App -sdk iphonesimulator -configuration Debug -derivedDataPath build/ios CODE_SIGNING_ALLOWED=NO
-      - name: Package simulator app
-        run: cd build/ios/Build/Products/Debug-iphonesimulator && zip -r "$GITHUB_WORKSPACE/Finance-IA-iOS-Simulator.zip" App.app
-      - uses: actions/upload-artifact@v4
-        with:
-          name: finance-ia-ios-simulator
-          path: Finance-IA-iOS-Simulator.zip
           if-no-files-found: error
           retention-days: 14
