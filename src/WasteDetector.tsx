@@ -62,6 +62,7 @@ export default function WasteDetector({ transactions, formatMoney, selectedMonth
         <div><div><strong>Quanto você conseguiria reduzir?</strong><b>{target}%</b></div>
         <input aria-label="Percentual de redução" type="range" min="0" max="50" step="5" value={target} onChange={event => setTarget(Number(event.currentTarget.value))}/>
         <p>Reduzindo {target}% dos gastos selecionados, a economia estimada neste mês seria de <strong>{formatMoney(estimated)}</strong>. Mantendo o mesmo resultado por 12 meses: <strong>{formatMoney(estimated * 12)}</strong>.</p>
+        </div>
       </div>
       <div className="waste-purchases">
         <div className="waste-purchases-heading"><strong>Quais gastos entram na simulação?</strong><span>{included.length} de {report.small.length} selecionados</span></div>
