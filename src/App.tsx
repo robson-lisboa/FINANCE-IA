@@ -189,8 +189,10 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
   const availableTransactionMonths = useMemo(() => {
     const keys = new Set(transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date)).map(t => t.date.slice(0, 7)));
-    const current = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}`;
-    keys.add(current);
+    for (let offset = 0; offset < 12; offset++) {
+      const monthDate = new Date(currentTime.getFullYear(), currentTime.getMonth() - offset, 1);
+      keys.add(`${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`);
+    }
     return [...keys].sort((a, b) => b.localeCompare(a));
   }, [transactions, currentTime]);
   const monthOptionLabel = (key: string) => {
