@@ -168,7 +168,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const validation = useMemo(() => {
     const issues: string[] = [];
     if (rows.length === 0) issues.push("Nenhuma compra válida foi identificada.");
-    if (rows.some(row => !row.title.trim() || !/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) issues.push("Há lançamento com descrição, data ou valor inválido.");
+    if (rows.some(row => !row.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) issues.push("Há lançamento com descrição, data ou valor inválido.");
     const amounts = rows.map(row => row.amount).filter(value => Number.isFinite(value) && value > 0);
     if (amounts.some(value => value > 5000)) issues.push("Foi encontrado lançamento acima de R$ 5.000. Confira se o OCR confundiu um número ou o limite do cartão com uma compra.");
     if (statementTotal !== null && statementTotal > 0 && total > statementTotal * 1.5) issues.push("A soma reconhecida está mais de 50% acima do total da fatura. A importação exige conferência manual dos valores.");
