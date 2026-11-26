@@ -12,7 +12,7 @@ export default function FinancialEvolution({ transactions, selectedMonth, format
     const cutoffDay = currentMonth ? now.getDate() : new Date(year, month, 0).getDate();
     const previousDate = new Date(year, month - 2, 1);
     const previousKey = previousDate.getFullYear() + "-" + String(previousDate.getMonth() + 1).padStart(2, "0");
-    const valid = transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
+    const valid = filterRealizedTransactions(transactions).filter(t => Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
     const inWindow = (t: Transaction, key: string) => t.date.startsWith(key) && (!currentMonth || Number(t.date.slice(8, 10)) <= cutoffDay);
     const sum = (items: Transaction[], type: "income" | "expense") => items.filter(t => t.type === type).reduce((total, t) => total + Number(t.amount), 0);
     const current = valid.filter(t => inWindow(t, selectedMonth));
@@ -76,6 +76,6 @@ export default function FinancialEvolution({ transactions, selectedMonth, format
         <span>{item.label}</span><small className={item.balance < 0 ? "evolution-negative" : "evolution-positive"}>{formatMoney(item.balance)}</small>
       </div>)}</div><div className="evolution-legend"><span><i className="evolution-income-bar"/> Receitas</span><span><i className="evolution-expense-bar"/> Despesas</span></div></div>
     </>}
-    <p className="insight-disclaimer">Análise baseada somente nos lançamentos cadastrados. Para o mês atual, compara até o mesmo dia do mês anterior; para meses anteriores, usa o mês completo. Não representa saldo bancário nem considera movimentações não registradas.</p>
+    <p className="insight-disclaimer">Análise baseada somente nos lançamentos realizados até hoje; os agendados não entram no resultado. Para o mês atual, compara até o mesmo dia do mês anterior; para meses anteriores, usa o mês completo. Não representa saldo bancário nem considera movimentações não registradas.</p>
   </section>;
 }
