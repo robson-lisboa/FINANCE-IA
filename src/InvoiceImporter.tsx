@@ -331,7 +331,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
               <div className="invoice-row-subfields">
                 <label>Data<input type="date" value={row.date} onChange={e => updateRow(index, { date: e.target.value })}/></label>
                 <label>Valor (R$)<input inputMode="decimal" value={String(row.amount).replace(".", ",")} onChange={e => { const parsed = Number(e.target.value.replace(",", ".")); updateRow(index, { amount: e.target.value.trim() === "" ? 0 : parsed }); }}/></label>
-                <label>Tipo<select value={row.type} onChange={e => updateRow(index, { type: e.target.value as "income" | "expense" })}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>\n                <label>Categoria<select value={row.category} onChange={e => updateRow(index, { category: e.target.value })}>{CATEGORIES.map(category => <option key={category}>{category}</option>)}</select></label>
+                <label>Tipo<select value={row.type} onChange={e => updateRow(index, { type: e.target.value as "income" | "expense" })}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>
+                <label>Categoria<select value={row.category} onChange={e => updateRow(index, { category: e.target.value })}>{CATEGORIES.map(category => <option key={category}>{category}</option>)}</select></label>
               </div>
             </div>
             <button type="button" className="icon-btn invoice-remove" title="Remover movimentação" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
