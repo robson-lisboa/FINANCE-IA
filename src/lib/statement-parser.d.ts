@@ -13,3 +13,7 @@ export function extractBankAccountSummary(text: string): BankAccountSummary | nu
 
 export function normalizeStatementDescription(value: string): string;
 export function isPotentialTransferMovement(value: string): boolean;
+
+export type StatementRowKeyInput = { title: string; date: string; amount: number; type: "income" | "expense" };
+export function buildStatementTransactionKey(row: StatementRowKeyInput): string;
+export function filterNewStatementRows<T extends StatementRowKeyInput>(rows: T[], existingRows: StatementRowKeyInput[]): T[];
