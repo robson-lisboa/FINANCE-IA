@@ -207,7 +207,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     return issues;
   }, [rows, statementTotal, total]);
   const audit = useMemo(() => {
-    const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+    const normalize = normalizeStatementDescription;
     const existing = transactions;
     const exactMatches = rows.filter(row => existing.some(item => item.type === row.type && normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
     const duplicateMap = new Map<string, InvoiceRow[]>();
@@ -337,7 +337,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
               <div><strong>{audit.potentialTransfers.length}</strong><span>transferência(s) para revisar</span></div>
             </div>
             {audit.exactMatches.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> {audit.exactMatches.length} lançamento(s) coincidem com registros existentes, somando {audit.totalAlreadyRegistered.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Eles serão ignorados na importação.</p>}
-            {audit.repeated.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> Uma descrição com o mesmo valor aparece mais de uma vez em datas diferentes. Pode ser recorrência normal; confira o histórico.</p>}
+            {audit.repeated.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> A mesma descrição, data e valor aparece repetida dentro do arquivo. Confira se o extrato duplicou alguma linha antes de importar.</p>}
             {audit.installmentRows.length > 0 && <p className="invoice-audit-note">Encontramos indicações de parcelamento em algumas descrições. Confirme se o valor lido é o valor da parcela, não o valor total da compra.</p>}
             {audit.potentialTransfers.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> {audit.potentialTransfers.length} movimentação(ões) parecem PIX ou transferência. Confira se alguma foi feita entre contas suas: nesse caso, não deve ser contabilizada como receita ou despesa. O sistema não vai presumir isso nem excluir valores automaticamente.</p>}
             {audit.exactMatches.length === 0 && audit.repeated.length === 0 && audit.installmentRows.length === 0 && audit.potentialTransfers.length === 0 && <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma coincidência exata ou indicação de parcela encontrada nos critérios automáticos.</p>}
