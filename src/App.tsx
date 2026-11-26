@@ -149,10 +149,24 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         }
         const remote = await fetchTransactions(session);
         if (!active) return;
+        const local = savedLocal ? repairStoredTransactions(JSON.parse(savedLocal) as unknown) : [];
         if (remote.length > 0) {
-          setTransactions(remote);
+          const remoteIds = new Set(remote.map(item => item.id));
+          const localOnly = local.filter(item => item && !remoteIds.has(item.id));
+          if (localOnly.length > 0) {
+            const shouldImport = window.confirm("Encontrei " + localOnly.length + " lançamento(s) locais que não aparecem na nuvem. Deseja importá-los sem substituir os dados já sincronizados?");
+            if (shouldImport) {
+              const imported = await insertTransactions(session, localOnly.map(({ id: _id, ...transaction }) => transaction));
+              if (!active) return;
+              setTransactions([...remote, ...imported]);
+              localStorage.removeItem(LEGACY_BACKUP_KEY);
+            } else {
+              setTransactions(remote);
+            }
+          } else {
+            setTransactions(remote);
+          }
         } else {
-          const local = savedLocal ? repairStoredTransactions(JSON.parse(savedLocal) as unknown) : [];
           const shouldImport = local.length > 0 && window.confirm("Encontrei " + local.length + " lançamento(s) neste navegador. Deseja importar para sua conta na nuvem? Os dados locais só serão substituídos depois da importação.");
           if (shouldImport) {
             const imported = await insertTransactions(session, local.map(({ id: _id, ...transaction }) => transaction));
@@ -223,14 +237,20 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     .sort((a, b) => b.date.localeCompare(a.date)), [transactions, transactionMonth, filter, search]);
 
   const monthlyTotals = useMemo(() => {
-    const current = transactions.filter(t => t.date.startsWith(transactionMonth));
+    const now = new Date();
+    const isCurrentMonth = transactionMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const cutoff = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    const current = transactions.filter(t => t.date.startsWith(transactionMonth) && (!isCurrentMonth || t.date.slice(0, 10) <= cutoff));
     const income = current.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = current.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     return { income, expenses, balance: income - expenses, count: current.length };
   }, [transactions, transactionMonth]);
 
   const expenseByCategory = useMemo(() => {
-    const totalsByCategory = transactions.filter(t => t.type === "expense" && t.date.startsWith(transactionMonth)).reduce<Record<string, number>>((acc, t) => {
+    const now = new Date();
+    const isCurrentMonth = transactionMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const cutoff = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
+    const totalsByCategory = transactions.filter(t => t.type === "expense" && t.date.startsWith(transactionMonth) && (!isCurrentMonth || t.date.slice(0, 10) <= cutoff)).reduce<Record<string, number>>((acc, t) => {
       acc[t.category || "Sem categoria"] = (acc[t.category || "Sem categoria"] || 0) + Number(t.amount);
       return acc;
     }, {});
