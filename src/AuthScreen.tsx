@@ -18,10 +18,17 @@ export default function AuthScreen({ onAuthenticated }: { onAuthenticated: (sess
     setMessage("");
     try {
       if (mode === "signin") {
-        onAuthenticated(await signIn(email.trim(), password));
+        const session = await signIn(email.trim(), password);
+        setPassword("");
+        setShowPassword(false);
+        onAuthenticated(session);
       } else {
         const result = await signUp(email.trim(), password);
-        if (result.session) onAuthenticated(result.session);
+        if (result.session) {
+          setPassword("");
+          setShowPassword(false);
+          onAuthenticated(result.session);
+        }
         else setMessage("Conta criada. Confira seu e-mail para confirmar o cadastro e depois entre.");
       }
     } catch (err) {
@@ -50,14 +57,14 @@ export default function AuthScreen({ onAuthenticated }: { onAuthenticated: (sess
         ) : (
           <>
             <div className="auth-heading"><p className="eyebrow">SUA VIDA FINANCEIRA, EM UM SÓ LUGAR</p><h1>{mode === "signin" ? "Acesse sua conta" : "Crie sua conta"}</h1><p>Seus lançamentos ficam protegidos e sincronizados na nuvem.</p></div>
-            <form className="auth-form" onSubmit={submit}>
+            <form className="auth-form" onSubmit={submit} autoComplete="off">
               <label>E-mail<div className="auth-input"><Mail size={17}/><input type="email" required autoComplete="email" placeholder="seu@email.com" value={email} onChange={event => setEmail(event.target.value)}/></div></label>
-              <label>Senha<div className="auth-input"><LockKeyhole size={17}/><input type={showPassword ? "text" : "password"} required minLength={6} autoComplete={mode === "signin" ? "current-password" : "new-password"} placeholder="Mínimo de 6 caracteres" value={password} onChange={event => setPassword(event.target.value)}/><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></div></label>
+              <label>Senha<div className="auth-input"><LockKeyhole size={17}/><input type={showPassword ? "text" : "password"} required minLength={6} autoComplete="new-password" placeholder="Mínimo de 6 caracteres" value={password} onChange={event => setPassword(event.target.value)}/><button type="button" onClick={() => setShowPassword(value => !value)} aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}>{showPassword ? <EyeOff size={17}/> : <Eye size={17}/>}</button></div></label>
               {error && <p className="auth-error" role="alert">{error}</p>}
               {message && <p className="auth-success" role="status">{message}</p>}
               <button className="primary-btn auth-submit" type="submit" disabled={busy}>{busy ? "Aguarde..." : mode === "signin" ? "Entrar com segurança" : "Criar minha conta"}</button>
             </form>
-            <p className="auth-switch">{mode === "signin" ? "Ainda não tem conta?" : "Já tem uma conta?"} <button type="button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setError(""); setMessage(""); }}>{mode === "signin" ? "Criar conta" : "Fazer login"}</button></p>
+            <p className="auth-switch">{mode === "signin" ? "Ainda não tem conta?" : "Já tem uma conta?"} <button type="button" onClick={() => { setMode(mode === "signin" ? "signup" : "signin"); setPassword(""); setShowPassword(false); setError(""); setMessage(""); }}>{mode === "signin" ? "Criar conta" : "Fazer login"}</button></p>
           </>
         )}
         <p className="auth-footnote">Acesso protegido por autenticação. Nunca compartilhe sua senha.</p>
