@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
 import AccountDeletion from "./AccountDeletion";
+import ProfileSettings from "./ProfileSettings";
 import InvoiceImporter from "./InvoiceImporter";
 import GoalsManager from "./GoalsManager";
 import FinancialDiagnosis from "./FinancialDiagnosis";
@@ -102,7 +103,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
       return DEFAULT_SETTINGS;
     }
   });
-  const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "planning", "goals", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
+  const [activePage, setActivePage] = useState(() => ["dashboard", "transactions", "insights", "planning", "goals", "profile", "settings"].includes(window.location.hash.slice(1)) ? window.location.hash.slice(1) : "dashboard");
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [invoiceOpen, setInvoiceOpen] = useState(false);
@@ -183,7 +184,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   }, [settings, settingsStorageKey]);
 
   useEffect(() => {
-    const syncPage = () => { const page = window.location.hash.slice(1); setActivePage(["dashboard", "transactions", "insights", "planning", "goals", "settings"].includes(page) ? page : "dashboard"); };
+    const syncPage = () => { const page = window.location.hash.slice(1); setActivePage(["dashboard", "transactions", "insights", "planning", "goals", "profile", "settings"].includes(page) ? page : "dashboard"); };
     window.addEventListener("hashchange", syncPage);
     return () => window.removeEventListener("hashchange", syncPage);
   }, []);
@@ -373,6 +374,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <p>Organize suas finanças com mais clareza.</p>
             <button type="button" className="help-link" onClick={() => setHelpOpen(true)}>Ver dicas <span>→</span></button>
           </div>
+          <a className={`nav-item muted ${activePage === "profile" ? "active" : ""}`} href="#profile" onClick={() => { setActivePage("profile"); setMenuOpen(false); }}><Activity size={18}/> Meu perfil</a>
           <a className={`nav-item muted ${activePage === "settings" ? "active" : ""}`} href="#settings" onClick={() => { setActivePage("settings"); setMenuOpen(false); }}><Settings size={18}/> Configurações</a>
           <div className="profile">
             <div className="avatar">R</div>
@@ -390,7 +392,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
-            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span></div></div>
+            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", profile: "Meu perfil", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span></div></div>
           </div>
           <div className="topbar-actions">
             <label className="month-filter-control global-month-filter"><CalendarDays size={16}/><span>Período</span><select aria-label="Selecionar mês do painel" value={transactionMonth} onChange={e => setTransactionMonth(e.target.value)}>{availableTransactionMonths.map(month => <option key={month} value={month}>{monthOptionLabel(month)}</option>)}</select></label>
@@ -408,7 +410,9 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </div>
         </header>
 
-        {activePage === "settings" ? (
+        {activePage === "profile" ? (
+          <ProfileSettings session={session}/>
+        ) : activePage === "settings" ? (
           <section className="settings-page">
             <div className="page-heading">
               <div><p className="eyebrow">PREFERÊNCIAS DO SISTEMA</p><h1>Configurações</h1><p className="muted-text">Personalize a aparência do seu Finance IA.</p></div>
