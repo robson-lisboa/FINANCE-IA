@@ -828,3 +828,19 @@
 .health-status-pill i{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
 .theme-light .app-shell[class*="health-"] .insight-panel{background:color-mix(in srgb,var(--accent) 5%,#fff)}
 @media(max-width:520px){.health-status-pill{margin:7px 0 0;font-size:8px}.welcome .health-status-pill{display:flex!important;width:max-content}}
+
+
+/* Dashboard contextual: prioridade e ordem dos módulos por diagnóstico */
+.health-guidance{display:flex;align-items:center;gap:14px;margin:0 0 16px;padding:16px 18px;border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:12px;background:linear-gradient(110deg,var(--accent-soft),var(--panel));}
+.health-guidance-mark{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:10px;background:var(--accent-soft);color:var(--accent)}
+.health-guidance-copy{min-width:0;flex:1}
+.health-guidance-copy .eyebrow{display:block;color:var(--accent);font-size:8px;margin-bottom:5px}
+.health-guidance-copy strong{display:block;color:var(--text);font:700 13px Manrope,sans-serif}
+.health-guidance-copy p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.55}
+.health-guidance-status{flex:none;padding:6px 9px;border-radius:20px;background:var(--accent-soft);color:var(--accent);font-size:9px;font-weight:700}
+.health-critical .content-grid .insight-panel,.health-attention .content-grid .insight-panel{order:-1}
+.health-critical .lower-grid .transactions-panel{order:-1}
+.health-recovery .content-grid .insight-panel,.health-good .content-grid .insight-panel{order:-1}
+.health-excellent .lower-grid .goals-panel{order:-1}
+.health-unknown .health-guidance{border-style:dashed}
+@media(max-width:600px){.health-guidance{align-items:flex-start;gap:10px;padding:13px}.health-guidance-mark{width:32px;height:32px}.health-guidance-copy strong{font-size:12px}.health-guidance-status{font-size:8px;padding:5px 7px}}
