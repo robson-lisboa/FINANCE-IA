@@ -273,12 +273,17 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     });
 
     const totalsByMonth = new Map(months.map(month => [month.key, month]));
+    const now = new Date();
+    const isCurrentSelectedMonth = transactionMonth === `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const todayKey = now.getFullYear() + "-" + String(now.getMonth() + 1).padStart(2, "0") + "-" + String(now.getDate()).padStart(2, "0");
     transactions.forEach(transaction => {
       if (!transaction.date || !/^\d{4}-\d{2}-\d{2}$/.test(transaction.date)) return;
       const month = totalsByMonth.get(transaction.date.slice(0, 7));
-      if (!month || !Number.isFinite(transaction.amount)) return;
-      if (transaction.type === "income") month.income += transaction.amount;
-      if (transaction.type === "expense") month.expenses += transaction.amount;
+      const amount = Number(transaction.amount);
+      if (!month || !Number.isFinite(amount) || amount < 0) return;
+      if (isCurrentSelectedMonth && transaction.date.slice(0, 7) === transactionMonth && transaction.date > todayKey) return;
+      if (transaction.type === "income") month.income += amount;
+      if (transaction.type === "expense") month.expenses += amount;
     });
 
     return months.map(({ month, income, expenses }) => ({ month, income, expenses }));
