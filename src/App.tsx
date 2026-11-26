@@ -450,7 +450,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <header className="topbar">
           <div className="topbar-left">
             <button className="icon-btn mobile-menu" onClick={() => setMenuOpen(true)} aria-label="Abrir menu"><Menu size={20}/></button>
-            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", profile: "Meu perfil", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() >= 5 && currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() >= 12 && currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span><span className="health-status-pill" title={financialHealth.description}><i/> {financialHealth.label}</span></div></div>
+            <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", profile: "Meu perfil", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() >= 5 && currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() >= 12 && currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span>{activePage === "dashboard" && <span className="health-status-pill" title={financialHealth.description} aria-label={`Diagnóstico financeiro: ${financialHealth.label}. ${financialHealth.description}`}><i/> {financialHealth.label}</span>}</div></div>
           </div>
           <div className="topbar-actions">
             <label className="month-filter-control global-month-filter"><CalendarDays size={16}/><span>Período</span><select aria-label="Selecionar mês do painel" value={transactionMonth} onChange={e => setTransactionMonth(e.target.value)}>{availableTransactionMonths.map(month => <option key={month} value={month}>{monthOptionLabel(month)}</option>)}</select></label>
@@ -536,13 +536,12 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </section>
         ) : activePage === "transactions" ? (
           <section className="page-section">
-            <div className="page-heading">
+            <div className="page-heading transactions-page-heading">
               <div><p className="eyebrow">CONTROLE DE MOVIMENTAÇÕES</p><h1>Lançamentos</h1><p className="muted-text">Consulte, pesquise e organize todas as suas receitas e despesas.</p></div>
               <div className="transaction-actions"><button className="outline-btn" onClick={() => setInvoiceOpen(true)}><FileText size={16}/> Importar fatura</button> <button className="primary-btn" onClick={openNewTransaction}><Plus size={16}/> Novo lançamento</button></div>
             </div>
             <div className="panel transactions-panel full-page-panel">
               <div className="table-tools">
-                <label className="month-filter-control"><CalendarDays size={16}/><span>Mês</span><select aria-label="Filtrar lançamentos por mês" value={transactionMonth} onChange={e => setTransactionMonth(e.target.value)}>{availableTransactionMonths.map(month => <option key={month} value={month}>{monthOptionLabel(month)}</option>)}</select></label>
                 <div className="search-box"><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por descrição ou categoria..."/></div>
                 <div className="filter-tabs"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "income" ? "selected" : ""} onClick={() => setFilter("income")}>Receitas</button><button className={filter === "expense" ? "selected" : ""} onClick={() => setFilter("expense")}>Despesas</button></div>
               </div>
@@ -557,7 +556,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                   </div>
                 ))}
               </div>
-              <div className="category-footer"><span>{filtered.length} lançamento(s) em {monthOptionLabel(transactionMonth)}</span><strong>{formatMoney(filtered.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
+              <div className="category-footer"><span>{filtered.length} lançamento(s) exibido(s) · {monthOptionLabel(transactionMonth)}{(search.trim() || filter !== "all") ? " · Resultado da seleção" : " · Resultado do mês"}</span><strong>{formatMoney(filtered.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
             </div>
           </section>
         ) : activePage === "insights" ? (
