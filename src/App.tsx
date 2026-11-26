@@ -385,7 +385,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   );
   const previousMonthBalance = previousMonthTotals.income - previousMonthTotals.expenses;
   const financialHealth = (() => {
-    if (monthlyTotals.count < 3 || monthlyTotals.income <= 0) return { status: "unknown", label: "Dados insuficientes", color: "#8190a8", description: "Cadastre receitas e despesas para um diagnóstico confiável." };
+    if (monthlyTotals.count < 3 || monthlyTotals.income <= 0) return { status: "unknown", label: "Dados insuficientes", color: "#8190a8", description: monthlyTotals.scheduledCount > 0 ? `O diagnóstico considera apenas lançamentos realizados até hoje. Há ${formatMoney(monthlyTotals.scheduledIncome)} em receitas e ${formatMoney(monthlyTotals.scheduledExpenses)} em despesas agendadas, fora do resultado realizado.` : "O diagnóstico considera apenas lançamentos realizados até hoje. Cadastre receitas e despesas para formar uma base confiável." };
     const rate = (monthlyTotals.balance / monthlyTotals.income) * 100;
     const hasPrevious = previousMonthTotals.income > 0 || previousMonthTotals.expenses > 0;
     const improvingFromDeficit = hasPrevious && previousMonthBalance < 0 && monthlyTotals.balance > previousMonthBalance;
