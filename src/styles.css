@@ -1169,8 +1169,3 @@
 .transaction-totals .scheduled-total strong{color:var(--muted)}
 .transaction-totals .insight-disclaimer{margin:0;padding-top:7px}
 
-
-/* Evita que a barra de status do Android cubra o cabeçalho do app. */
-.native-app .app-shell{padding-top:max(env(safe-area-inset-top,0px),28px)}
-.native-app .sidebar{top:max(env(safe-area-inset-top,0px),28px);height:calc(100vh - max(env(safe-area-inset-top,0px),28px));height:calc(100dvh - max(env(safe-area-inset-top,0px),28px))}
-@media(max-width:800px){.native-app .topbar{min-height:76px}}
