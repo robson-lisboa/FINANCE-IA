@@ -108,7 +108,7 @@ app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
     const prompt = `Você é o analista financeiro do Finance IA. Analise os dados reais abaixo e produza alertas úteis, personalizados e conservadores. Considere o perfil pessoal informado apenas como contexto, sem presumir renda, saúde, patrimônio, dependentes ou objetivos. A idade pode ajudar a contextualizar horizonte de planejamento, mas nunca deve determinar sozinha uma recomendação.
 Responda SOMENTE com JSON válido no formato: {"summary":"frase curta","alerts":[{"title":"...","severity":"critical|warning|info","message":"...","evidence":"...","action":"..."}]}.
 Regras obrigatórias:
-- Use exclusivamente os dados fornecidos. Não invente compromissos, saldo bancário, contas futuras, causas, preços de mercado ou perfil pessoal.
+- Use exclusivamente os lançamentos e o perfil explicitamente fornecidos. Não invente compromissos, saldo bancário, contas futuras, causas, preços de mercado ou características pessoais além dos campos informados.
 - Considere mês selecionado ${selectedMonth}. Os lançamentos são registros do usuário, não necessariamente todo o dinheiro movimentado.
 - Identifique sinais realmente úteis: variação de categoria vs meses anteriores comparáveis, concentração, recorrência de descrições, despesa muito fora do padrão pessoal, receitas/despesas e metas (não há metas nesta chamada).
 - Não use limites genéricos como 80% como diagnóstico automático sem explicar por que é relevante nos dados. Prefira comparar com o histórico real.
