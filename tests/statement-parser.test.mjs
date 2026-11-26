@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary, normalizeStatementDescription, isPotentialTransferMovement } from "../src/lib/statement-parser.js";
+import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary, normalizeStatementDescription, isPotentialTransferMovement, buildStatementTransactionKey } from "../src/lib/statement-parser.js";
 
 test("classifies Brazilian statement credit and debit markers after amount", () => {
   assert.equal(classifyStatementMovement("PIX recebido 400,00 +", "PIX recebido 400,00".length), "income");
@@ -42,7 +42,6 @@ test("reconciles a bank statement using opening balance, credits, debits and clo
 test("normalizes descriptions consistently for duplicate checks", () => {
   assert.equal(normalizeStatementDescription("  PÃO & Café  "), "pao cafe");
   assert.equal(normalizeStatementDescription("Pao cafe"), "pao cafe");
-  const { buildStatementTransactionKey } = await import("../src/lib/statement-parser.js");
   assert.equal(buildStatementTransactionKey({ title: "PÃO & Café", date: "2026-08-10", amount: 12.5, type: "expense" }), buildStatementTransactionKey({ title: "Pao cafe", date: "2026-08-10", amount: 12.5, type: "expense" }));
 });
 
