@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary } from "../src/lib/statement-parser.js";
+import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary, normalizeStatementDescription, isPotentialTransferMovement } from "../src/lib/statement-parser.js";
 
 test("classifies Brazilian statement credit and debit markers after amount", () => {
   assert.equal(classifyStatementMovement("PIX recebido 400,00 +", "PIX recebido 400,00".length), "income");
@@ -34,4 +34,15 @@ test("reconciles a bank statement using opening balance, credits, debits and clo
     expectedClosing: 0.05,
     difference: 0
   });
+});
+
+test("normalizes descriptions consistently for duplicate checks", () => {
+  assert.equal(normalizeStatementDescription("  PÃO & Café  "), "pao cafe");
+  assert.equal(normalizeStatementDescription("Pao cafe"), "pao cafe");
+});
+
+test("flags PIX and bank transfers for manual review", () => {
+  assert.equal(isPotentialTransferMovement("PIX recebido Robson 400,00"), true);
+  assert.equal(isPotentialTransferMovement("Transferência entre contas 150,00"), true);
+  assert.equal(isPotentialTransferMovement("Compra supermercado 85,00"), false);
 });
