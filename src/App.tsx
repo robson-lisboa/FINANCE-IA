@@ -461,7 +461,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         ) : activePage === "insights" ? (
           <FinancialDiagnosis transactions={transactions} formatMoney={formatMoney} accessToken={session.access_token} selectedMonth={transactionMonth}/>
         ) : activePage === "planning" ? (
-          <PlanningCenter transactions={transactions} formatMoney={formatMoney}/>
+          <PlanningCenter transactions={transactions} formatMoney={formatMoney} selectedMonth={transactionMonth}/>
         ) : activePage === "goals" ? (
           <GoalsManager session={session} balance={totals.balance} formatMoney={formatMoney}/>
         ) : (
