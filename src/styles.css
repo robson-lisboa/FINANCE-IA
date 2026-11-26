@@ -1135,3 +1135,28 @@
 
 /* Shared heading spacing: the accent rail must never touch page titles */
 .app-shell .page-heading>div{min-width:0}
+
+
+/* Ajustes mobile: respeitar a área segura e evitar cortes nos títulos */
+.app-shell{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+.main-content{min-width:0}
+.page-heading>div{min-width:0}
+.page-heading h1{display:block;line-height:1.25;overflow:visible}
+.transactions-page-heading{gap:16px}
+@media(max-width:800px){
+  .topbar{min-height:76px;height:auto;padding:12px 0;gap:10px}
+  .topbar-left{min-width:0;flex:1}
+  .topbar-left>div{min-width:0}
+  .topbar-actions{flex:none}
+}
+@media(max-width:520px){
+  .page-heading{align-items:flex-start;gap:14px;padding:26px 0 18px}
+  .transactions-page-heading{flex-direction:column;align-items:stretch}
+  .transactions-page-heading h1{font-size:24px;line-height:1.3;padding-top:1px}
+  .transaction-actions{width:100%;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .transaction-actions>button{width:100%;min-width:0;padding:0 8px;gap:6px;font-size:10px;white-space:nowrap}
+  .transaction-actions>button svg{flex:none}
+  .full-page-panel{min-width:0}
+  .full-page-panel .category-footer{align-items:flex-start}
+  .full-page-panel .category-footer span{min-width:0;line-height:1.45}
+}
