@@ -59,6 +59,18 @@ function parseBrazilianDate(value: string, referenceDate: Date | null): string |
   return year + "-" + String(month).padStart(2,"0") + "-" + String(day).padStart(2,"0");
 }
 
+function extractStatementTotal(text: string): number | null {
+  const labels = /^(?:total da fatura|valor total da fatura|total a pagar|valor total a pagar|total desta fatura|total do demonstrativo)\\b/i;
+  for (const line of text.replace(/[\\u00a0]/g, " ").split(/[\\r\\n]+/).map(value => value.trim())) {
+    if (!labels.test(line)) continue;
+    const values = [...line.matchAll(/(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+,\\d{2})\\b/g)];
+    if (!values.length) continue;
+    const amount = Number(values[values.length - 1][1].replace(/\\./g, "").replace(",", "."));
+    if (Number.isFinite(amount) && amount >= 0 && amount <= 10000000) return amount;
+  }
+  return null;
+}
+
 function parseRows(text: string): InvoiceRow[] {
   const lines = text.replace(/[\u00a0]/g," ").split(/[\r\n]+/).map(line => line.replace(/\s+/g," ").trim()).filter(Boolean);
   const referenceDate = detectInvoiceReferenceDate(text);
@@ -148,6 +160,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
   const [detectedPeriod, setDetectedPeriod] = useState("");
+  const [statementTotal, setStatementTotal] = useState<number | null>(null);
+  const [showItems, setShowItems] = useState(false);
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
   const audit = useMemo(() => {
@@ -176,6 +190,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
       const text = await extractFile(file, setProgress);
       const referenceDate = detectInvoiceReferenceDate(text);
       const parsed = parseRows(text);
+      setStatementTotal(extractStatementTotal(text));
+      setShowItems(false);
       if (!parsed.length) throw new Error("Não encontrei compras com data e valor reconhecíveis. Tente o PDF original ou uma foto mais nítida da tabela de compras.");
       setDetectedPeriod(referenceDate ? referenceDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : "");
       setRows(parsed);
@@ -216,7 +232,12 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         {rows.length > 0 && <div className="invoice-review">
           <div className="invoice-review-head"><strong>{rows.length} compra(s) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
           {detectedPeriod && <p className="invoice-period-detected"><CheckCircle2 size={15}/> Período da fatura identificado: <strong>{detectedPeriod}</strong>. Datas sem ano foram ajustadas com base nesse período.</p>}
-          <div className="invoice-total-preview"><span>Total reconhecido</span><strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>
+          {statementTotal !== null && <div className="invoice-statement-total"><span>Total informado na fatura</span><strong>{statementTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>}
+          <button type="button" className="invoice-total-preview" aria-expanded={showItems} onClick={() => setShowItems(value => !value)}>
+            <span><strong>Soma das compras identificadas</strong><small>{showItems ? "Toque para ocultar as compras" : "Toque para ver todas as compras"}</small></span>
+            <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} <span aria-hidden="true">{showItems ? "−" : "+"}</span></strong>
+          </button>
+          {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total da fatura e as compras reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
           <section className="invoice-audit" aria-label="Auditoria da fatura">
             <div className="invoice-audit-heading"><span className="eyebrow">AUDITORIA AUTOMÁTICA</span><strong>O que encontrei nesta fatura</strong></div>
             <div className="invoice-audit-grid">
@@ -230,7 +251,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             {audit.exactMatches.length === 0 && audit.repeated.length === 0 && audit.installmentRows.length === 0 && <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma coincidência exata ou indicação de parcela encontrada nos critérios automáticos.</p>}
             <p className="invoice-audit-disclaimer">A auditoria compara descrição, data e valor com seus lançamentos. Uma coincidência é um alerta para revisão, não prova de cobrança indevida.</p>
           </section>
-          <div className="invoice-rows">{rows.map((row, index) => <div className="invoice-row invoice-row-editable" key={index}>
+          {showItems && <div className="invoice-rows">{rows.map((row, index) => <div className="invoice-row invoice-row-editable" key={index}>
             <div className="invoice-row-fields">
               <label>Descrição<input value={row.title} maxLength={100} onChange={e => updateRow(index, { title: e.target.value })}/></label>
               <div className="invoice-row-subfields">
@@ -241,6 +262,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             </div>
             <button type="button" className="icon-btn invoice-remove" title="Remover compra" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
           </div>)}</div>
+          </div>}
           <button className="primary-btn invoice-action" disabled={busy || !rows.length} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
           <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); }}>Descartar leitura e tentar novamente</button>
         </div>}
