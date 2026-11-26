@@ -4,6 +4,20 @@ export function normalizeStatementDescription(value) {
   return normalize(String(value ?? "")).replace(/[^a-z0-9]+/g, " ").trim();
 }
 
+export function buildStatementTransactionKey(row) {
+  return [row.type, normalizeStatementDescription(row.title), row.date, Number(row.amount).toFixed(2)].join("|");
+}
+
+export function filterNewStatementRows(rows, existingRows) {
+  const seen = new Set(existingRows.map(buildStatementTransactionKey));
+  return rows.filter(row => {
+    const key = buildStatementTransactionKey(row);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 export function isPotentialTransferMovement(value) {
   return /\b(pix (?:enviado|recebido)|transferencia|ted|doc)\b/.test(normalize(String(value ?? "")));
 }
