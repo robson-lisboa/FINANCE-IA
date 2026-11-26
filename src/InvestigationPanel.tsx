@@ -9,7 +9,6 @@ type Finding = { id: string; title: string; summary: string; value: string; deta
 export default function InvestigationPanel({ transactions, formatMoney, selectedMonth }: Props) {
   const [opened, setOpened] = useState<string | null>(null);
   const findings = useMemo<Finding[]>(() => {
-    const now = new Date();
     const key = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     const [year, month] = selectedMonth.split("-").map(Number);
     const selectedDate = new Date(year, month - 1, 1);
@@ -24,7 +23,7 @@ export default function InvestigationPanel({ transactions, formatMoney, selected
     if (largest) result.push({ id:"largest", title:"Maior saída do período", summary:`${largest.title} · ${largest.category} · ${largest.date.split("-").reverse().join("/")}`, value:formatMoney(largest.amount), detail:`Este é o maior lançamento individual classificado como despesa em ${selectedLabel}.`, icon:"largest", rows:[largest] });
     const small = current.filter(t => t.amount <= 100).sort((a,b) => b.amount-a.amount);
     const smallTotal = small.reduce((s,t)=>s+t.amount,0);
-    if (small.length >= 2) result.push({ id:"small", title:"Pequenos gastos somados", summary:`${small.length} lançamentos de até R$ 100,00 no período selecionado`, value:formatMoney(smallTotal), detail:"A soma mostra quanto esses valores menores representam no mês. Não significa que sejam desperdício.", icon:"small", rows:small });
+    if (small.length >= 2) result.push({ id:"small", title:"Pequenos gastos somados", summary:`${small.length} lançamentos de até R$ 100,00 no período selecionado`, value:formatMoney(smallTotal), detail:`A soma mostra quanto esses valores menores representam em ${selectedLabel}. Não significa que sejam desperdício.`, icon:"small", rows:small });
     const sumCategory = (items: Transaction[], category: string) => items.filter(t=>t.category.trim().toLocaleLowerCase("pt-BR")===category.trim().toLocaleLowerCase("pt-BR")).reduce((s,t)=>s+t.amount,0);
     const categories = [...new Set(current.map(t=>t.category))].map(category=>({category, now:sumCategory(current,category), before:sumCategory(previous,category)})).filter(x=>x.before>0 && x.now>x.before).sort((a,b)=>(b.now/b.before-1)-(a.now/a.before-1));
     const growth = categories[0];
