@@ -10,3 +10,6 @@ export type BankAccountSummary = {
   difference: number;
 };
 export function extractBankAccountSummary(text: string): BankAccountSummary | null;
+
+export function normalizeStatementDescription(value: string): string;
+export function isPotentialTransferMovement(value: string): boolean;
