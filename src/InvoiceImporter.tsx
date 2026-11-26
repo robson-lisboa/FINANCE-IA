@@ -71,6 +71,20 @@ function extractStatementTotal(text: string): number | null {
   return null;
 }
 
+
+function isBankStatementSummary(text: string): boolean {
+  const normalized = text.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  const signals = [
+    /saldo de conta corrente/,
+    /total de creditos/,
+    /total de debitos/,
+    /saldo em \\d{1,2}\\/\\d{1,2}/,
+    /depositos\\s*\\/\\s*transferencias/,
+    /salario e proventos/
+  ];
+  return signals.filter(pattern => pattern.test(normalized)).length >= 3;
+}
+
 function parseRows(text: string): InvoiceRow[] {
   const lines = text.replace(/[\u00a0]/g," ").split(/[\r\n]+/).map(line => line.replace(/\s+/g," ").trim()).filter(Boolean);
   const referenceDate = detectInvoiceReferenceDate(text);
@@ -162,7 +176,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const [detectedPeriod, setDetectedPeriod] = useState("");
   const [statementTotal, setStatementTotal] = useState<number | null>(null);
   const [showItems, setShowItems] = useState(false);
-  const [reviewAcknowledged, setReviewAcknowledged] = useState(false);
+  const [reviewAcknowledged, setReviewAcknowledged] = useState(false);\n  const [documentNotice, setDocumentNotice] = useState("");
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
   const validation = useMemo(() => {
@@ -205,7 +219,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
 
   const analyze = async () => {
     if (!file) return;
-    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setProgress("Preparando leitura...");
+    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setDocumentNotice(""); setProgress("Preparando leitura...");
     try {
       const text = await extractFile(file, setProgress);
       const referenceDate = detectInvoiceReferenceDate(text);
@@ -251,7 +265,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         </label>
         {!rows.length && <button className="primary-btn invoice-action" disabled={!file || busy || (file?.size || 0) > 15 * 1024 * 1024} onClick={() => void analyze()}>{busy ? <><LoaderCircle className="spin" size={16}/> {progress || "Analisando..."}</> : "Analisar fatura"}</button>}
         {file && file.size > 15 * 1024 * 1024 && <p className="invoice-error">O arquivo ultrapassa o limite de 15 MB.</p>}
-        {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}
+        {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}\n        {documentNotice && <div className="invoice-audit invoice-audit-warning" role="status"><strong><AlertTriangle size={16}/> Extrato bancário identificado</strong><p>{documentNotice}</p><p>Para conciliar corretamente, copie ou exporte a tabela detalhada de movimentações. O saldo inicial e o saldo final entram apenas na conferência, nunca como receita ou despesa.</p></div>}
         {rows.length > 0 && <div className="invoice-review">
           <div className="invoice-review-head"><strong>{rows.length} compra(s) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
           {detectedPeriod && <p className="invoice-period-detected"><CheckCircle2 size={15}/> Período da fatura identificado: <strong>{detectedPeriod}</strong>. Datas sem ano foram ajustadas com base nesse período.</p>}
