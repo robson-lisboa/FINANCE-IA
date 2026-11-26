@@ -45,6 +45,76 @@ async function verifyUser(req, res, next) {
 
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
+
+app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
+  if (!groqKey) return res.status(503).json({ error: "A inteligência artificial não está configurada no servidor." });
+  const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\\d{4}-(0[1-9]|1[0-2])$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
+  if (!selectedMonth) return res.status(400).json({ error: "Selecione um mês válido para analisar." });
+  if (!rateLimit(req.user.id)) return res.status(429).json({ error: "Limite temporário de análises atingido. Aguarde um minuto." });
+  try {
+    const headers = { apikey: supabaseKey, Authorization: "Bearer " + req.accessToken };
+    const response = await fetch(supabaseUrl + "/rest/v1/transactions?select=title,category,date,amount,type&order=date.desc&limit=250", { headers });
+    if (!response.ok) throw new Error("Não foi possível consultar os lançamentos.");
+    const rows = await response.json();
+    const transactions = Array.isArray(rows) ? rows.filter(item =>
+      item && typeof item.title === "string" && typeof item.date === "string" &&
+      Number.isFinite(Number(item.amount)) && ["income", "expense"].includes(item.type)
+    ) : [];
+    const relevant = transactions.filter(item => item.date.slice(0, 7) <= selectedMonth).slice(0, 250);
+    const monthRows = relevant.filter(item => item.date.startsWith(selectedMonth));
+    const income = monthRows.filter(item => item.type === "income").reduce((sum,item)=>sum+Number(item.amount),0);
+    const expenses = monthRows.filter(item => item.type === "expense").reduce((sum,item)=>sum+Number(item.amount),0);
+    const previousMonths = Array.from({length:5},(_,i)=>{
+      const [year,month]=selectedMonth.split("-").map(Number);
+      const date=new Date(year,month-2-i,1);
+      const key=date.getFullYear()+"-"+String(date.getMonth()+1).padStart(2,"0");
+      const list=relevant.filter(item=>item.date.startsWith(key));
+      return {month:key,count:list.length,income:list.filter(x=>x.type==="income").reduce((a,x)=>a+Number(x.amount),0),expenses:list.filter(x=>x.type==="expense").reduce((a,x)=>a+Number(x.amount),0)};
+    }).reverse();
+    const prompt = `Você é o analista financeiro do Finance IA. Analise os dados reais abaixo e produza alertas úteis, personalizados e conservadores.
+Responda SOMENTE com JSON válido no formato: {"summary":"frase curta","alerts":[{"title":"...","severity":"critical|warning|info","message":"...","evidence":"...","action":"..."}]}.
+Regras obrigatórias:
+- Use exclusivamente os dados fornecidos. Não invente compromissos, saldo bancário, contas futuras, causas, preços de mercado ou perfil pessoal.
+- Considere mês selecionado ${selectedMonth}. Os lançamentos são registros do usuário, não necessariamente todo o dinheiro movimentado.
+- Identifique sinais realmente úteis: variação de categoria vs meses anteriores comparáveis, concentração, recorrência de descrições, despesa muito fora do padrão pessoal, receitas/despesas e metas (não há metas nesta chamada).
+- Não use limites genéricos como 80% como diagnóstico automático sem explicar por que é relevante nos dados. Prefira comparar com o histórico real.
+- Para comparar um mês incompleto, informe que ele pode estar em andamento. Não compare mês parcial como se estivesse fechado.
+- Só emita alerta se houver evidência mensurável e suficiente. Se nada relevante existir, retorne alerts vazio e resumo dizendo que não encontrou anomalia nos registros disponíveis.
+- Cada alerta deve incluir evidência com valores, quantidade de registros e período. action deve ser uma ação concreta e simples, sem prometer economia.
+- No máximo 5 alertas. Priorize severidade e impacto. Não repita alertas equivalentes.
+- Não trate ausência de registros como prova de ausência de gastos. Não chame resultado dos lançamentos de saldo bancário.
+- Português brasileiro, claro e conciso. Não dê recomendação de investimento.
+Mês: ${selectedMonth}
+Resumo calculado pelo servidor para conferência: ${JSON.stringify({income,expenses,result:income-expenses,count:monthRows.length,previousMonths})}
+Lançamentos disponíveis (até 250, dados mais recentes): ${JSON.stringify(relevant)}`;
+    const aiResponse = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method:"POST",
+      headers:{"Content-Type":"application/json",Authorization:"Bearer "+groqKey},
+      body:JSON.stringify({model,messages:[{role:"system",content:"Você retorna exclusivamente JSON válido, sem Markdown."},{role:"user",content:prompt}],max_completion_tokens:1800})
+    });
+    const data = await aiResponse.json().catch(()=>({}));
+    if (!aiResponse.ok) {
+      console.error("groq_alerts_error",JSON.stringify({status:aiResponse.status,code:data?.error?.code||null}));
+      return res.status(aiResponse.status===429?429:502).json({error:"A IA não conseguiu analisar os dados agora. Tente novamente."});
+    }
+    let raw=data?.choices?.[0]?.message?.content;
+    if (Array.isArray(raw)) raw=raw.map(part=>typeof part==="string"?part:part?.text||"").join("");
+    if (typeof raw!=="string" || !raw.trim()) return res.status(502).json({error:"A IA não retornou uma análise. Tente novamente."});
+    const cleaned=raw.trim().replace(/^\`\`\`(?:json)?/i,"").replace(/\`\`\`$/,"").trim();
+    const start=cleaned.indexOf("{"), end=cleaned.lastIndexOf("}");
+    const parsed=JSON.parse(start>=0&&end>start?cleaned.slice(start,end+1):cleaned);
+    const alerts=Array.isArray(parsed.alerts)?parsed.alerts.slice(0,5).filter(item=>item&&typeof item.title==="string"&&typeof item.message==="string"&&typeof item.evidence==="string"&&typeof item.action==="string").map((item,index)=>({
+      id:selectedMonth+"-"+index+"-"+item.title.toLowerCase().normalize("NFD").replace(/[\\u0300-\\u036f]/g,"").replace(/[^a-z0-9]+/g,"-").slice(0,36),
+      title:item.title.slice(0,100),severity:["critical","warning","info"].includes(item.severity)?item.severity:"info",
+      message:item.message.slice(0,500),evidence:item.evidence.slice(0,300),action:item.action.slice(0,300)
+    })):[];
+    return res.json({summary:typeof parsed.summary==="string"?parsed.summary.slice(0,400):"Análise concluída.",alerts,model:data?.model||model,analyzedAt:new Date().toISOString(),transactionCount:relevant.length});
+  } catch(error) {
+    console.error("assistant_alerts_error",error instanceof Error?error.message:"unknown");
+    return res.status(502).json({error:"Não foi possível concluir a análise inteligente agora."});
+  }
+});
+
 app.post("/api/assistant/chat", verifyUser, async (req, res) => {
   if (!groqKey) return res.status(503).json({ error: "O serviço de inteligência ainda não foi ativado pelo administrador." });
   const message = typeof req.body?.message === "string" ? req.body.message.trim() : "";
