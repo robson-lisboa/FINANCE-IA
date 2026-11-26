@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { Search, Wallet, Repeat2, ShieldCheck } from "lucide-react";
+import { filterRealizedTransactions, filterScheduledTransactions } from "./lib/financial-core";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; selectedMonth: string };
@@ -18,13 +19,13 @@ export default function WasteDetector({ transactions, formatMoney, selectedMonth
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
 
   const report = useMemo(() => {
-    const valid = transactions.filter(t =>
+    const valid = filterRealizedTransactions(transactions).filter(t =>
       t.type === "expense" &&
-      typeof t.date === "string" &&
-      /^\d{4}-\d{2}-\d{2}/.test(t.date) &&
       Number.isFinite(Number(t.amount)) &&
       Number(t.amount) > 0
     );
+    const scheduledExpenses = filterScheduledTransactions(transactions).filter(t => t.type === "expense" && t.date.startsWith(selectedMonth));
+    const scheduledTotal = scheduledExpenses.reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = valid
       .filter(t => t.date.startsWith(selectedMonth))
       .sort((a, b) => Number(b.amount) - Number(a.amount));
@@ -54,7 +55,7 @@ export default function WasteDetector({ transactions, formatMoney, selectedMonth
       .sort((a, b) => b.total - a.total)
       .slice(0, 5);
 
-    return { total, expenses, small, smallTotal, recurring, frequent };
+    return { total, expenses, small, smallTotal, recurring, frequent, scheduledExpenses, scheduledTotal };
   }, [transactions, selectedMonth]);
 
   const selectedExpenses = report.expenses.filter(t => !excludedIds.includes(t.id));
@@ -72,7 +73,7 @@ export default function WasteDetector({ transactions, formatMoney, selectedMonth
         <Search size={19} className="subtle-icon" />
       </div>
 
-      <p className="waste-period-label">Análise de {monthLabel(selectedMonth)}</p>
+      <p className="waste-period-label">Análise de {monthLabel(selectedMonth)} · considera despesas realizadas até hoje{report.scheduledExpenses.length ? `; ${report.scheduledExpenses.length} despesa(s) agendada(s), total de ${formatMoney(report.scheduledTotal)}, ficam fora da simulação` : ""}.</p>
 
       {report.expenses.length === 0 ? (
         <div className="time-machine-empty">
