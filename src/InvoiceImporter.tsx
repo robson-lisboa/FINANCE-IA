@@ -195,8 +195,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     if (rows.some(row => !row.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) issues.push("Há lançamento com descrição, data ou valor inválido.");
     const amounts = rows.map(row => row.amount).filter(value => Number.isFinite(value) && value > 0);
     if (amounts.some(value => value > 5000)) issues.push("Foi encontrado lançamento acima de R$ 5.000. Confira se o OCR confundiu um número ou um valor de referência com uma movimentação.");
-    if (statementTotal !== null && statementTotal > 0 && total > statementTotal * 1.5) issues.push("A soma reconhecida está mais de 50% acima do total da fatura. A importação exige conferência manual dos valores.");
-    if (statementTotal !== null && statementTotal > 0 && total < statementTotal * 0.5) issues.push("A soma reconhecida está muito abaixo do total da fatura. Podem faltar compras ou existir saldo anterior/encargos.");
+    if (statementTotal !== null && statementTotal > 0 && total > statementTotal * 1.5) issues.push("A soma das despesas reconhecidas está mais de 50% acima do total de referência. A importação exige conferência manual dos valores.");
+    if (statementTotal !== null && statementTotal > 0 && total < statementTotal * 0.5) issues.push("A soma das despesas reconhecidas está muito abaixo do total de referência. Podem faltar compras ou existir saldo anterior/encargos.");
     const repeatedKeys = new Set<string>();
     const seenKeys = new Set<string>();
     for (const row of rows) {
@@ -205,7 +205,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
       seenKeys.add(key);
     }
     if (repeatedKeys.size) issues.push("Existem movimentações idênticas repetidas. Confira se são duplicidades ou compras realmente distintas.");
-    if (statementTotal === null) issues.push("Não foi possível localizar com segurança o total oficial da fatura no documento.");
+    if (statementTotal === null) issues.push("Não foi possível localizar com segurança um total de referência no documento. Confira os valores diretamente no extrato ou na fatura.");
     return issues;
   }, [rows, statementTotal, total]);
   const audit = useMemo(() => {
@@ -289,11 +289,11 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         </div>
         <label className="invoice-drop">
           <FileUp size={28}/>
-          <strong>{file ? file.name : "Selecionar fatura"}</strong>
+          <strong>{file ? file.name : "Selecionar extrato ou fatura"}</strong>
           <span>PDF, JPG, PNG ou WEBP · até 15 MB</span>
           <input type="file" accept=".pdf,image/jpeg,image/png,image/webp" disabled={busy} onChange={e => { setFile(e.target.files?.[0] || null); setRows([]); setError(""); setProgress(""); }} />
         </label>
-        {!rows.length && <button className="primary-btn invoice-action" disabled={!file || busy || (file?.size || 0) > 15 * 1024 * 1024} onClick={() => void analyze()}>{busy ? <><LoaderCircle className="spin" size={16}/> {progress || "Analisando..."}</> : "Analisar fatura"}</button>}
+        {!rows.length && <button className="primary-btn invoice-action" disabled={!file || busy || (file?.size || 0) > 15 * 1024 * 1024} onClick={() => void analyze()}>{busy ? <><LoaderCircle className="spin" size={16}/> {progress || "Analisando..."}</> : "Analisar documento"}</button>}
         {file && file.size > 15 * 1024 * 1024 && <p className="invoice-error">O arquivo ultrapassa o limite de 15 MB.</p>}
         {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}\n        {documentNotice && <div className="invoice-audit invoice-audit-warning" role="status"><strong><AlertTriangle size={16}/> Extrato bancário identificado</strong><p>{documentNotice}</p><p>Para conciliar corretamente, copie ou exporte a tabela detalhada de movimentações. O saldo inicial e o saldo final entram apenas na conferência, nunca como receita ou despesa.</p></div>}
         {rows.length > 0 && <div className="invoice-review">
