@@ -61,7 +61,7 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
     const transactions = await transactionsResponse.json();
     const goals = goalsResponse.ok ? await goalsResponse.json() : [];
     const safeTransactions = Array.isArray(transactions) ? transactions : [];
-    const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\\d{4}-\\d{2}$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
+    const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\d{4}-\d{2}$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
     const scopedTransactions = selectedMonth ? safeTransactions.filter(item => typeof item?.date === "string" && item.date.startsWith(selectedMonth)) : safeTransactions;
     const safeGoals = Array.isArray(goals) ? goals : [];
     const history = Array.isArray(req.body?.history)
