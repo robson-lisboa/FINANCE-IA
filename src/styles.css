@@ -700,3 +700,10 @@
 .simulator-howto p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.5}
 .purchase-simulator .simulator-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
 @media(max-width:650px){.purchase-simulator .simulator-fields{grid-template-columns:1fr}}
+
+
+/* Ajustes do detector: controles da simulação */
+.waste-savings-heading{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.waste-savings-heading strong{font-size:11px;color:var(--text)}
+.waste-selection-actions{display:flex;gap:12px;padding:3px 0 8px}
+.waste-selection-actions .text-btn{font-size:10px}
