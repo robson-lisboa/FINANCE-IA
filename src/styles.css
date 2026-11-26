@@ -1070,3 +1070,33 @@
   margin-bottom:8px;
   padding:9px 12px;
 }
+
+
+/* Profile is part of the account identity, not a separate sidebar button */
+.profile-link{
+  min-width:0;
+  flex:1;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:inherit;
+  text-decoration:none;
+  border-radius:8px;
+  padding:4px;
+  margin-left:-4px;
+}
+.profile-link:hover .profile-text strong,
+.profile-link:focus-visible .profile-text strong{color:#c1b7ff}
+.profile-link .profile-text small{
+  display:block;
+  font-size:9px;
+  color:#a99cff;
+  margin:0 0 3px;
+}
+.profile-link .profile-text strong{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.profile-link:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
