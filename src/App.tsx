@@ -109,6 +109,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   const [menuOpen, setMenuOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | Kind>("all");
   const [search, setSearch] = useState("");
+  const [transactionMonth, setTransactionMonth] = useState(() => `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, "0")}`);
   const [form, setForm] = useState({
     title: "", category: "Outros", date: today, amount: "", type: "expense" as Kind
   });
@@ -186,10 +187,22 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     return { income, expenses, balance: income - expenses };
   }, [transactions]);
 
+  const availableTransactionMonths = useMemo(() => {
+    const keys = new Set(transactions.filter(t => /^\\d{4}-\\d{2}-\\d{2}$/.test(t.date)).map(t => t.date.slice(0, 7)));
+    const current = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}`;
+    keys.add(current);
+    return [...keys].sort((a, b) => b.localeCompare(a));
+  }, [transactions, currentTime]);
+  const monthOptionLabel = (key: string) => {
+    const [year, month] = key.split("-").map(Number);
+    return new Date(year, month - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  };
+
   const filtered = useMemo(() => transactions
+    .filter(t => t.date.startsWith(transactionMonth))
     .filter(t => filter === "all" || t.type === filter)
     .filter(t => `${t.title} ${t.category}`.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => b.date.localeCompare(a.date)), [transactions, filter, search]);
+    .sort((a, b) => b.date.localeCompare(a.date)), [transactions, transactionMonth, filter, search]);
 
   const currentMonthKey = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}`;
   const monthlyTotals = useMemo(() => {
@@ -425,6 +438,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </div>
             <div className="panel transactions-panel full-page-panel">
               <div className="table-tools">
+                <label className="month-filter-control"><CalendarDays size={16}/><span>Mês</span><select aria-label="Filtrar lançamentos por mês" value={transactionMonth} onChange={e => setTransactionMonth(e.target.value)}>{availableTransactionMonths.map(month => <option key={month} value={month}>{monthOptionLabel(month)}</option>)}</select></label>
                 <div className="search-box"><Search size={16}/><input value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar por descrição ou categoria..."/></div>
                 <div className="filter-tabs"><button className={filter === "all" ? "selected" : ""} onClick={() => setFilter("all")}>Todos</button><button className={filter === "income" ? "selected" : ""} onClick={() => setFilter("income")}>Receitas</button><button className={filter === "expense" ? "selected" : ""} onClick={() => setFilter("expense")}>Despesas</button></div>
               </div>
@@ -439,7 +453,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                   </div>
                 ))}
               </div>
-              <div className="category-footer"><span>{filtered.length} lançamento(s) encontrado(s)</span><strong>{formatMoney(filtered.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
+              <div className="category-footer"><span>{filtered.length} lançamento(s) em {monthOptionLabel(transactionMonth)}</span><strong>{formatMoney(filtered.reduce((sum, t) => sum + (t.type === "income" ? t.amount : -t.amount), 0))}</strong></div>
             </div>
           </section>
         ) : activePage === "insights" ? (
