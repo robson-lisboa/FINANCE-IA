@@ -84,7 +84,7 @@ export default function CentralIntelligence({ transactions, formatMoney, selecte
   }, [transactions, formatMoney, selectedMonth]);
 
   const levelLabel = (level: Finding["level"]) => level === "critical" ? "Atenção imediata" : level === "warning" ? "Vale investigar" : "Observação";
-  const monthLabel = new Date(selectedYear, selectedMonthNumber - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const monthLabel = new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return <section className="central-intelligence panel">
     <div className="central-intelligence-head">
