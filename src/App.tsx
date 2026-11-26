@@ -206,25 +206,26 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
   const currentMonthKey = `${currentTime.getFullYear()}-${String(currentTime.getMonth() + 1).padStart(2, "0")}`;
   const monthlyTotals = useMemo(() => {
-    const current = transactions.filter(t => t.date.startsWith(currentMonthKey));
+    const current = transactions.filter(t => t.date.startsWith(transactionMonth));
     const income = current.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = current.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     return { income, expenses, balance: income - expenses, count: current.length };
-  }, [transactions, currentMonthKey]);
+  }, [transactions, transactionMonth]);
 
   const expenseByCategory = useMemo(() => {
-    const totalsByCategory = transactions.filter(t => t.type === "expense" && t.date.startsWith(currentMonthKey)).reduce<Record<string, number>>((acc, t) => {
+    const totalsByCategory = transactions.filter(t => t.type === "expense" && t.date.startsWith(transactionMonth)).reduce<Record<string, number>>((acc, t) => {
       acc[t.category || "Sem categoria"] = (acc[t.category || "Sem categoria"] || 0) + Number(t.amount);
       return acc;
     }, {});
     return Object.entries(totalsByCategory).sort((a, b) => b[1] - a[1]);
-  }, [transactions, currentMonthKey]);
+  }, [transactions, transactionMonth]);
 
   // Agrupa os lançamentos reais nos últimos seis meses, incluindo o mês atual.
   const chartData = useMemo(() => {
-    const currentDate = new Date();
+    const [selectedYear, selectedMonthNumber] = transactionMonth.split("-").map(Number);
+    const selectedDate = new Date(selectedYear, selectedMonthNumber - 1, 1);
     const months = Array.from({ length: 6 }, (_, index) => {
-      const monthDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 5 + index, 1);
+      const monthDate = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - 5 + index, 1);
       const key = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`;
       return {
         key,
@@ -244,7 +245,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     });
 
     return months.map(({ month, income, expenses }) => ({ month, income, expenses }));
-  }, [transactions]);
+  }, [transactions, transactionMonth]);
 
   const openNewTransaction = () => {
     setEditingId(null);
@@ -361,7 +362,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <div><div className="breadcrumb">Workspace <span>/</span> <b>{{dashboard: "Visão geral", transactions: "Lançamentos", insights: "Relatório inteligente", planning: "Planejamento financeiro", goals: "Metas financeiras", settings: "Configurações"}[activePage] || "Visão geral"}</b></div><div className="welcome">{currentTime.getHours() < 12 ? "Bom dia" : currentTime.getHours() < 18 ? "Boa tarde" : "Boa noite"}! <span>Vamos cuidar do seu dinheiro.</span></div></div>
           </div>
           <div className="topbar-actions">
-            <div className="date-chip"><CalendarDays size={15}/> {currentTime.toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })}</div>
+            <label className="month-filter-control global-month-filter"><CalendarDays size={16}/><span>Período</span><select aria-label="Selecionar mês do painel" value={transactionMonth} onChange={e => setTransactionMonth(e.target.value)}>{availableTransactionMonths.map(month => <option key={month} value={month}>{monthOptionLabel(month)}</option>)}</select></label>
             <button className="icon-btn notification-btn" aria-label="Notificações"><Bell size={18}/><i/></button>
             <button className="primary-btn top-add" onClick={openNewTransaction}><Plus size={17}/> Novo lançamento</button>
           </div>
@@ -457,7 +458,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </div>
           </section>
         ) : activePage === "insights" ? (
-          <FinancialDiagnosis transactions={transactions} formatMoney={formatMoney} accessToken={session.access_token}/>
+          <FinancialDiagnosis transactions={transactions} formatMoney={formatMoney} accessToken={session.access_token} selectedMonth={transactionMonth}/>
         ) : activePage === "planning" ? (
           <PlanningCenter transactions={transactions} formatMoney={formatMoney}/>
         ) : activePage === "goals" ? (
@@ -466,20 +467,20 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         <>
         <section className="page-section">
         <section className="page-heading">
-          <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>Visão geral</h1><p className="muted-text">Acompanhe sua vida financeira em um só lugar.</p></div>
+          <div><p className="eyebrow">SEU RESUMO FINANCEIRO</p><h1>Visão geral</h1><p className="muted-text">Acompanhe sua vida financeira em {monthOptionLabel(transactionMonth)}.</p></div>
           <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
         </section>
 
         {settings.widgets.stats && <section className="stats-grid">
-          <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail="Receitas menos despesas registradas" />
-          <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail="Entradas registradas neste mês" />
-          <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail="Saídas registradas neste mês" />
-          <StatCard title="Taxa de economia" value={savingsRate === null ? "—" : `${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail="Resultado sobre receitas do mês" />
+          <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail={`Receitas menos despesas · ${monthOptionLabel(transactionMonth)}`} />
+          <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail={`Entradas em ${monthOptionLabel(transactionMonth)}`} />
+          <StatCard title="Despesas do mês" value={formatMoney(monthlyTotals.expenses)} icon={<ArrowUpRight size={19}/>} tone="red" detail={`Saídas em ${monthOptionLabel(transactionMonth)}`} />
+          <StatCard title="Taxa de economia" value={savingsRate === null ? "—" : `${savingsRate.toFixed(1).replace(".", ",")}%`} icon={<TrendingUp size={19}/>} tone="blue" detail={`Resultado sobre receitas · ${monthOptionLabel(transactionMonth)}`} />
         </section>}
 
         {(settings.widgets.chart || settings.widgets.advisor) && <section className="content-grid" style={{ gridTemplateColumns: settings.widgets.chart && settings.widgets.advisor ? undefined : "minmax(0, 1fr)" }}>
           {settings.widgets.chart && <div className="panel chart-panel">
-            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Receitas e despesas dos últimos 6 meses, calculadas pelos seus lançamentos</p></div><button className="select-chip">Últimos 6 meses <ChevronDown size={14}/></button></div>
+            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Seis meses até {monthOptionLabel(transactionMonth)}, calculados pelos seus lançamentos</p></div><span className="select-chip">6 meses até {monthOptionLabel(transactionMonth)}</span></div>
             <div className="chart-legend"><span><i className="legend-income"/> Receitas</span><span><i className="legend-expense"/> Despesas</span></div>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height="100%">
@@ -500,7 +501,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             <div className="chart-note"><span className="note-dot"/> <span>{transactions.length === 0 ? "Ainda não há lançamentos. Adicione receitas e despesas para construir seu histórico." : "Este gráfico é atualizado automaticamente com os lançamentos cadastrados."}</span></div>
           </div>}
 
-          {settings.widgets.advisor && <ProactiveAdvisor transactions={transactions} formatMoney={formatMoney}/>}
+          {settings.widgets.advisor && <ProactiveAdvisor transactions={transactions} formatMoney={formatMoney} selectedMonth={transactionMonth}/>}
         </section>}
 
         {(settings.widgets.transactions || settings.widgets.categories) && <section className="lower-grid" style={{ gridTemplateColumns: settings.widgets.transactions && settings.widgets.categories ? undefined : "minmax(0, 1fr)" }}>
@@ -521,13 +522,13 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </div>}
 
           {settings.widgets.categories && <div className="panel goals-panel" id="goals">
-            <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição dos gastos neste mês</p></div><Activity size={18} className="subtle-icon"/></div>
+            <div className="panel-heading"><div><h2>Despesas por categoria</h2><p>Distribuição dos gastos em {monthOptionLabel(transactionMonth)}</p></div><Activity size={18} className="subtle-icon"/></div>
             {expenseByCategory.length === 0 ? <div className="empty-state compact">Adicione despesas para ver as categorias.</div> : <div className="category-list">{expenseByCategory.slice(0, 5).map(([category, amount], index) => {
               const colors = ["#8e7cff", "#35c99a", "#f3b85b", "#5ca9ff", "#e879a9"];
               const percent = monthlyTotals.expenses ? amount / monthlyTotals.expenses * 100 : 0;
               return <div className="category-item" key={category}><div className="category-top"><span><i style={{ background: colors[index % colors.length] }}/>{category}</span><strong>{formatMoney(amount)}</strong></div><div className="progress-track"><div style={{ width: `${percent}%`, background: colors[index % colors.length] }}/></div><small>{percent.toFixed(1).replace(".", ",")}% das despesas</small></div>;
             })}</div>}
-            <div className="category-footer"><span>Total de despesas</span><strong>{formatMoney(monthlyTotals.expenses)}</strong></div>
+            <div className="category-footer"><span>Total de despesas · {monthOptionLabel(transactionMonth)}</span><strong>{formatMoney(monthlyTotals.expenses)}</strong></div>
           </div>}
         </section>}
         </section>
