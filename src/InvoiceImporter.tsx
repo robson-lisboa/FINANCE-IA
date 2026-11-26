@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
 import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle, Trash2, Pencil } from "lucide-react";
-import { classifyStatementMovement, isStatementSummaryLine } from "./lib/statement-parser.js";
+import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary } from "./lib/statement-parser.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
@@ -183,6 +183,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const [reviewAcknowledged, setReviewAcknowledged] = useState(false);
   const [documentNotice, setDocumentNotice] = useState("");
   const [pastedText, setPastedText] = useState("");
+  const [accountSummary, setAccountSummary] = useState<ReturnType<typeof extractBankAccountSummary>>(null);
 
   const total = useMemo(() => rows.filter(row => row.type === "expense").reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
   const incomeTotal = useMemo(() => rows.filter(row => row.type === "income").reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
@@ -225,7 +226,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   };
 
   const analyzeText = async (text: string) => {
-    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setDocumentNotice(""); setProgress("Analisando movimentações...");
+    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setAccountSummary(extractBankAccountSummary(text)); setDocumentNotice(""); setProgress("Analisando movimentações...");
     try {
       if (isBankStatementSummary(text)) {
         setDocumentNotice("Este conteúdo parece ser um resumo consolidado de conta bancária, não uma lista de transações. Créditos, débitos e saldos agrupados não serão convertidos em lançamentos individuais. Cole o extrato detalhado, com data, descrição e valor de cada operação.");
@@ -292,7 +293,22 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         </label>
         {!rows.length && <button className="primary-btn invoice-action" disabled={!file || busy || (file?.size || 0) > 15 * 1024 * 1024} onClick={() => void analyze()}>{busy ? <><LoaderCircle className="spin" size={16}/> {progress || "Analisando..."}</> : "Analisar documento"}</button>}
         {file && file.size > 15 * 1024 * 1024 && <p className="invoice-error">O arquivo ultrapassa o limite de 15 MB.</p>}
-        {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}\n        {documentNotice && <div className="invoice-audit invoice-audit-warning" role="status"><strong><AlertTriangle size={16}/> Extrato bancário identificado</strong><p>{documentNotice}</p><p>Para conciliar corretamente, copie ou exporte a tabela detalhada de movimentações. O saldo inicial e o saldo final entram apenas na conferência, nunca como receita ou despesa.</p></div>}
+        {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}\n        {accountSummary && <section className="invoice-audit" aria-label="Conciliação do extrato bancário">
+          <div className="invoice-audit-heading"><span className="eyebrow">CONCILIAÇÃO BANCÁRIA</span><strong>Conferência dos saldos</strong></div>
+          <div className="invoice-audit-grid">
+            <div><strong>{accountSummary.openingBalance.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong><span>Saldo inicial</span></div>
+            <div><strong>{accountSummary.credits.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong><span>Total de créditos</span></div>
+            <div><strong>{accountSummary.debits.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong><span>Total de débitos</span></div>
+            <div><strong>{accountSummary.closingBalance.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong><span>Saldo final informado</span></div>
+          </div>
+          <p className={Math.abs(accountSummary.difference) < 0.01 ? "invoice-audit-ok" : "invoice-audit-warning"}>
+            {Math.abs(accountSummary.difference) < 0.01 ? <CheckCircle2 size={15}/> : <AlertTriangle size={15}/>}
+            Saldo final calculado: <strong>{accountSummary.expectedClosing.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>.
+            {Math.abs(accountSummary.difference) < 0.01 ? " Os valores conferem." : " Diferença encontrada: " + accountSummary.difference.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }) + ". Confira o documento original."}
+          </p>
+          <p className="invoice-audit-disclaimer">Os saldos são usados somente para conferência; não são importados como receitas ou despesas.</p>
+        </section>}
+        {documentNotice && <div className="invoice-audit invoice-audit-warning" role="status"><strong><AlertTriangle size={16}/> Extrato bancário identificado</strong><p>{documentNotice}</p><p>Para conciliar corretamente, copie ou exporte a tabela detalhada de movimentações. O saldo inicial e o saldo final entram apenas na conferência, nunca como receita ou despesa.</p></div>}
         {rows.length > 0 && <div className="invoice-review">
           <div className="invoice-review-head"><strong>{rows.length} movimentação(ões) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
           {detectedPeriod && <p className="invoice-period-detected"><CheckCircle2 size={15}/> Período identificado: <strong>{detectedPeriod}</strong>. Datas sem ano foram ajustadas com base nesse período.</p>}
