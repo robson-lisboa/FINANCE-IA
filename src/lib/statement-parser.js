@@ -38,6 +38,7 @@ export function extractBankAccountSummary(text) {
   const closingBalance = balanceRows.length > 1 ? balanceRows[balanceRows.length - 1].amount : null;
   if (credits === null || debits === null || openingBalance === null || closingBalance === null) return null;
   const expectedClosing = openingBalance + credits - debits;
-  const difference = Number((closingBalance - expectedClosing).toFixed(2));
+  const roundedDifference = Number((closingBalance - expectedClosing).toFixed(2));
+  const difference = roundedDifference === 0 ? 0 : roundedDifference;
   return { openingBalance, credits, debits, closingBalance, expectedClosing: Number(expectedClosing.toFixed(2)), difference };
 }
