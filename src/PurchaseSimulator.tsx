@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Calculator, AlertTriangle, CheckCircle2, TrendingUp, Info } from "lucide-react";
 import { parseBrazilianMoney } from "./lib/money-core.js";
+import { filterRealizedTransactions } from "./lib/financial-core";
 
 type Transaction = { date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; selectedMonth: string };
@@ -33,7 +34,7 @@ export default function PurchaseSimulator({ transactions, formatMoney, selectedM
       return { key, income: 0, expenses: 0, count: 0 };
     });
     const map = new Map(buckets.map(item => [item.key, item]));
-    transactions.forEach(item => {
+    filterRealizedTransactions(transactions).forEach(item => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(item.date || "")) return;
       const bucket = map.get(item.date.slice(0, 7));
       const amount = Number(item.amount);
@@ -88,6 +89,6 @@ export default function PurchaseSimulator({ transactions, formatMoney, selectedM
         <div><span>Preço à vista em meses dessa margem</span><strong>{cashEquivalentMonths !== null ? `${cashEquivalentMonths.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} meses` : "Sem dados suficientes"}</strong></div>
       </div>
     </>}
-    <p className="simulator-disclaimer">Análise de {labelMonth(selectedMonth)}. A média considera até 3 meses-calendário terminando no período selecionado; meses sem lançamentos não entram no cálculo. A amostra pode não representar meses sem cadastro. É uma referência baseada nos registros, não consulta seu saldo bancário nem considera contas futuras, outras parcelas ou reserva de emergência.</p>
+    <p className="simulator-disclaimer">Análise de {labelMonth(selectedMonth)}. A média considera até 3 meses-calendário terminando no período selecionado, somente com lançamentos realizados; valores agendados ficam fora. Meses sem lançamentos não entram no cálculo. A amostra pode não representar meses sem cadastro. É uma referência baseada nos registros, não consulta seu saldo bancário nem considera contas futuras, outras parcelas ou reserva de emergência.</p>
   </section>;
 }
