@@ -103,7 +103,7 @@ function parseRows(text: string): InvoiceRow[] {
     const explicitDebit = /-\s*$/.test(beforeAmount) || /^\s*-/.test(beforeAmount) || /^\s*D(?:ÉBITO|EBITO)?\b/i.test(afterAmount) || /^\s*\d*\s*-\s*$/.test(afterAmount);
     const explicitCredit = /\+\s*$/.test(beforeAmount) || /^\s*C(?:RÉDITO|REDITO)?\b/i.test(afterAmount);
     const income = !explicitDebit && (explicitCredit || /\b(sal[aá]rio|proventos|recebido|recebimento|dep[oó]sito recebido|pix recebido|transfer[eê]ncia recebida|estorno|reembolso|cashback|rendimento|cr[eé]dito)\b/i.test(line));
-    const title = line.replace(/\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b/, "").replace(/(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}/g, "").replace(/\s+/g, " ").trim().replace(/^[\-–|:]+|[\-–|:]+$/g, "");
+    const title = line.replace(/\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b/, "").replace(/(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}/g, "").replace(/\s+/g, " ").trim().replace(/\s+(?:C|D|CRÉDITO|CREDITO|DÉBITO|DEBITO)\s*$/i, "").replace(/[+-]$/, "").replace(/^[\-–|:]+|[\-–|:]+$/g, "");
     if (title.length < 3 || /cartão|fatura|titular|você pagou|compras nacionais/i.test(title)) continue;
     const type = income ? "income" : "expense";
     const key = [type, title.toLowerCase(), date, amount.toFixed(2)].join("|");
@@ -304,7 +304,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             <span><strong>Despesas identificadas</strong><small>{showItems ? "Toque para ocultar os lançamentos" : "Toque para ver todos os lançamentos"}</small></span>
             <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} <span aria-hidden="true">{showItems ? "−" : "+"}</span></strong>
           </button>
-          {incomeTotal > 0 && <p className="invoice-reconciliation">Receitas identificadas: <strong>{incomeTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. Despesas identificadas: <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>.</p>}\n          {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total informado no documento e as despesas reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
+          {incomeTotal > 0 && <p className="invoice-reconciliation">Receitas identificadas: <strong>{incomeTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. Despesas identificadas: <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>.</p> }
+          {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total informado no documento e as despesas reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
           <section className="invoice-audit" aria-label="Validação de segurança do documento">
             <div className="invoice-audit-heading"><span className="eyebrow">REGRAS DE CONFERÊNCIA</span><strong>Verificações antes de importar</strong></div>
             {validation.length > 0
