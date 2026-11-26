@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
 import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle, Trash2, Pencil } from "lucide-react";
-import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary, normalizeStatementDescription, isPotentialTransferMovement } from "./lib/statement-parser.js";
+import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary, normalizeStatementDescription, isPotentialTransferMovement, buildStatementTransactionKey } from "./lib/statement-parser.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
@@ -103,7 +103,7 @@ function parseRows(text: string): InvoiceRow[] {
     const type = classifyStatementMovement(line, amountEndIndex);
     const title = line.replace(/\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b/, "").replace(/(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}/g, "").replace(/\s+/g, " ").trim().replace(/\s+(?:C|D|CRÉDITO|CREDITO|DÉBITO|DEBITO)\s*$/i, "").replace(/[+-]$/, "").replace(/^[\-–|:]+|[\-–|:]+$/g, "");
     if (title.length < 3 || /cartão|fatura|titular|você pagou|compras nacionais/i.test(title)) continue;
-    const key = [type, title.toLowerCase(), date, amount.toFixed(2)].join("|");
+    const key = buildStatementTransactionKey({ type, title, date, amount });
     if (seen.has(key)) continue;
     seen.add(key);
     rows.push({ title: title.slice(0, 100), date, amount, category: categoryFor(title), type });
@@ -212,7 +212,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     const exactMatches = rows.filter(row => existing.some(item => item.type === row.type && normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
     const duplicateMap = new Map<string, InvoiceRow[]>();
     rows.forEach(row => {
-      const key = [row.type, normalize(row.title), row.amount.toFixed(2)].join("|");
+      const key = buildStatementTransactionKey(row);
       duplicateMap.set(key, [...(duplicateMap.get(key) || []), row]);
     });
     const repeated = [...duplicateMap.values()].filter(group => group.length > 1);
