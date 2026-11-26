@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import AuthScreen from "./AuthScreen";
+import AccountDeletion from "./AccountDeletion";
 import InvoiceImporter from "./InvoiceImporter";
 import GoalsManager from "./GoalsManager";
 import FinancialDiagnosis from "./FinancialDiagnosis";
@@ -468,6 +469,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                 </div>
               </div>
               <div className="settings-footer"><span>Preferências salvas automaticamente neste navegador e restauradas ao voltar. Seus lançamentos não são alterados por estas opções.</span><button type="button" className="outline-btn" onClick={() => setSettings(DEFAULT_SETTINGS)}>Restaurar padrão</button></div>
+              <AccountDeletion session={session} />
             </div>
           </section>
         ) : activePage === "transactions" ? (
