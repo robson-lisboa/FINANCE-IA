@@ -9,7 +9,7 @@ import { parseBrazilianMoney } from "./lib/money-core.js";
 import { DEFAULT_SETTINGS, readSettings, type AppSettings } from "./lib/preferences.js";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
 import {
-  Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays, ChevronDown,
+  Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays,
   CircleHelp, Download, LayoutDashboard, Menu, Plus, Search,
   Settings, Target, TrendingUp, Wallet, X, Trash2, Sparkles, FileText, Pencil, CheckCircle2
 } from "lucide-react";
