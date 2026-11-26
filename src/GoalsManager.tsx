@@ -90,6 +90,6 @@ export default function GoalsManager({ session, balance, formatMoney }: Props) {
       {error && <p className="invoice-error">{error}</p>}
       <div className="modal-actions"><button type="button" className="outline-btn" onClick={() => setOpen(false)}>Cancelar</button><button className="primary-btn" disabled={saving}>{saving ? "Salvando..." : editing ? "Salvar alterações" : "Criar meta"}</button></div>
     </form></div>}
-    <p className="goal-balance-note">Resultado acumulado dos lançamentos: <b>{formatMoney(balance)}</b>. Esse cálculo soma todas as receitas e despesas cadastradas desde o início; não representa saldo bancário nem dinheiro disponível. O valor guardado nas metas é informado por você e não movimenta automaticamente sua conta.</p>
+    <p className="goal-balance-note">Resultado acumulado realizado dos lançamentos: <b>{formatMoney(balance)}</b>. Esse cálculo soma receitas e despesas com data até hoje desde o início; não representa saldo bancário nem dinheiro disponível. O valor guardado nas metas é informado por você e não movimenta automaticamente sua conta.</p>
   </section>;
 }
