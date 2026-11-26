@@ -198,7 +198,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     const repeatedKeys = new Set<string>();
     const seenKeys = new Set<string>();
     for (const row of rows) {
-      const key = [row.type, row.title.toLocaleLowerCase("pt-BR").trim(), row.date, row.amount.toFixed(2)].join("|");
+      const key = buildStatementTransactionKey(row);
       if (seenKeys.has(key)) repeatedKeys.add(key);
       seenKeys.add(key);
     }
