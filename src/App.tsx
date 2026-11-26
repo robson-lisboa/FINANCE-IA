@@ -539,6 +539,16 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           <button className="outline-btn" onClick={exportCsv}><Download size={16}/> Exportar dados</button>
         </section>
 
+        <section className={`health-guidance health-guidance-${financialHealth.status}`} aria-live="polite">
+          <div className="health-guidance-mark"><Activity size={19}/></div>
+          <div className="health-guidance-copy">
+            <span className="eyebrow">PRIORIDADE DO MOMENTO</span>
+            <strong>{financialHealth.status === "critical" ? "Vamos recuperar o equilíbrio" : financialHealth.status === "recovery" ? "Continue no caminho da recuperação" : financialHealth.status === "attention" ? "Proteja sua margem financeira" : financialHealth.status === "excellent" ? "Transforme seu resultado em conquistas" : financialHealth.status === "good" ? "Mantenha sua evolução" : "Vamos conhecer sua vida financeira"}</strong>
+            <p>{financialHealth.status === "critical" ? "Comece revisando despesas e compromissos próximos. O foco agora é reduzir a diferença entre o que entra e o que sai." : financialHealth.status === "recovery" ? "Seu resultado voltou ao positivo em relação ao mês anterior. Preserve esse avanço e acompanhe os gastos variáveis." : financialHealth.status === "attention" ? "Sua margem está positiva, mas pequena. Observe despesas recorrentes e evite comprometer o orçamento antes de fechar o mês." : financialHealth.status === "excellent" ? "Com uma margem positiva, você pode fortalecer sua reserva e avançar em metas sem perder o controle." : financialHealth.status === "good" ? "Seu orçamento está positivo. Continue acompanhando a evolução das receitas e despesas." : "Cadastre receitas e despesas do período para receber prioridades e recomendações baseadas nos seus próprios dados."}</p>
+          </div>
+          <span className="health-guidance-status">{financialHealth.label}</span>
+        </section>
+
         {settings.widgets.stats && <section className="stats-grid">
           <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail={`Receitas menos despesas · ${monthOptionLabel(transactionMonth)}`} />
           <StatCard title="Receitas do mês" value={formatMoney(monthlyTotals.income)} icon={<ArrowDownLeft size={19}/>} tone="green" detail={`Entradas em ${monthOptionLabel(transactionMonth)}`} />
