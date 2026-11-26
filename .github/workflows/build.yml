@@ -21,7 +21,7 @@ jobs:
           node-version: 22
           cache: npm
       - name: Install locked dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Run automated tests
         run: npm test
       - name: Check TypeScript and build Vite
