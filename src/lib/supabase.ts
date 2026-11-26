@@ -282,7 +282,7 @@ export async function deleteFinancialGoal(session: AuthSession, id: string): Pro
 }
 
 
-export type PersonalProfile = { firstName: string; lastName: string; age: number | null };
+export type PersonalProfile = { firstName: string; lastName: string; birthDate: string; age: number | null; showNameInSidebar: boolean };
 
 export async function fetchPersonalProfile(session: AuthSession): Promise<PersonalProfile> {
   const activeSession = await refreshSession(session);
@@ -293,10 +293,21 @@ export async function fetchPersonalProfile(session: AuthSession): Promise<Person
   if (!response.ok) throw new Error(result.msg || result.message || "Não foi possível carregar seu perfil.");
   const metadata = result.user_metadata && typeof result.user_metadata === "object" ? result.user_metadata : {};
   const age = Number(metadata.finance_age);
+  const birthDate = typeof metadata.finance_birth_date === "string" ? metadata.finance_birth_date : "";
+  const calculatedAge = birthDate ? (() => {
+    const birth = new Date(birthDate + "T00:00:00");
+    if (Number.isNaN(birth.getTime())) return null;
+    const now = new Date();
+    let years = now.getFullYear() - birth.getFullYear();
+    if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) years--;
+    return years >= 13 && years <= 110 ? years : null;
+  })() : null;
   return {
     firstName: typeof metadata.finance_first_name === "string" ? metadata.finance_first_name : "",
     lastName: typeof metadata.finance_last_name === "string" ? metadata.finance_last_name : "",
-    age: Number.isInteger(age) && age >= 13 && age <= 110 ? age : null
+    birthDate,
+    age: calculatedAge ?? (Number.isInteger(age) && age >= 13 && age <= 110 ? age : null),
+    showNameInSidebar: metadata.finance_show_name_in_sidebar === true
   };
 }
 
@@ -308,7 +319,9 @@ export async function updatePersonalProfile(session: AuthSession, profile: Perso
     body: JSON.stringify({ data: {
       finance_first_name: profile.firstName.trim(),
       finance_last_name: profile.lastName.trim(),
-      finance_age: profile.age
+      finance_age: profile.age,
+      finance_birth_date: profile.birthDate,
+      finance_show_name_in_sidebar: profile.showNameInSidebar
     } })
   });
   const result = await response.json().catch(() => ({}));
