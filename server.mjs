@@ -61,6 +61,8 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
     const transactions = await transactionsResponse.json();
     const goals = goalsResponse.ok ? await goalsResponse.json() : [];
     const safeTransactions = Array.isArray(transactions) ? transactions : [];
+    const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\\d{4}-\\d{2}$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
+    const scopedTransactions = selectedMonth ? safeTransactions.filter(item => typeof item?.date === "string" && item.date.startsWith(selectedMonth)) : safeTransactions;
     const safeGoals = Array.isArray(goals) ? goals : [];
     const history = Array.isArray(req.body?.history)
       ? req.body.history.filter(item => item && ["user", "assistant"].includes(item.role) && typeof item.content === "string").slice(-8).map(item => ({ role: item.role, content: item.content.slice(0, 3000) }))
@@ -115,8 +117,13 @@ SEGURANÇA:
 - Não faça recomendações de investimento como se fosse consultor autorizado; ofereça educação financeira geral.
 - Os dados abaixo pertencem exclusivamente ao usuário autenticado.
 
-LANÇAMENTOS REGISTRADOS (máximo 120):
-${JSON.stringify(safeTransactions)}
+PERÍODO PRINCIPAL SELECIONADO: ${selectedMonth || "não informado"}.
+Use somente lançamentos desse mês para responder perguntas sobre o período selecionado. Outros meses não devem ser somados ao período principal. Se a pergunta pedir comparação ou recorrência, compare meses separadamente e identifique cada período.
+
+LANÇAMENTOS DO PERÍODO SELECIONADO (máximo 120):
+${JSON.stringify(scopedTransactions)}
+
+CONTEXTO DE OUTROS MESES: ${selectedMonth ? "não incluído nesta consulta; não invente comparações históricas." : "a lista completa recente pode conter mais de um mês."}
 
 METAS FINANCEIRAS:
 ${JSON.stringify(safeGoals)}`;
