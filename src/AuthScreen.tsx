@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Activity, Eye, EyeOff, LockKeyhole, Mail } from "lucide-react";
 import { isSupabaseConfigured, signIn, signUp, requestPasswordRecovery, updatePasswordWithRecoveryToken, type AuthSession } from "./lib/supabase";
 
@@ -16,7 +16,9 @@ export default function AuthScreen({ onAuthenticated }: { onAuthenticated: (sess
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
-  if (initialRecoveryToken && window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  useEffect(() => {
+    if (initialRecoveryToken && window.location.hash) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+  }, [initialRecoveryToken]);
 
   const submit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
