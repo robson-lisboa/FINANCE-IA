@@ -22,7 +22,8 @@
     "react-markdown": "^9.0.3",
     "remark-gfm": "^4.0.1",
     "@capacitor/core": "^8.6.2",
-    "@capacitor/android": "^8.6.2"
+    "@capacitor/android": "^8.6.2",
+    "@capacitor/status-bar": "^8.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
