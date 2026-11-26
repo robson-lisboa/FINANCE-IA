@@ -25,11 +25,11 @@ const categoryFor = (text: string) => {
 const MONTHS: Record<string, number> = { janeiro:1, jan:1, fevereiro:2, fev:2, marco:3, mar:3, abril:4, abr:4, maio:5, mai:5, junho:6, jun:6, julho:7, jul:7, agosto:8, ago:8, setembro:9, set:9, outubro:10, out:10, novembro:11, nov:11, dezembro:12, dez:12 };
 
 function detectInvoiceReferenceDate(text: string): Date | null {
-  const normalized = text.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  const normalized = text.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const monthPattern = "(janeiro|jan|fevereiro|fev|marco|mar|abril|abr|maio|mai|junho|jun|julho|jul|agosto|ago|setembro|set|outubro|out|novembro|nov|dezembro|dez)";
   const textual = normalized.match(new RegExp("(?:fatura|referencia|mes de)\\s*(?:de\\s*)?" + monthPattern + "\\s*(?:de|/)\\s*(20\\d{2})", "i"));
   if (textual) return new Date(Number(textual[2]), MONTHS[textual[1]] - 1, 15);
-  const labeledDate = normalized.match(/(?:vencimento|vence em|fechamento|fecha em|data de vencimento)[^\\d]{0,24}(\\d{1,2})[\\/.-](\\d{1,2})(?:[\\/.-](\\d{2,4}))?/i);
+  const labeledDate = normalized.match(/(?:vencimento|vence em|fechamento|fecha em|data de vencimento)[^\d]{0,24}(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](\d{2,4}))?/i);
   if (labeledDate) {
     const day = Number(labeledDate[1]), month = Number(labeledDate[2]);
     const yearText = labeledDate[3], year = yearText ? (yearText.length === 2 ? 2000 + Number(yearText) : Number(yearText)) : new Date().getFullYear();
@@ -40,7 +40,7 @@ function detectInvoiceReferenceDate(text: string): Date | null {
 }
 
 function parseBrazilianDate(value: string, referenceDate: Date | null): string | null {
-  const match = value.match(/\\b(\\d{1,2})[/.-](\\d{1,2})(?:[/.-](\\d{2,4}))?\\b/);
+  const match = value.match(/\b(\d{1,2})[/.-](\d{1,2})(?:[/.-](\d{2,4}))?\b/);
   if (!match) return null;
   const day = Number(match[1]), month = Number(match[2]);
   if (day < 1 || day > 31 || month < 1 || month > 12) return null;
@@ -60,19 +60,19 @@ function parseBrazilianDate(value: string, referenceDate: Date | null): string |
 }
 
 function parseRows(text: string): InvoiceRow[] {
-  const lines = text.replace(/[\\u00a0]/g," ").split(/[\\r\\n]+/).map(line => line.replace(/\\s+/g," ").trim()).filter(Boolean);
+  const lines = text.replace(/[\u00a0]/g," ").split(/[\r\n]+/).map(line => line.replace(/\s+/g," ").trim()).filter(Boolean);
   const referenceDate = detectInvoiceReferenceDate(text);
   const rows: InvoiceRow[] = [], seen = new Set<string>();
   for (const line of lines) {
-    if (/^(total|subtotal|pagamento|vencimento|saldo anterior|limite|encargos|juros|iof|parcelamento|melhor dia|resumo da fatura|anuidade|valor mínimo)\\b/i.test(line)) continue;
-    if (/\\b(estorno|crédito|credito|pagamento recebido|pagamento efetuado)\\b/i.test(line)) continue;
+    if (/^(total|subtotal|pagamento|vencimento|saldo anterior|limite|encargos|juros|iof|parcelamento|melhor dia|resumo da fatura|anuidade|valor mínimo)\b/i.test(line)) continue;
+    if (/\b(estorno|crédito|credito|pagamento recebido|pagamento efetuado)\b/i.test(line)) continue;
     const date = parseBrazilianDate(line, referenceDate);
     if (!date) continue;
-    const amountMatches = [...line.matchAll(/(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+,\\d{2})\\b/g)];
+    const amountMatches = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})\b/g)];
     if (!amountMatches.length) continue;
-    const amount = Number(amountMatches[amountMatches.length-1][1].replace(/\\./g,"").replace(",","."));
+    const amount = Number(amountMatches[amountMatches.length-1][1].replace(/\./g,"").replace(",","."));
     if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) continue;
-    const title = line.replace(/\\b\\d{1,2}[/.-]\\d{1,2}(?:[/.-]\\d{2,4})?\\b/,"").replace(/(?:R\\$\\s*)?(?:\\d{1,3}(?:\\.\\d{3})*|\\d+),\\d{2}\\b/g,"").replace(/\\s+/g," ").trim().replace(/^[\\-–|:]+|[\\-–|:]+$/g,"");
+    const title = line.replace(/\b\d{1,2}[/.-]\d{1,2}(?:[/.-]\d{2,4})?\b/,"").replace(/(?:R\$\s*)?(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}\b/g,"").replace(/\s+/g," ").trim().replace(/^[\-–|:]+|[\-–|:]+$/g,"");
     if (title.length < 3 || /cartão|fatura|titular|você pagou|compras nacionais/i.test(title)) continue;
     const key = [title.toLowerCase(),date,amount.toFixed(2)].join("|");
     if (seen.has(key)) continue;
