@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { createWorker } from "tesseract.js";
 import * as pdfjsLib from "pdfjs-dist";
 import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle, Trash2, Pencil } from "lucide-react";
-import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary } from "./lib/statement-parser.js";
+import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary, normalizeStatementDescription, isPotentialTransferMovement } from "./lib/statement-parser.js";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
@@ -208,7 +208,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   }, [rows, statementTotal, total]);
   const audit = useMemo(() => {
     const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
-    const existing = transactions.filter(item => item.type === "expense");
+    const existing = transactions;
     const exactMatches = rows.filter(row => existing.some(item => item.type === row.type && normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
     const duplicateMap = new Map<string, InvoiceRow[]>();
     rows.forEach(row => {
@@ -218,7 +218,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     const repeated = [...duplicateMap.values()].filter(group => group.length > 1);
     const installmentRows = rows.filter(row => /parc|parcela|\d{1,2}\s*\/\s*\d{1,2}/i.test(row.title));
     const totalAlreadyRegistered = exactMatches.reduce((sum, row) => sum + row.amount, 0);
-    return { exactMatches, repeated, installmentRows, totalAlreadyRegistered };
+    const potentialTransfers = rows.filter(row => isPotentialTransferMovement(row.title));
+    return { exactMatches, repeated, installmentRows, totalAlreadyRegistered, potentialTransfers };
   }, [rows, transactions]);
 
   const updateRow = (index: number, changes: Partial<InvoiceRow>) => {
@@ -333,11 +334,13 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
               <div><strong>{audit.exactMatches.length}</strong><span>já cadastrada(s)</span></div>
               <div><strong>{audit.repeated.length}</strong><span>possível(is) repetição(ões)</span></div>
               <div><strong>{audit.installmentRows.length}</strong><span>descrição(ões) com parcela</span></div>
+              <div><strong>{audit.potentialTransfers.length}</strong><span>transferência(s) para revisar</span></div>
             </div>
             {audit.exactMatches.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> {audit.exactMatches.length} lançamento(s) coincidem com registros existentes, somando {audit.totalAlreadyRegistered.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}. Eles serão ignorados na importação.</p>}
             {audit.repeated.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> Uma descrição com o mesmo valor aparece mais de uma vez em datas diferentes. Pode ser recorrência normal; confira o histórico.</p>}
             {audit.installmentRows.length > 0 && <p className="invoice-audit-note">Encontramos indicações de parcelamento em algumas descrições. Confirme se o valor lido é o valor da parcela, não o valor total da compra.</p>}
-            {audit.exactMatches.length === 0 && audit.repeated.length === 0 && audit.installmentRows.length === 0 && <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma coincidência exata ou indicação de parcela encontrada nos critérios automáticos.</p>}
+            {audit.potentialTransfers.length > 0 && <p className="invoice-audit-warning"><AlertTriangle size={15}/> {audit.potentialTransfers.length} movimentação(ões) parecem PIX ou transferência. Confira se alguma foi feita entre contas suas: nesse caso, não deve ser contabilizada como receita ou despesa. O sistema não vai presumir isso nem excluir valores automaticamente.</p>}
+            {audit.exactMatches.length === 0 && audit.repeated.length === 0 && audit.installmentRows.length === 0 && audit.potentialTransfers.length === 0 && <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma coincidência exata ou indicação de parcela encontrada nos critérios automáticos.</p>}
             <p className="invoice-audit-disclaimer">A auditoria compara descrição, data e valor com seus lançamentos. Uma coincidência é um alerta para revisão, não prova de cobrança indevida.</p>
           </section>
           {showItems && <div className="invoice-rows">{rows.map((row, index) => <div className="invoice-row invoice-row-editable" key={index}>
