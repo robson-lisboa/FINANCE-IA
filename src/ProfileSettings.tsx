@@ -1,10 +1,27 @@
 import { useEffect, useState } from "react";
-import { Activity, CheckCircle2, Save, UserRound } from "lucide-react";
+import { CalendarDays, CheckCircle2, Mail, Save, ShieldCheck, UserRound } from "lucide-react";
 import { fetchPersonalProfile, updatePersonalProfile, type AuthSession, type PersonalProfile } from "./lib/supabase";
 
+const EMPTY_PROFILE: PersonalProfile = { firstName: "", lastName: "", birthDate: "", age: null, showNameInSidebar: false };
+
+function getAge(date: string): number | null {
+  if (!date) return null;
+  const birth = new Date(date + "T00:00:00");
+  if (Number.isNaN(birth.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - birth.getFullYear();
+  if (now.getMonth() < birth.getMonth() || (now.getMonth() === birth.getMonth() && now.getDate() < birth.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
+function initials(firstName: string, lastName: string) {
+  const first = firstName.trim().split(/\s+/)[0]?.[0] || "";
+  const last = lastName.trim().split(/\s+/).filter(Boolean).slice(-1)[0]?.[0] || "";
+  return (first + last).toLocaleUpperCase("pt-BR") || "EU";
+}
+
 export default function ProfileSettings({ session }: { session: AuthSession }) {
-  const [profile, setProfile] = useState<PersonalProfile>({ firstName: "", lastName: "", age: null });
-  const [ageInput, setAgeInput] = useState("");
+  const [profile, setProfile] = useState<PersonalProfile>(EMPTY_PROFILE);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(null);
@@ -12,9 +29,7 @@ export default function ProfileSettings({ session }: { session: AuthSession }) {
   useEffect(() => {
     let active = true;
     fetchPersonalProfile(session).then(value => {
-      if (!active) return;
-      setProfile(value);
-      setAgeInput(value.age === null ? "" : String(value.age));
+      if (active) setProfile(value);
     }).catch(error => {
       if (active) setFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível carregar o perfil." });
     }).finally(() => { if (active) setLoading(false); });
@@ -23,21 +38,26 @@ export default function ProfileSettings({ session }: { session: AuthSession }) {
 
   const save = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const age = ageInput.trim() ? Number(ageInput) : null;
-    if (age !== null && (!Number.isInteger(age) || age < 13 || age > 110)) {
-      setFeedback({ type: "error", message: "Informe uma idade válida entre 13 e 110 anos." });
+    const firstName = profile.firstName.trim();
+    const lastName = profile.lastName.trim();
+    if (!firstName) {
+      setFeedback({ type: "error", message: "Informe seu nome." });
       return;
     }
-    if (!profile.firstName.trim()) {
-      setFeedback({ type: "error", message: "Informe seu primeiro nome para a IA reconhecer seu perfil." });
-      return;
+    if (profile.birthDate) {
+      const birth = new Date(profile.birthDate + "T00:00:00");
+      const age = getAge(profile.birthDate);
+      if (Number.isNaN(birth.getTime()) || birth > new Date() || age === null || age > 110) {
+        setFeedback({ type: "error", message: "Confira a data de nascimento informada." });
+        return;
+      }
     }
     setSaving(true);
     setFeedback(null);
     try {
-      const saved = await updatePersonalProfile(session, { ...profile, firstName: profile.firstName.trim(), lastName: profile.lastName.trim(), age });
+      const saved = await updatePersonalProfile(session, { ...profile, firstName, lastName, age: getAge(profile.birthDate) });
       setProfile(saved);
-      setFeedback({ type: "success", message: "Perfil salvo. A IA usará essas informações nas próximas análises." });
+      setFeedback({ type: "success", message: "Seus dados foram atualizados com segurança." });
     } catch (error) {
       setFeedback({ type: "error", message: error instanceof Error ? error.message : "Não foi possível salvar seu perfil." });
     } finally {
@@ -45,20 +65,29 @@ export default function ProfileSettings({ session }: { session: AuthSession }) {
     }
   };
 
+  const fullName = [profile.firstName, profile.lastName].filter(Boolean).join(" ");
+
   return <section className="page-section profile-page">
-    <div className="page-heading"><div><p className="eyebrow">IDENTIDADE E PERSONALIZAÇÃO</p><h1>Meu perfil</h1><p className="muted-text">Ajude o Finance IA a entender seu contexto para personalizar as análises.</p></div></div>
-    <form className="profile-card" onSubmit={save}>
-      <div className="panel-heading"><div className="insight-title"><div className="ai-icon"><UserRound size={19}/></div><div><h2>Seus dados pessoais</h2><p>Informações que acompanham sua conta.</p></div></div><span className="ai-live-label"><i/> Perfil</span></div>
-      <div className="profile-intro"><span className="profile-intro-icon"><Activity size={20}/></span><div><strong>Uma IA que considera sua fase de vida</strong><p>Seu nome ajuda a conversa ficar mais natural. Sua idade pode contextualizar horizontes de planejamento. As recomendações continuam baseadas nos seus dados financeiros e objetivos informados.</p></div></div>
-      {loading ? <p className="profile-feedback">Carregando seu perfil...</p> : <>
-        <div className="profile-fields">
-          <label>Nome<input autoComplete="given-name" maxLength={60} value={profile.firstName} onChange={event => setProfile(current => ({ ...current, firstName: event.target.value }))} placeholder="Seu primeiro nome" required/></label>
+    <div className="page-heading"><div><p className="eyebrow">SUA CONTA</p><h1>Meu perfil</h1><p className="muted-text">Seus dados pessoais e preferências de identificação.</p></div></div>
+    <form className="profile-card profile-settings-card" onSubmit={save}>
+      <div className="profile-hero">
+        <div className="profile-large-avatar">{initials(profile.firstName, profile.lastName)}</div>
+        <div className="profile-hero-copy"><span className="eyebrow">PERFIL FINANCE IA</span><h2>{fullName || "Configure seu nome"}</h2><p>{session.user.email || "E-mail da conta"}</p></div>
+        <span className="profile-secure-tag"><ShieldCheck size={14}/> Privado</span>
+      </div>
+      {loading ? <p className="profile-feedback">Carregando seus dados...</p> : <>
+        <div className="profile-section-title"><UserRound size={17}/><div><h3>Dados pessoais</h3><p>Essas informações ficam vinculadas à sua conta.</p></div></div>
+        <div className="profile-fields profile-fields-standard">
+          <label>Nome<input autoComplete="given-name" maxLength={60} value={profile.firstName} onChange={event => setProfile(current => ({ ...current, firstName: event.target.value }))} placeholder="Seu nome" required/></label>
           <label>Sobrenome<input autoComplete="family-name" maxLength={80} value={profile.lastName} onChange={event => setProfile(current => ({ ...current, lastName: event.target.value }))} placeholder="Seu sobrenome"/></label>
-          <label>Idade<input type="number" inputMode="numeric" min="13" max="110" value={ageInput} onChange={event => setAgeInput(event.target.value)} placeholder="Ex.: 35"/></label>
+          <label className="profile-birth-field">Data de nascimento<span className="profile-input-icon"><CalendarDays size={15}/><input type="date" autoComplete="bday" max={new Date().toISOString().slice(0,10)} value={profile.birthDate} onChange={event => setProfile(current => ({ ...current, birthDate: event.target.value }))}/></span></label>
+          <label className="profile-email-field">E-mail da conta<span className="profile-readonly-field"><Mail size={15}/><input value={session.user.email || ""} readOnly aria-readonly="true"/></span></label>
         </div>
-        <div className="profile-save-row"><span className={feedback ? "profile-feedback "+feedback.type : "profile-feedback"} role="status">{feedback?.message || "Você pode atualizar essas informações quando quiser."}</span><button className="primary-btn" type="submit" disabled={saving}><Save size={15}/>{saving ? "Salvando..." : "Salvar perfil"}</button></div>
+        <div className="profile-section-title profile-preferences-title"><ShieldCheck size={17}/><div><h3>Privacidade e exibição</h3><p>Você decide o que aparece no menu lateral.</p></div></div>
+        <label className="profile-display-option"><span><strong>Mostrar meu nome no menu</strong><small>Desativado: aparece apenas “Meu perfil” e suas iniciais. Ativado: seu nome também será exibido.</small></span><input type="checkbox" checked={profile.showNameInSidebar} onChange={event => setProfile(current => ({ ...current, showNameInSidebar: event.target.checked }))}/></label>
+        <div className="profile-save-row"><span className={feedback ? "profile-feedback "+feedback.type : "profile-feedback"} role="status">{feedback?.message || "Você pode alterar essas informações quando quiser."}</span><button className="primary-btn" type="submit" disabled={saving}><Save size={15}/>{saving ? "Salvando..." : "Salvar alterações"}</button></div>
       </>}
-      <p className="profile-privacy"><CheckCircle2 size={12} style={{display:"inline",verticalAlign:"-2px",marginRight:5}}/>Seu perfil fica salvo nos metadados da sua conta Supabase e é enviado ao Finance IA no servidor autenticado. Não aparece publicamente.</p>
+      <p className="profile-privacy"><CheckCircle2 size={13}/> Seus dados não são exibidos publicamente. A data de nascimento é usada apenas para calcular sua idade e contextualizar o planejamento.</p>
     </form>
   </section>;
 }
