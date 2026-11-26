@@ -707,3 +707,55 @@
 .waste-savings-heading strong{font-size:11px;color:var(--text)}
 .waste-selection-actions{display:flex;gap:12px;padding:3px 0 8px}
 .waste-selection-actions .text-btn{font-size:10px}
+
+
+/* Seletor de período: texto legível no campo e na lista nativa */
+.month-filter-control {
+  color: var(--text);
+  background: var(--panel2);
+  border-color: var(--line);
+}
+.month-filter-control > span {
+  color: var(--muted);
+  font-weight: 600;
+}
+.month-filter-control select {
+  min-height: 38px;
+  padding: 0 28px 0 9px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background-color: var(--panel);
+  color: var(--text);
+  font-weight: 700;
+  opacity: 1;
+  color-scheme: dark;
+}
+.month-filter-control select option {
+  background-color: #151e30;
+  color: #eef1f8;
+}
+.theme-light .month-filter-control {
+  background: #fff;
+  border-color: #dce2ed;
+  color: #202a3b;
+}
+.theme-light .month-filter-control select {
+  background-color: #f5f7fb;
+  border-color: #dce2ed;
+  color: #202a3b;
+  color-scheme: light;
+}
+.theme-light .month-filter-control select option {
+  background-color: #fff;
+  color: #202a3b;
+}
+.global-month-filter select {
+  min-width: 145px;
+  max-width: 190px;
+}
+@media(max-width:640px) {
+  .global-month-filter select {
+    min-width: 0;
+    max-width: 125px;
+  }
+}
