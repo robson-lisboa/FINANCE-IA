@@ -593,7 +593,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
 
         {(settings.widgets.chart || settings.widgets.advisor) && <section className="content-grid" style={{ gridTemplateColumns: settings.widgets.chart && settings.widgets.advisor ? undefined : "minmax(0, 1fr)" }}>
           {settings.widgets.chart && <div className="panel chart-panel">
-            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Seis meses até {monthOptionLabel(transactionMonth)}, calculados pelos seus lançamentos</p></div><span className="select-chip">6 meses até {monthOptionLabel(transactionMonth)}</span></div>
+            <div className="panel-heading"><div><h2>Fluxo financeiro</h2><p>Últimos seis meses até {monthOptionLabel(transactionMonth)} · somente valores realizados</p></div><span className="select-chip">Últimos 6 meses</span></div>
             <div className="chart-legend"><span><i className="legend-income"/> Receitas</span><span><i className="legend-expense"/> Despesas</span></div>
             <div className="chart-wrap">
               <ResponsiveContainer width="100%" height="100%">
@@ -604,7 +604,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                   </defs>
                   <CartesianGrid stroke="#242b3d" strokeDasharray="4 5" vertical={false}/>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 12 }}/>
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 11 }} tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: settings.currency, notation: "compact", maximumFractionDigits: 1 }).format(v)}/>
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 11 }} tickFormatter={(v) => "R$ " + new Intl.NumberFormat("pt-BR", { notation: "compact", maximumFractionDigits: 1 }).format(v)}/>
                   <Tooltip contentStyle={{ background: "#151c2d", border: "1px solid #303950", borderRadius: 12, color: "#f4f6fb" }} formatter={(value) => formatMoney(Number(value))}/>
                   <Area type="monotone" dataKey="income" name="Receitas" stroke={settings.customAccent || ACCENT_COLORS[settings.accent]} strokeWidth={2.5} fill="url(#incomeFill)"/>
                   <Area type="monotone" dataKey="expenses" name="Despesas" stroke="#e45f6d" strokeWidth={2.5} fill="url(#expenseFill)"/>
