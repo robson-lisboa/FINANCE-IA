@@ -59,7 +59,7 @@ export default function FinancialEvolution({ transactions, selectedMonth, format
     {!hasComparison ? <div className="evolution-empty"><strong>Precisamos de mais histórico para comparar.</strong><span>Cadastre lançamentos no mês selecionado e no mês anterior. A comparação usa o mesmo número de dias quando o mês selecionado é o atual.</span></div> : <>
       <div className="evolution-result">
         <div className="evolution-result-icon">{improved ? <TrendingUp size={19}/> : worsened ? <TrendingDown size={19}/> : <Activity size={19}/>}</div>
-        <div><span>Resultado em relação a " + previousLabel + "</span>
+        <div><span>{"Resultado em relação a " + previousLabel}</span>
           <strong className={improved ? "evolution-positive" : worsened ? "evolution-negative" : ""}>{delta > 0 ? "+" : delta < 0 ? "−" : ""}{formatMoney(Math.abs(delta))}</strong>
           <small>{improved ? "Seu resultado melhorou." : worsened ? "Seu resultado piorou." : "Seu resultado ficou praticamente igual."}</small>
         </div>
