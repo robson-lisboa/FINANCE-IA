@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, ShieldCheck, ShieldAlert, Activity } from "lucide-react";
 import { parseBrazilianMoney } from "./lib/money-core.js";
+import { filterRealizedTransactions } from "./lib/financial-core";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
@@ -16,7 +17,7 @@ export default function FinancialStressTest({ transactions, formatMoney }: Props
     const months = Array.from({ length: 3 }, (_, index) => {
       const date = new Date(now.getFullYear(), now.getMonth() - 3 + index, 1);
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-      const rows = transactions.filter(t => t.date.startsWith(key) && Number.isFinite(Number(t.amount)));
+      const rows = filterRealizedTransactions(transactions).filter(t => t.date.startsWith(key) && Number.isFinite(Number(t.amount)));
       return {
         key,
         income: rows.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0),
