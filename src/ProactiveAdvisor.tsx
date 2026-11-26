@@ -53,7 +53,7 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
       title = "Nenhum risco prioritário apareceu nos registros";
       action = "Continue registrando as movimentações e mantenha uma reserva para imprevistos. O diagnóstico melhora com dados completos.";
       evidence = `${formatMoney(income)} em receitas e ${formatMoney(expenses)} em despesas registrados no período selecionado.`;
-      if (income > expenses && expenses > 0 && !projectionHasMinimumEvidence) {
+      if (isCurrentMonth && income > expenses && expenses > 0 && !projectionHasMinimumEvidence) {
         evidence += ` A projeção de fechamento foi omitida: são necessários ao menos 5 despesas distribuídas em 3 dias diferentes para reduzir o risco de um alerta baseado em poucos registros.`;
       }
     }
