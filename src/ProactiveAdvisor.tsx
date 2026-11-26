@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, ShieldCheck, Sparkles, Target } from "lucide-react";
+import { filterRealizedTransactions, filterScheduledTransactions } from "./lib/financial-core";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; selectedMonth: string };
@@ -13,8 +14,11 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
     const currentMonthKey = todayKey.slice(0, 7);
     const includeOnlyRealized = selectedMonth >= currentMonthKey;
     const selectedTransactions = transactions.filter(t => t.date.startsWith(selectedMonth) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
-    const scheduledCount = selectedTransactions.filter(t => t.date > todayKey).length;
-    const month = selectedTransactions.filter(t => !includeOnlyRealized || t.date <= todayKey);
+    const month = filterRealizedTransactions(selectedTransactions);
+    const scheduled = filterScheduledTransactions(selectedTransactions);
+    const scheduledCount = scheduled.length;
+    const scheduledIncome = scheduled.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
+    const scheduledExpenses = scheduled.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     const income = month.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = month.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenseEntries = month.filter(t => t.type === "expense");
@@ -34,10 +38,14 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
     let title = "Vamos construir seu diagnóstico";
     let action = "Registre suas receitas e despesas para que o Finance IA identifique padrões reais e priorize o que merece atenção.";
     let evidence = `Ainda não há lançamentos suficientes em ${new Date(year, monthNumber - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })} para uma recomendação personalizada.`;
-    if (month.length > 0 && income === 0 && expenses > 0) {
-      title = "Falta registrar suas receitas";
-      action = "Cadastre sua renda mensal. Sem ela, não é possível avaliar se os gastos cabem no orçamento.";
-      evidence = `${month.length} lançamento(s) encontrado(s), com ${formatMoney(expenses)} em despesas e nenhuma receita registrada no período selecionado.`;
+    if (month.length > 0 && income === 0 && expenses > 0 && scheduledIncome > 0) {
+      title = "Há receitas agendadas, mas ainda não realizadas";
+      action = "As receitas futuras já estão cadastradas. Até hoje, porém, nenhuma entrada foi realizada; acompanhe a confirmação desses recebimentos.";
+      evidence = `${formatMoney(expenses)} em despesas realizadas e ${formatMoney(scheduledIncome)} em receitas agendadas. As receitas futuras não entram no resultado realizado.`;
+    } else if (month.length > 0 && income === 0 && expenses > 0) {
+      title = "Ainda não há receitas realizadas neste período";
+      action = "Confira se sua renda já foi cadastrada com a data correta. O diagnóstico considera como realizada somente uma receita com data até hoje.";
+      evidence = `${month.length} lançamento(s) realizado(s), com ${formatMoney(expenses)} em despesas e nenhuma receita realizada no período selecionado.`;
     } else if (income > 0 && expenses > income) {
       level = "critical";
       title = "As despesas já passaram das receitas";
@@ -62,7 +70,7 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
         evidence += ` A projeção de fechamento foi omitida: são necessários ao menos 5 despesas distribuídas em 3 dias diferentes para reduzir o risco de um alerta baseado em poucos registros.`;
       }
     }
-    return { level, title, action, evidence, income, expenses, count: month.length, scheduledCount, top, share };
+    return { level, title, action, evidence, income, expenses, count: month.length, scheduledCount, scheduledIncome, scheduledExpenses, top, share };
   }, [transactions, formatMoney, selectedMonth]);
 
   return <section className={`panel proactive-advisor ${result.level}`}>
@@ -72,6 +80,6 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
       <div><span className="insight-label">RECOMENDAÇÃO PRINCIPAL</span><h3>{result.title}</h3><p>{result.action}</p></div>
     </div>
     <div className="proactive-evidence"><strong><CheckCircle2 size={14}/> Evidência</strong><p>{result.evidence}</p></div>
-    <div className="proactive-footer"><span>{result.count} lançamento(s) realizado(s){result.scheduledCount > 0 ? ` · ${result.scheduledCount} agendado(s), fora do resultado` : ""}</span><span>Não representa saldo bancário</span></div>
+    <div className="proactive-footer"><span>{result.count} lançamento(s) realizado(s){result.scheduledCount > 0 ? ` · ${result.scheduledCount} agendado(s): ${formatMoney(result.scheduledIncome)} em receitas e ${formatMoney(result.scheduledExpenses)} em despesas` : ""}</span><span>Não representa saldo bancário</span></div>
   </section>;
 }
