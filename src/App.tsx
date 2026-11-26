@@ -550,7 +550,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
                 {filtered.length === 0 ? <div className="empty-state"><FileText size={24}/><strong>Nenhum lançamento encontrado</strong><span>Cadastre uma movimentação ou altere sua busca.</span></div> : filtered.map(t => (
                   <div className="transaction-row" key={t.id}>
                     <div className={`transaction-icon ${t.type}`}>{t.type === "income" ? <ArrowDownLeft size={17}/> : <ArrowUpRight size={17}/>}</div>
-                    <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}</span></div>
+                    <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}{t.date > today ? " · Agendado" : ""}</span></div>
                     <strong className={`transaction-amount ${t.type}`}>{t.type === "income" ? "+" : "−"} {formatMoney(t.amount)}</strong>
                     <button className="edit-btn" onClick={() => openEditTransaction(t)} title="Editar lançamento" aria-label={`Editar ${t.title}`}><Pencil size={15}/></button>
                     <button className="delete-btn" onClick={() => deleteTransaction(t.id)} title="Excluir lançamento" aria-label={`Excluir ${t.title}`}><Trash2 size={15}/></button>
@@ -627,7 +627,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               {filtered.length === 0 ? <div className="empty-state"><FileText size={24}/><strong>Nenhum lançamento encontrado</strong><span>Adicione uma movimentação ou altere sua busca.</span></div> : filtered.slice(0, 8).map(t => (
                 <div className="transaction-row" key={t.id}>
                   <div className={`transaction-icon ${t.type}`}>{t.type === "income" ? <ArrowDownLeft size={17}/> : <ArrowUpRight size={17}/>}</div>
-                  <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}</span></div>
+                  <div className="transaction-main"><strong>{t.title}</strong><span>{t.category} · {new Date(`${t.date}T12:00:00`).toLocaleDateString("pt-BR")}{t.date > today ? " · Agendado" : ""}</span></div>
                   <strong className={`transaction-amount ${t.type}`}>{t.type === "income" ? "+" : "−"} {formatMoney(t.amount)}</strong>
                   <button className="edit-btn" onClick={() => openEditTransaction(t)} title="Editar lançamento" aria-label={`Editar ${t.title}`}><Pencil size={15}/></button>
                   <button className="delete-btn" onClick={() => deleteTransaction(t.id)} title="Excluir lançamento" aria-label={`Excluir ${t.title}`}><Trash2 size={15}/></button>
