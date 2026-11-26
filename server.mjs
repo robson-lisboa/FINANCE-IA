@@ -85,6 +85,8 @@ app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
   if (!rateLimit(req.user.id)) return res.status(429).json({ error: "Limite temporário de análises atingido. Aguarde um minuto." });
   try {
     const headers = { apikey: supabaseKey, Authorization: "Bearer " + req.accessToken };
+    const profileMetadata = req.user?.user_metadata && typeof req.user.user_metadata === "object" ? req.user.user_metadata : {};
+    const personalProfile = { firstName: typeof profileMetadata.finance_first_name === "string" ? profileMetadata.finance_first_name.slice(0, 60) : "", lastName: typeof profileMetadata.finance_last_name === "string" ? profileMetadata.finance_last_name.slice(0, 80) : "", age: Number.isInteger(Number(profileMetadata.finance_age)) && Number(profileMetadata.finance_age) >= 13 && Number(profileMetadata.finance_age) <= 110 ? Number(profileMetadata.finance_age) : null };
     const response = await fetch(supabaseUrl + "/rest/v1/transactions?select=title,category,date,amount,type&order=date.desc&limit=250", { headers });
     if (!response.ok) throw new Error("Não foi possível consultar os lançamentos.");
     const rows = await response.json();
@@ -103,7 +105,7 @@ app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
       const list=relevant.filter(item=>item.date.startsWith(key));
       return {month:key,count:list.length,income:list.filter(x=>x.type==="income").reduce((a,x)=>a+Number(x.amount),0),expenses:list.filter(x=>x.type==="expense").reduce((a,x)=>a+Number(x.amount),0)};
     }).reverse();
-    const prompt = `Você é o analista financeiro do Finance IA. Analise os dados reais abaixo e produza alertas úteis, personalizados e conservadores.
+    const prompt = `Você é o analista financeiro do Finance IA. Analise os dados reais abaixo e produza alertas úteis, personalizados e conservadores. Considere o perfil pessoal informado apenas como contexto, sem presumir renda, saúde, patrimônio, dependentes ou objetivos. A idade pode ajudar a contextualizar horizonte de planejamento, mas nunca deve determinar sozinha uma recomendação.
 Responda SOMENTE com JSON válido no formato: {"summary":"frase curta","alerts":[{"title":"...","severity":"critical|warning|info","message":"...","evidence":"...","action":"..."}]}.
 Regras obrigatórias:
 - Use exclusivamente os dados fornecidos. Não invente compromissos, saldo bancário, contas futuras, causas, preços de mercado ou perfil pessoal.
@@ -116,6 +118,7 @@ Regras obrigatórias:
 - No máximo 5 alertas. Priorize severidade e impacto. Não repita alertas equivalentes.
 - Não trate ausência de registros como prova de ausência de gastos. Não chame resultado dos lançamentos de saldo bancário.
 - Português brasileiro, claro e conciso. Não dê recomendação de investimento.
+Perfil informado pelo usuário: ${JSON.stringify(personalProfile)}. Se campos estiverem vazios, não tente adivinhar.
 Mês: ${selectedMonth}
 Resumo calculado pelo servidor para conferência: ${JSON.stringify({income,expenses,result:income-expenses,count:monthRows.length,previousMonths})}
 Lançamentos disponíveis (até 250, dados mais recentes): ${JSON.stringify(relevant)}`;
@@ -155,6 +158,8 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
 
   try {
     const headers = { apikey: supabaseKey, Authorization: "Bearer " + req.accessToken };
+    const profileMetadata = req.user?.user_metadata && typeof req.user.user_metadata === "object" ? req.user.user_metadata : {};
+    const personalProfile = { firstName: typeof profileMetadata.finance_first_name === "string" ? profileMetadata.finance_first_name.slice(0, 60) : "", lastName: typeof profileMetadata.finance_last_name === "string" ? profileMetadata.finance_last_name.slice(0, 80) : "", age: Number.isInteger(Number(profileMetadata.finance_age)) && Number(profileMetadata.finance_age) >= 13 && Number(profileMetadata.finance_age) <= 110 ? Number(profileMetadata.finance_age) : null };
     const [transactionsResponse, goalsResponse] = await Promise.all([
       fetch(supabaseUrl + "/rest/v1/transactions?select=title,category,date,amount,type&order=date.desc&limit=120", { headers }),
       fetch(supabaseUrl + "/rest/v1/financial_goals?select=title,target_amount,saved_amount,deadline&order=deadline.asc", { headers })
@@ -170,7 +175,11 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
       ? req.body.history.filter(item => item && ["user", "assistant"].includes(item.role) && typeof item.content === "string").slice(-8).map(item => ({ role: item.role, content: item.content.slice(0, 3000) }))
       : [];
 
-    const systemPrompt = `Você é o Finance IA, um analista financeiro pessoal inteligente. Responda sempre em português brasileiro, com clareza, objetividade e linguagem natural.
+    const systemPrompt = `Você é o Finance IA, um analista financeiro pessoal inteligente. Responda sempre em português brasileiro, com clareza, objetividade e linguagem natural. Reconheça a pessoa pelo perfil abaixo, quando disponível, e adapte a explicação ao contexto sem estereótipos. Use nome e sobrenome com naturalidade, sem repetir em toda resposta. A idade é apenas contexto para explicar horizontes de planejamento; não presuma renda, saúde, patrimônio, família, aposentadoria ou objetivos com base nela. Se não houver perfil cadastrado, não invente dados.
+
+PERFIL PESSOAL INFORMADO PELO USUÁRIO:
+${JSON.stringify(personalProfile)}
+
 
 RECONHECIMENTO DE INTENÇÃO:
 - Primeiro identifique a intenção da mensagem: saudação, agradecimento, pergunta sobre lançamentos, cálculo, comparação, metas, fatura, compra ou pedido de diagnóstico.
