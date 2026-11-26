@@ -90,7 +90,7 @@ function parseRows(text: string): InvoiceRow[] {
   const referenceDate = detectInvoiceReferenceDate(text);
   const rows: InvoiceRow[] = [], seen = new Set<string>();
   for (const line of lines) {
-    if (/\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|saldo disponível|saldo disponivel|saldo final|saldo inicial|limite total|limite disponivel|limite disponível|limite utilizado|encargos|iof|anuidade|valor minimo|valor mínimo|resumo da fatura|melhor dia de compra|vencimento|total de creditos|total de debitos)\b/i.test(line)) continue;
+    if (/\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|saldo disponível|saldo disponivel|saldo final|saldo inicial|limite total|limite disponivel|limite disponível|limite utilizado|encargos|iof|anuidade|valor minimo|valor mínimo|resumo da fatura|melhor dia de compra|vencimento|total de creditos|total de debitos|saldo do dia|saldo atual|saldo disponível|saldo disponivel|total do dia|subtotal)\b/i.test(line)) continue;
     const date = parseBrazilianDate(line, referenceDate);
     if (!date) continue;
     const amountMatches = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})/g)];
@@ -298,22 +298,22 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}\n        {documentNotice && <div className="invoice-audit invoice-audit-warning" role="status"><strong><AlertTriangle size={16}/> Extrato bancário identificado</strong><p>{documentNotice}</p><p>Para conciliar corretamente, copie ou exporte a tabela detalhada de movimentações. O saldo inicial e o saldo final entram apenas na conferência, nunca como receita ou despesa.</p></div>}
         {rows.length > 0 && <div className="invoice-review">
           <div className="invoice-review-head"><strong>{rows.length} movimentação(ões) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
-          {detectedPeriod && <p className="invoice-period-detected"><CheckCircle2 size={15}/> Período da fatura identificado: <strong>{detectedPeriod}</strong>. Datas sem ano foram ajustadas com base nesse período.</p>}
-          {statementTotal !== null && <div className="invoice-statement-total"><span>Total informado na fatura</span><strong>{statementTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>}
+          {detectedPeriod && <p className="invoice-period-detected"><CheckCircle2 size={15}/> Período identificado: <strong>{detectedPeriod}</strong>. Datas sem ano foram ajustadas com base nesse período.</p>}
+          {statementTotal !== null && <div className="invoice-statement-total"><span>Total informado no documento</span><strong>{statementTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>}
           <button type="button" className="invoice-total-preview" aria-expanded={showItems} onClick={() => setShowItems(value => !value)}>
             <span><strong>Despesas identificadas</strong><small>{showItems ? "Toque para ocultar os lançamentos" : "Toque para ver todos os lançamentos"}</small></span>
             <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} <span aria-hidden="true">{showItems ? "−" : "+"}</span></strong>
           </button>
-          {incomeTotal > 0 && <p className="invoice-reconciliation">Receitas identificadas: <strong>{incomeTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. Despesas identificadas: <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>.</p>}\n          {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total da fatura e as compras reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
-          <section className="invoice-audit" aria-label="Validação de segurança da fatura">
+          {incomeTotal > 0 && <p className="invoice-reconciliation">Receitas identificadas: <strong>{incomeTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. Despesas identificadas: <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>.</p>}\n          {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total informado no documento e as despesas reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
+          <section className="invoice-audit" aria-label="Validação de segurança do documento">
             <div className="invoice-audit-heading"><span className="eyebrow">REGRAS DE CONFERÊNCIA</span><strong>Verificações antes de importar</strong></div>
             {validation.length > 0
               ? <ul className="invoice-audit-warning">{validation.map((issue, index) => <li key={index}>{issue}</li>)}</ul>
               : <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma inconsistência básica detectada. Mesmo assim, confira o documento original.</p>}
             <label className="invoice-review-confirm"><input type="checkbox" checked={reviewAcknowledged} onChange={event => setReviewAcknowledged(event.target.checked)} /> Conferi os valores e os tipos de todas as movimentações no documento original.</label>
           </section>
-          <section className="invoice-audit" aria-label="Auditoria da fatura">
-            <div className="invoice-audit-heading"><span className="eyebrow">AUDITORIA AUTOMÁTICA</span><strong>O que encontrei nesta fatura</strong></div>
+          <section className="invoice-audit" aria-label="Auditoria das movimentações">
+            <div className="invoice-audit-heading"><span className="eyebrow">AUDITORIA AUTOMÁTICA</span><strong>O que encontrei neste documento</strong></div>
             <div className="invoice-audit-grid">
               <div><strong>{audit.exactMatches.length}</strong><span>já cadastrada(s)</span></div>
               <div><strong>{audit.repeated.length}</strong><span>possível(is) repetição(ões)</span></div>
