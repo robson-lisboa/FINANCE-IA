@@ -43,6 +43,23 @@ async function verifyUser(req, res, next) {
   }
 }
 
+async function fetchAllRows(path, headers) {
+  const pageSize = 1000;
+  const rows = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const separator = path.includes("?") ? "&" : "?";
+    const response = await fetch(supabaseUrl + "/rest/v1/" + path + separator + "limit=" + pageSize, {
+      headers: { ...headers, "Range-Unit": "items", Range: `${offset}-${offset + pageSize - 1}` }
+    });
+    if (!response.ok) throw new Error("Não foi possível consultar o histórico financeiro.");
+    const page = await response.json();
+    if (!Array.isArray(page)) throw new Error("O histórico financeiro retornou um formato inválido.");
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return rows;
+}
+
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
 
 app.delete("/api/account", verifyUser, async (req, res) => {
@@ -81,14 +98,12 @@ app.post("/api/assistant/alerts", verifyUser, async (req, res) => {
     const headers = { apikey: supabaseKey, Authorization: "Bearer " + req.accessToken };
     const profileMetadata = req.user?.user_metadata && typeof req.user.user_metadata === "object" ? req.user.user_metadata : {};
     const personalProfile = { firstName: typeof profileMetadata.finance_first_name === "string" ? profileMetadata.finance_first_name.slice(0, 60) : "", lastName: typeof profileMetadata.finance_last_name === "string" ? profileMetadata.finance_last_name.slice(0, 80) : "", age: Number.isInteger(Number(profileMetadata.finance_age)) && Number(profileMetadata.finance_age) >= 13 && Number(profileMetadata.finance_age) <= 110 ? Number(profileMetadata.finance_age) : null };
-    const response = await fetch(supabaseUrl + "/rest/v1/transactions?select=title,category,date,amount,type&order=date.desc&limit=250", { headers });
-    if (!response.ok) throw new Error("Não foi possível consultar os lançamentos.");
-    const rows = await response.json();
-    const transactions = Array.isArray(rows) ? rows.filter(item =>
+    const rows = await fetchAllRows("transactions?select=title,category,date,amount,type&order=date.desc", headers);
+    const transactions = rows.filter(item =>
       item && typeof item.title === "string" && typeof item.date === "string" &&
       Number.isFinite(Number(item.amount)) && ["income", "expense"].includes(item.type)
-    ) : [];
-    const relevant = transactions.filter(item => item.date.slice(0, 7) <= selectedMonth).slice(0, 250);
+    );
+    const relevant = transactions.filter(item => item.date.slice(0, 7) <= selectedMonth).slice(0, 500);
     const monthRows = relevant.filter(item => item.date.startsWith(selectedMonth));
     const income = monthRows.filter(item => item.type === "income").reduce((sum,item)=>sum+Number(item.amount),0);
     const expenses = monthRows.filter(item => item.type === "expense").reduce((sum,item)=>sum+Number(item.amount),0);
@@ -155,16 +170,13 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
     const headers = { apikey: supabaseKey, Authorization: "Bearer " + req.accessToken };
     const profileMetadata = req.user?.user_metadata && typeof req.user.user_metadata === "object" ? req.user.user_metadata : {};
     const personalProfile = { firstName: typeof profileMetadata.finance_first_name === "string" ? profileMetadata.finance_first_name.slice(0, 60) : "", lastName: typeof profileMetadata.finance_last_name === "string" ? profileMetadata.finance_last_name.slice(0, 80) : "", age: Number.isInteger(Number(profileMetadata.finance_age)) && Number(profileMetadata.finance_age) >= 13 && Number(profileMetadata.finance_age) <= 110 ? Number(profileMetadata.finance_age) : null };
-    const [transactionsResponse, goalsResponse] = await Promise.all([
-      fetch(supabaseUrl + "/rest/v1/transactions?select=title,category,date,amount,type&order=date.desc&limit=120", { headers }),
+    const [safeTransactions, goalsResponse] = await Promise.all([
+      fetchAllRows("transactions?select=title,category,date,amount,type&order=date.desc", headers),
       fetch(supabaseUrl + "/rest/v1/financial_goals?select=title,target_amount,saved_amount,deadline&order=deadline.asc", { headers })
     ]);
-    if (!transactionsResponse.ok) throw new Error("Não foi possível consultar seus lançamentos.");
-    const transactions = await transactionsResponse.json();
     const goals = goalsResponse.ok ? await goalsResponse.json() : [];
-    const safeTransactions = Array.isArray(transactions) ? transactions : [];
     const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\d{4}-\d{2}$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
-    const scopedTransactions = safeTransactions.filter(item => !selectedMonth || (typeof item.date === "string" && item.date.slice(0, 7) <= selectedMonth));
+    const scopedTransactions = safeTransactions.filter(item => !selectedMonth || (typeof item.date === "string" && item.date.slice(0, 7) <= selectedMonth)).slice(0, 500);
     const safeGoals = Array.isArray(goals) ? goals : [];
     const history = Array.isArray(req.body?.history)
       ? req.body.history.filter(item => item && ["user", "assistant"].includes(item.role) && typeof item.content === "string").slice(-8).map(item => ({ role: item.role, content: item.content.slice(0, 3000) }))
@@ -226,7 +238,7 @@ SEGURANÇA:
 PERÍODO PRINCIPAL SELECIONADO: ${selectedMonth || "não informado"}.
 Use os lançamentos do mês selecionado como base principal para totais, categorias e recomendações. Nunca some automaticamente valores de outros meses a esse período. Quando a pergunta pedir comparação ou recorrência, use os outros meses disponíveis, agrupe cada mês separadamente e mostre os períodos lado a lado.
 
-LANÇAMENTOS RECENTES DISPONÍVEIS (máximo 120; filtre pelo período selecionado quando a pergunta não pedir comparação):
+LANÇAMENTOS DISPONÍVEIS (até 500 registros mais recentes do período aplicável; se a resposta exigir histórico além dessa amostra, informe a limitação):
 ${JSON.stringify(scopedTransactions)}
 
 CONTEXTO: ${selectedMonth ? "a seleção ativa é " + selectedMonth + "; não misture meses em totais do período." : "não há mês selecionado."}
