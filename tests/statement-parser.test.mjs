@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { classifyStatementMovement, isStatementSummaryLine } from "../src/lib/statement-parser.js";
+import { classifyStatementMovement, isStatementSummaryLine, extractBankAccountSummary } from "../src/lib/statement-parser.js";
 
 test("classifies Brazilian statement credit and debit markers after amount", () => {
   assert.equal(classifyStatementMovement("PIX recebido 400,00 +", "PIX recebido 400,00".length), "income");
@@ -17,4 +17,21 @@ test("filters consolidated totals and balances, not individual operations", () =
   assert.equal(isStatementSummaryLine("Saldo final 0,05"), true);
   assert.equal(isStatementSummaryLine("Total de créditos 2.426,40"), true);
   assert.equal(isStatementSummaryLine("PIX recebido Maria 400,00"), false);
+});
+
+test("reconciles a bank statement using opening balance, credits, debits and closing balance", () => {
+  const summary = extractBankAccountSummary(`
+    Saldo de Conta Corrente em 31/07 0,42
+    Total de Créditos 2.426,40
+    Total de Débitos 2.426,77
+    Saldo de Conta Corrente em 31/08 0,05
+  `);
+  assert.deepEqual(summary, {
+    openingBalance: 0.42,
+    credits: 2426.4,
+    debits: 2426.77,
+    closingBalance: 0.05,
+    expectedClosing: 0.05,
+    difference: 0
+  });
 });
