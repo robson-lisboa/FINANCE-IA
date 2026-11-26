@@ -88,6 +88,6 @@ export default function PurchaseSimulator({ transactions, formatMoney, selectedM
         <div><span>Preço à vista em meses dessa margem</span><strong>{cashEquivalentMonths !== null ? `${cashEquivalentMonths.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} meses` : "Sem dados suficientes"}</strong></div>
       </div>
     </>}
-    <p className="simulator-disclaimer">Análise de {labelMonth(selectedMonth)}. A média considera até 3 meses terminando no período selecionado, somente meses com lançamentos. É uma referência baseada nos registros, não consulta seu saldo bancário nem considera contas futuras, outras parcelas ou reserva de emergência.</p>
+    <p className="simulator-disclaimer">Análise de {labelMonth(selectedMonth)}. A média considera até 3 meses-calendário terminando no período selecionado; meses sem lançamentos não entram no cálculo. A amostra pode não representar meses sem cadastro. É uma referência baseada nos registros, não consulta seu saldo bancário nem considera contas futuras, outras parcelas ou reserva de emergência.</p>
   </section>;
 }
