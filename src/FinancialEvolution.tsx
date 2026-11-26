@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, TrendingDown, TrendingUp } from "lucide-react";
+import { filterRealizedTransactions } from "./lib/financial-core";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; selectedMonth: string; formatMoney: (value: number) => string };
