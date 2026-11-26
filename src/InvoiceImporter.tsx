@@ -262,7 +262,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             </div>
             <button type="button" className="icon-btn invoice-remove" title="Remover compra" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
           </div>)}</div>
-          </div>}
+          }
           <button className="primary-btn invoice-action" disabled={busy || !rows.length} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
           <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); }}>Descartar leitura e tentar novamente</button>
         </div>}
