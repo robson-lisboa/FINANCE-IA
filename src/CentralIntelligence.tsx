@@ -46,7 +46,7 @@ export default function CentralIntelligence({ transactions, formatMoney, selecte
     }, {});
     const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
     if (topCategory && expenses > 0 && topCategory[1] / expenses >= 0.35) {
-      findings.push({ id: "category", level: "warning", title: "Uma categoria concentra grande parte das despesas", summary: `${topCategory[0]} representa ${(topCategory[1] / expenses * 100).toFixed(0)}% dos gastos do mês.`, evidence: `${formatMoney(topCategory[1])} de ${formatMoney(expenses)} em despesas registradas.` });
+      findings.push({ id: "category", level: "warning", title: "Uma categoria concentra grande parte das despesas", summary: `${topCategory[0]} representa ${(topCategory[1] / expenses * 100).toFixed(0)}% dos gastos do período selecionado.`, evidence: `${formatMoney(topCategory[1])} de ${formatMoney(expenses)} em despesas registradas.` });
     }
 
     const duplicateGroups = new Map<string, Transaction[]>();
@@ -75,7 +75,7 @@ export default function CentralIntelligence({ transactions, formatMoney, selecte
     const small = current.filter(t => t.type === "expense" && Number(t.amount) <= 100);
     const smallTotal = small.reduce((sum, t) => sum + Number(t.amount), 0);
     if (small.length >= 3 && expenses > 0 && smallTotal / expenses >= 0.1) {
-      findings.push({ id: "small", level: "info", title: "Pequenos gastos somam um valor relevante", summary: `${small.length} despesas de até R$ 100 somam ${formatMoney(smallTotal)}.`, evidence: `Isso representa ${(smallTotal / expenses * 100).toFixed(0)}% das despesas do mês. O valor pode incluir gastos necessários.`, amount: smallTotal, items: small });
+      findings.push({ id: "small", level: "info", title: "Pequenos gastos somam um valor relevante", summary: `${small.length} despesas de até R$ 100 somam ${formatMoney(smallTotal)}.`, evidence: `Isso representa ${(smallTotal / expenses * 100).toFixed(0)}% das despesas do período selecionado. O valor pode incluir gastos necessários.`, amount: smallTotal, items: small });
     }
 
     const priority = { critical: 0, warning: 1, info: 2 };
