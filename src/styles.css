@@ -692,3 +692,11 @@
   .global-month-filter { width: auto; max-width: 185px; padding: 0 8px; gap: 5px; font-size: 11px; }
   .global-month-filter select { min-width: 0; max-width: 125px; }
 }
+
+
+/* Simulador de compra: instruções claras e campos guiados */
+.simulator-howto{padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);margin:14px 0}
+.simulator-howto strong{font-size:11px;color:var(--text)}
+.simulator-howto p{margin:5px 0 0;color:var(--muted);font-size:10px;line-height:1.5}
+.purchase-simulator .simulator-fields{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:650px){.purchase-simulator .simulator-fields{grid-template-columns:1fr}}
