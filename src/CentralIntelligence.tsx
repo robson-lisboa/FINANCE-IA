@@ -12,25 +12,27 @@ type Finding = {
   items?: Transaction[];
 };
 
-export default function CentralIntelligence({ transactions, formatMoney }: { transactions: Transaction[]; formatMoney: (value: number) => string }) {
+export default function CentralIntelligence({ transactions, formatMoney, selectedMonth }: { transactions: Transaction[]; formatMoney: (value: number) => string; selectedMonth: string }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const analysis = useMemo(() => {
     const valid = transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
     const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const [selectedYear, selectedMonthNumber] = selectedMonth.split("-").map(Number);
+    const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonthNumber === now.getMonth() + 1;
+    const monthKey = selectedMonth;
     const current = valid.filter(t => t.date.startsWith(monthKey));
     const income = current.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = current.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     const findings: Finding[] = [];
 
     if (income > 0 && expenses > income) {
-      findings.push({ id: "deficit", level: "critical", title: "Despesas já ultrapassaram as receitas", summary: `O resultado registrado está negativo em ${formatMoney(expenses - income)} neste mês.`, evidence: `${formatMoney(expenses)} em despesas contra ${formatMoney(income)} em receitas registradas.` });
+      findings.push({ id: "deficit", level: "critical", title: "Despesas já ultrapassaram as receitas", summary: `O resultado registrado está negativo em ${formatMoney(expenses - income)} no período selecionado.`, evidence: `${formatMoney(expenses)} em despesas contra ${formatMoney(income)} em receitas registradas.` });
     } else if (income > 0) {
       const expenseEntries = current.filter(t => t.type === "expense");
       const distinctExpenseDays = new Set(expenseEntries.map(t => t.date)).size;
-      const hasProjectionEvidence = expenseEntries.length >= 5 && distinctExpenseDays >= 3;
+      const hasProjectionEvidence = isCurrentMonth && expenseEntries.length >= 5 && distinctExpenseDays >= 3;
       const elapsed = Math.max(1, now.getDate());
-      const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+      const days = new Date(selectedYear, selectedMonthNumber, 0).getDate();
       const projected = (expenses / elapsed) * days;
       if (hasProjectionEvidence && projected > income && expenses > 0) {
         findings.push({ id: "pace", level: "warning", title: "Ritmo de gastos pode pressionar o fechamento", summary: "Se o ritmo atual continuar, as despesas projetadas podem superar as receitas registradas.", evidence: `Projeção linear de despesas: ${formatMoney(projected)} para ${formatMoney(income)} em receitas. Não inclui contas futuras ainda não cadastradas.` });
@@ -79,10 +81,10 @@ export default function CentralIntelligence({ transactions, formatMoney }: { tra
     const priority = { critical: 0, warning: 1, info: 2 };
     findings.sort((a, b) => priority[a.level] - priority[b.level]);
     return { findings, currentCount: current.length, income, expenses, hasData: current.length > 0 };
-  }, [transactions, formatMoney]);
+  }, [transactions, formatMoney, selectedMonth]);
 
   const levelLabel = (level: Finding["level"]) => level === "critical" ? "Atenção imediata" : level === "warning" ? "Vale investigar" : "Observação";
-  const monthLabel = new Date().toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+  const monthLabel = new Date(selectedYear, selectedMonthNumber - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
 
   return <section className="central-intelligence panel">
     <div className="central-intelligence-head">
@@ -91,8 +93,8 @@ export default function CentralIntelligence({ transactions, formatMoney }: { tra
     </div>
     <div className="central-summary">
       <div><span>Achados encontrados</span><strong>{analysis.findings.length}</strong><small>em {monthLabel}</small></div>
-      <div><span>Receitas registradas</span><strong>{formatMoney(analysis.income)}</strong><small>mês atual</small></div>
-      <div><span>Despesas registradas</span><strong>{formatMoney(analysis.expenses)}</strong><small>{analysis.currentCount} lançamento(s)</small></div>
+      <div><span>Receitas registradas</span><strong>{formatMoney(analysis.income)}</strong><small>{monthLabel}</small></div>
+      <div><span>Despesas registradas</span><strong>{formatMoney(analysis.expenses)}</strong><small>{analysis.currentCount} lançamento(s) · {monthLabel}</small></div>
     </div>
     <div className="central-section-title"><div><Sparkles size={16}/><strong>O que merece sua atenção</strong></div><span>{analysis.findings.length} sinal(is)</span></div>
     {!analysis.hasData ? <div className="central-empty"><Search size={22}/><div><strong>A investigação ainda não começou</strong><p>Adicione lançamentos ou importe uma fatura. A Central vai procurar padrões, concentrações de gastos e possíveis inconsistências.</p></div></div> :
