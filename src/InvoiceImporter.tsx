@@ -228,7 +228,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
       return;
     }
     if (!reviewAcknowledged) { setError("Antes de importar, confira os valores e marque a confirmação de revisão."); return; }
-    if (validation.issues.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))) { setError("Importação bloqueada: a soma ou algum lançamento está muito acima do esperado. Corrija os valores ou descarte a leitura."); return; }
+    if (validation.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))) { setError("Importação bloqueada: a soma ou algum lançamento está muito acima do esperado. Corrija os valores ou descarte a leitura."); return; }
     setBusy(true); setError("");
     try { await onImport(rows); setDone(true); }
     catch (e) { setError(e instanceof Error ? e.message : "Falha ao importar os lançamentos."); }
@@ -263,8 +263,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
           {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total da fatura e as compras reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
           <section className="invoice-audit" aria-label="Validação de segurança da fatura">
             <div className="invoice-audit-heading"><span className="eyebrow">REGRAS DE CONFERÊNCIA</span><strong>Verificações antes de importar</strong></div>
-            {validation.issues.length > 0
-              ? <ul className="invoice-audit-warning">{validation.issues.map((issue, index) => <li key={index}>{issue}</li>)}</ul>
+            {validation.length > 0
+              ? <ul className="invoice-audit-warning">{validation.map((issue, index) => <li key={index}>{issue}</li>)}</ul>
               : <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma inconsistência básica detectada. Mesmo assim, confira o documento original.</p>}
             <label className="invoice-review-confirm"><input type="checkbox" checked={reviewAcknowledged} onChange={event => setReviewAcknowledged(event.target.checked)} /> Conferi o total da fatura e os valores de cada compra no documento original.</label>
           </section>
