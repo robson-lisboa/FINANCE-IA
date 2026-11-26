@@ -283,48 +283,55 @@ ${JSON.stringify(safeGoals)}`;
       return { response, data };
     };
 
+    const extractAnswer = data => {
+      const content = data?.choices?.[0]?.message?.content;
+      if (Array.isArray(content)) return content.map(part => typeof part === "string" ? part : part?.text || "").join("").trim();
+      return typeof content === "string" ? content.trim() : "";
+    };
+
     let result = await callGroq(model, 2400, true);
-    if (!result.response.ok) {
-      console.error("groq_api_error", JSON.stringify({
-        status: result.response.status,
+    let answer = extractAnswer(result.data);
+    let usedFallback = false;
+
+    // Se o modelo principal falhar ou devolver conteúdo vazio, tenta automaticamente
+    // um segundo modelo compatível antes de mostrar erro ao usuário.
+    if (!result.response.ok || !answer) {
+      const primaryStatus = result.response.status || 0;
+      console.error("groq_primary_unavailable", JSON.stringify({
+        status: primaryStatus,
         code: result.data?.error?.code || null,
-        type: result.data?.error?.type || null
+        type: result.data?.error?.type || null,
+        emptyAnswer: !answer
       }));
-      const status = result.response.status === 429 ? 429 : 502;
-      return res.status(status).json({ error: result.response.status === 429 ? "A IA atingiu o limite de uso disponível. Tente novamente mais tarde." : "A provedora de IA recusou a solicitação. Verifique a configuração do serviço." });
+
+      result = await callGroq("llama-3.3-70b-versatile", 1600, false);
+      usedFallback = true;
+      if (!result.response.ok) {
+        console.error("groq_fallback_error", JSON.stringify({
+          status: result.response.status,
+          code: result.data?.error?.code || null,
+          type: result.data?.error?.type || null
+        }));
+        const limited = result.response.status === 429 || primaryStatus === 429;
+        return res.status(limited ? 429 : 502).json({
+          error: limited
+            ? "A IA atingiu o limite temporário de uso. Aguarde um pouco e tente novamente."
+            : "Não foi possível obter resposta dos modelos de IA. O servidor recebeu a pergunta, mas a provedora não concluiu o processamento."
+        });
+      }
+      answer = extractAnswer(result.data);
     }
 
-    const firstChoice = result.data?.choices?.[0];
-    let answer = firstChoice?.message?.content;
-    if (Array.isArray(answer)) {
-      answer = answer.map(part => typeof part === "string" ? part : part?.text || "").join("");
-    }
-    if (typeof answer !== "string" || !answer.trim()) {
-      console.warn("groq_empty_completion", JSON.stringify({
-        model,
-        finish_reason: firstChoice?.finish_reason || null,
-        usage: result.data?.usage || null,
-        message_fields: Object.keys(firstChoice?.message || {})
+    if (!answer) {
+      console.error("groq_empty_completion", JSON.stringify({
+        model: result.data?.model || (usedFallback ? "llama-3.3-70b-versatile" : model),
+        finish_reason: result.data?.choices?.[0]?.finish_reason || null,
+        usage: result.data?.usage || null
       }));
-      // Resposta alternativa: evita deixar o chat sem texto quando o modelo principal não conclui.
-      result = await callGroq("llama-3.3-70b-versatile", 1200, false);
-      if (!result.response.ok) {
-        console.error("groq_fallback_error", JSON.stringify({ status: result.response.status }));
-        return res.status(502).json({ error: "A IA principal não concluiu e a alternativa está indisponível. Tente novamente." });
-      }
-      const fallbackMessage = result.data?.choices?.[0]?.message?.content;
-      answer = Array.isArray(fallbackMessage)
-        ? fallbackMessage.map(part => typeof part === "string" ? part : part?.text || "").join("")
-        : fallbackMessage;
-      if (typeof answer !== "string" || !answer.trim()) {
-        console.error("groq_fallback_empty", JSON.stringify({
-          finish_reason: result.data?.choices?.[0]?.finish_reason || null,
-          usage: result.data?.usage || null
-        }));
-        return res.status(502).json({ error: "Os modelos de IA não conseguiram gerar texto agora. Tente novamente em instantes." });
-      }
+      return res.status(502).json({ error: "A IA recebeu a solicitação, mas não gerou uma resposta. Tente novamente." });
     }
-    return res.json({ answer: answer.trim(), model: result.data?.model || model });
+
+    return res.json({ answer, model: result.data?.model || (usedFallback ? "llama-3.3-70b-versatile" : model) });
   } catch (error) {
     console.error("assistant_chat_error", error instanceof Error ? error.message : "unknown");
     return res.status(503).json({ error: "Não foi possível concluir a análise agora. Tente novamente." });
