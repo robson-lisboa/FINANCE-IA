@@ -2,33 +2,36 @@ import { useMemo, useState } from "react";
 import { Search, ChevronDown, ChevronUp, Microscope, ReceiptText, TrendingUp, Repeat2, Coins } from "lucide-react";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
-type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
+type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; selectedMonth: string };
 
 type Finding = { id: string; title: string; summary: string; value: string; detail: string; icon: "largest" | "small" | "growth" | "repeat"; rows: Transaction[] };
 
-export default function InvestigationPanel({ transactions, formatMoney }: Props) {
+export default function InvestigationPanel({ transactions, formatMoney, selectedMonth }: Props) {
   const [opened, setOpened] = useState<string | null>(null);
   const findings = useMemo<Finding[]>(() => {
     const now = new Date();
     const key = (date: Date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const currentKey = key(now);
-    const previousKey = key(new Date(now.getFullYear(), now.getMonth() - 1, 1));
+    const [year, month] = selectedMonth.split("-").map(Number);
+    const selectedDate = new Date(year, month - 1, 1);
+    const currentKey = selectedMonth;
+    const previousKey = key(new Date(year, month - 2, 1));
+    const selectedLabel = selectedDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
     const expenses = transactions.filter(t => t.type === "expense" && /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(t.amount) && t.amount > 0);
     const current = expenses.filter(t => t.date.startsWith(currentKey));
     const previous = expenses.filter(t => t.date.startsWith(previousKey));
     const result: Finding[] = [];
     const largest = [...current].sort((a,b) => b.amount-a.amount)[0];
-    if (largest) result.push({ id:"largest", title:"Maior saída do mês", summary:`${largest.title} · ${largest.category} · ${largest.date.split("-").reverse().join("/")}`, value:formatMoney(largest.amount), detail:"Este é o maior lançamento individual classificado como despesa neste mês.", icon:"largest", rows:[largest] });
+    if (largest) result.push({ id:"largest", title:"Maior saída do período", summary:`${largest.title} · ${largest.category} · ${largest.date.split("-").reverse().join("/")}`, value:formatMoney(largest.amount), detail:`Este é o maior lançamento individual classificado como despesa em ${selectedLabel}.`, icon:"largest", rows:[largest] });
     const small = current.filter(t => t.amount <= 100).sort((a,b) => b.amount-a.amount);
     const smallTotal = small.reduce((s,t)=>s+t.amount,0);
-    if (small.length >= 2) result.push({ id:"small", title:"Pequenos gastos somados", summary:`${small.length} lançamentos de até R$ 100,00 neste mês`, value:formatMoney(smallTotal), detail:"A soma mostra quanto esses valores menores representam no mês. Não significa que sejam desperdício.", icon:"small", rows:small });
+    if (small.length >= 2) result.push({ id:"small", title:"Pequenos gastos somados", summary:`${small.length} lançamentos de até R$ 100,00 no período selecionado`, value:formatMoney(smallTotal), detail:"A soma mostra quanto esses valores menores representam no mês. Não significa que sejam desperdício.", icon:"small", rows:small });
     const sumCategory = (items: Transaction[], category: string) => items.filter(t=>t.category.trim().toLocaleLowerCase("pt-BR")===category.trim().toLocaleLowerCase("pt-BR")).reduce((s,t)=>s+t.amount,0);
     const categories = [...new Set(current.map(t=>t.category))].map(category=>({category, now:sumCategory(current,category), before:sumCategory(previous,category)})).filter(x=>x.before>0 && x.now>x.before).sort((a,b)=>(b.now/b.before-1)-(a.now/a.before-1));
     const growth = categories[0];
     if (growth) {
       const rows = current.filter(t=>t.category.trim().toLocaleLowerCase("pt-BR")===growth.category.trim().toLocaleLowerCase("pt-BR"));
       const pct = (growth.now/growth.before-1)*100;
-      result.push({ id:"growth", title:"Categoria que mais acelerou", summary:`${growth.category} · ${pct.toFixed(0)}% acima do mês anterior`, value:formatMoney(growth.now), detail:`A categoria somou ${formatMoney(growth.now)} neste mês, contra ${formatMoney(growth.before)} no mês anterior. O mês atual ainda pode estar incompleto.`, icon:"growth", rows });
+      result.push({ id:"growth", title:"Categoria que mais acelerou", summary:`${growth.category} · ${pct.toFixed(0)}% acima do mês anterior`, value:formatMoney(growth.now), detail:`A categoria somou ${formatMoney(growth.now)} em ${selectedLabel}, contra ${formatMoney(growth.before)} no mês anterior.`, icon:"growth", rows });
     }
     const groups = new Map<string, Transaction[]>();
     expenses.forEach(t=>{ const k=t.title.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g," "); if(!k)return; groups.set(k,[...(groups.get(k)||[]),t]); });
@@ -38,11 +41,11 @@ export default function InvestigationPanel({ transactions, formatMoney }: Props)
       result.push({ id:"repeat", title:"Descrição que reaparece", summary:`${recurring[0].title} · ${new Set(recurring.map(t=>t.date.slice(0,7))).size} meses diferentes`, value:formatMoney(total), detail:"A mesma descrição apareceu em meses diferentes. Confira se é uma conta recorrente; isso não confirma uma assinatura.", icon:"repeat", rows:recurring.sort((a,b)=>b.date.localeCompare(a.date)).slice(0,8) });
     }
     return result;
-  }, [transactions, formatMoney]);
+  }, [transactions, formatMoney, selectedMonth]);
 
   const iconFor = (kind: Finding["icon"]) => kind==="largest" ? <ReceiptText size={17}/> : kind==="small" ? <Coins size={17}/> : kind==="growth" ? <TrendingUp size={17}/> : <Repeat2 size={17}/>;
   return <section className="panel investigation-panel">
-    <div className="panel-heading"><div><h2><Microscope size={18}/> Investigação financeira</h2><p>O que seus lançamentos revelam quando olhamos mais de perto</p></div><Search size={19} className="subtle-icon"/></div>
+    <div className="panel-heading"><div><h2><Microscope size={18}/> Investigação financeira</h2><p>O que seus lançamentos revelam em {new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</p></div><Search size={19} className="subtle-icon"/></div>
     {findings.length===0 ? <div className="investigation-empty"><Search size={20}/><div><strong>Ainda não há pistas suficientes</strong><p>Com mais lançamentos e histórico de meses, vou encontrar padrões, mudanças e despesas que merecem uma segunda olhada.</p></div></div> :
       <div className="investigation-grid">{findings.map(item=><article className={`investigation-card ${opened===item.id?"is-open":""}`} key={item.id}>
         <button type="button" className="investigation-trigger" onClick={()=>setOpened(opened===item.id?null:item.id)} aria-expanded={opened===item.id}>
