@@ -133,7 +133,6 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
         <div className="insight-title"><div className="ai-icon"><TrendingUp size={18}/></div><div><h2>Projeção de fechamento</h2><p>Estimativa pelo ritmo de gastos atual</p></div></div>
         <div className="diagnosis-forecast-grid"><div><span>Despesas estimadas no fim do mês</span><strong>{report.projectedExpenses === null ? "Indisponível" : formatMoney(report.projectedExpenses)}</strong></div><div><span>Saldo estimado no fim do mês</span><strong className={report.projectedBalance === null ? "predictive-muted" : report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{report.projectedBalance === null ? "Indisponível" : formatMoney(report.projectedBalance)}</strong></div></div>
         <p className="insight-disclaimer">{report.projectionAvailable ? `Projeção linear baseada em ${report.daysElapsed} de ${report.daysInMonth} dias e em pelo menos 5 despesas distribuídas em 3 dias. Não considera contas futuras ainda não cadastradas nem mudanças no padrão de consumo.` : "Projeção indisponível: faltam despesas distribuídas em pelo menos 3 dias diferentes."}</p>
-      </div>
       </div>}
       <div className="panel recurring-panel">
         <div className="panel-heading"><div><h2>Possíveis gastos recorrentes</h2><p>Identificados pelo mesmo nome em meses diferentes</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
