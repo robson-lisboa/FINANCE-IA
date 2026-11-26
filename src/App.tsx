@@ -9,6 +9,7 @@ import FinancialEvolution from "./FinancialEvolution";
 import PlanningCenter from "./PlanningCenter";
 import ProactiveAdvisor from "./ProactiveAdvisor";
 import { parseBrazilianMoney } from "./lib/money-core.js";
+import { filterNewStatementRows } from "./lib/statement-parser.js";
 import { filterRealizedTransactions, filterScheduledTransactions } from "./lib/financial-core";
 import { DEFAULT_SETTINGS, readSettings, type AppSettings } from "./lib/preferences.js";
 import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, fetchPersonalProfile, type AuthSession, type PersonalProfile } from "./lib/supabase";
@@ -650,7 +651,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
         )}
       </main>
 
-      {invoiceOpen && <InvoiceImporter transactions={transactions} onClose={() => setInvoiceOpen(false)} onImport={async rows => { const normalizeTitle = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim(); const existing = new Set(transactions.map(t => `${t.type}|${normalizeTitle(t.title)}|${t.date}|${t.amount.toFixed(2)}`)); const fresh = rows.filter(row => !existing.has(`${row.type}|${normalizeTitle(row.title)}|${row.date}|${row.amount.toFixed(2)}`)); if (!fresh.length) throw new Error("Essas movimentações já existem nos seus lançamentos. Nenhuma duplicidade foi importada."); const saved = await insertTransactions(session, fresh.map(row => ({ ...row, type: row.type as Kind }))); setTransactions(current => [...saved, ...current]); const counts = new Map<string, number>(); fresh.forEach(row => { const key = row.date.slice(0, 7); counts.set(key, (counts.get(key) || 0) + 1); }); const detectedMonth = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]; if (detectedMonth) setTransactionMonth(detectedMonth); }} />}
+      {invoiceOpen && <InvoiceImporter transactions={transactions} onClose={() => setInvoiceOpen(false)} onImport={async rows => { const fresh = filterNewStatementRows(rows, transactions); if (!fresh.length) throw new Error("Essas movimentações já existem nos seus lançamentos. Nenhuma duplicidade foi importada."); const saved = await insertTransactions(session, fresh.map(row => ({ ...row, type: row.type as Kind }))); setTransactions(current => [...saved, ...current]); const counts = new Map<string, number>(); fresh.forEach(row => { const key = row.date.slice(0, 7); counts.set(key, (counts.get(key) || 0) + 1); }); const detectedMonth = [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]; if (detectedMonth) setTransactionMonth(detectedMonth); }} />}
       {helpOpen && <div className="modal-backdrop help-backdrop" onMouseDown={e => { if (e.target === e.currentTarget) setHelpOpen(false); }}>
         <section className="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="help-title">
           <div className="modal-heading">
