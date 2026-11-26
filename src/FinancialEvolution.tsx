@@ -65,8 +65,8 @@ export default function FinancialEvolution({ transactions, selectedMonth, format
         </div>
       </div>
       <div className="evolution-breakdown">
-        <div><span><ArrowDownRight size={14}/> Receitas</span><strong className={incomeDelta >= 0 ? "evolution-positive" : "evolution-negative"}>{incomeDelta > 0 ? "+" : incomeDelta < 0 ? "−" : ""}{formatMoney(Math.abs(incomeDelta))}</strong></div>
-        <div><span><ArrowUpRight size={14}/> Despesas</span><strong className={expenseDelta <= 0 ? "evolution-positive" : "evolution-negative"}>{expenseDelta > 0 ? "+" : expenseDelta < 0 ? "−" : ""}{formatMoney(Math.abs(expenseDelta))}</strong></div>
+        <div><span><ArrowDownRight size={14}/> Variação das receitas</span><strong className={incomeDelta >= 0 ? "evolution-positive" : "evolution-negative"}>{incomeDelta > 0 ? "+" : incomeDelta < 0 ? "−" : ""}{formatMoney(Math.abs(incomeDelta))}</strong></div>
+        <div className="evolution-expense-explanation"><span><ArrowUpRight size={14}/> Impacto nas despesas</span><strong className={expenseDelta < 0 ? "evolution-positive" : expenseDelta > 0 ? "evolution-negative" : ""}>{expenseDelta < 0 ? "As despesas diminuíram" : expenseDelta > 0 ? "As despesas aumentaram" : "As despesas não mudaram"}</strong></div>
       </div>
       <div className="evolution-drivers"><strong>O que mais influenciou as despesas</strong>
         {report.categoryChanges.length === 0 ? <p>Não houve variação por categoria nos registros comparados.</p> : report.categoryChanges.map(item => <div key={item.category}><span>{item.category}<small>{item.delta > 0 ? "Aumento" : "Redução"} em relação ao período anterior</small></span><b className={item.delta > 0 ? "evolution-negative" : "evolution-positive"}>{item.delta > 0 ? "+" : "−"}{formatMoney(Math.abs(item.delta))}</b></div>)}
