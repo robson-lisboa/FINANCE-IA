@@ -10,7 +10,7 @@ import PlanningCenter from "./PlanningCenter";
 import ProactiveAdvisor from "./ProactiveAdvisor";
 import { parseBrazilianMoney } from "./lib/money-core.js";
 import { DEFAULT_SETTINGS, readSettings, type AppSettings } from "./lib/preferences.js";
-import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, type AuthSession } from "./lib/supabase";
+import { deleteTransactionFromCloud, fetchTransactions, insertTransactions, updateTransactionInCloud, readStoredSession, signOut, fetchPersonalProfile, type AuthSession, type PersonalProfile } from "./lib/supabase";
 import {
   Activity, ArrowDownLeft, ArrowUpRight, Bell, CalendarDays,
   CircleHelp, Download, LayoutDashboard, Menu, Plus, Search,
@@ -97,6 +97,12 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
     }
   });
   const [currentTime, setCurrentTime] = useState(() => new Date());
+  const [sidebarProfile, setSidebarProfile] = useState<PersonalProfile>({ firstName: "", lastName: "", birthDate: "", age: null, showNameInSidebar: false });
+  useEffect(() => {
+    let active = true;
+    fetchPersonalProfile(session).then(value => { if (active) setSidebarProfile(value); }).catch(() => {});
+    return () => { active = false; };
+  }, [session.user.id]);
   const [settings, setSettings] = useState<AppSettings>(() => {
     try {
       return readSettings(localStorage.getItem(settingsStorageKey));
@@ -403,8 +409,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </div>
           <div className="profile">
             <a className="profile-link" href="#profile" onClick={() => { setActivePage("profile"); setMenuOpen(false); }}>
-              <div className="avatar">R</div>
-              <div className="profile-text"><small>Meu perfil</small><strong>{session.user.email || "Minha conta"}</strong></div>
+              <div className="avatar">{((sidebarProfile.firstName.trim().split(/\\s+/)[0]?.[0] || "") + (sidebarProfile.lastName.trim().split(/\\s+/).filter(Boolean).slice(-1)[0]?.[0] || "")).toLocaleUpperCase("pt-BR") || "EU"}</div>
+              <div className="profile-text"><small>Meu perfil</small>{sidebarProfile.showNameInSidebar && <strong>{[sidebarProfile.firstName, sidebarProfile.lastName].filter(Boolean).join(" ") || "Configure seu nome"}</strong>}</div>
             </a>
             <button className="profile-signout" onClick={onSignOut} title="Sair da conta">Sair</button>
           </div>
