@@ -32,10 +32,10 @@ export function localDateKey(now: Date = new Date()): string {
 
 export function filterRealizedTransactions<T extends DatedTransaction>(transactions: T[], now: Date = new Date()): T[] {
   const cutoff = localDateKey(now);
-  return transactions.filter(item => typeof item.date === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) && item.date <= cutoff);
+  return transactions.filter(item => typeof item.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item.date) && item.date <= cutoff);
 }
 
 export function filterScheduledTransactions<T extends DatedTransaction>(transactions: T[], now: Date = new Date()): T[] {
   const cutoff = localDateKey(now);
-  return transactions.filter(item => typeof item.date === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) && item.date > cutoff);
+  return transactions.filter(item => typeof item.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(item.date) && item.date > cutoff);
 }
