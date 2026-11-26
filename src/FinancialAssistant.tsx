@@ -11,7 +11,7 @@ function normalizeMarkdown(value: string): string {
   return value.replace(/\\([#|*_~>])/g, "$1");
 }
 
-export default function FinancialAssistant({ accessToken }: { accessToken: string }) {
+export default function FinancialAssistant({ accessToken, selectedMonth }: { accessToken: string; selectedMonth: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
@@ -44,7 +44,7 @@ export default function FinancialAssistant({ accessToken }: { accessToken: strin
       const response = await fetch("/api/assistant/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: "Bearer " + accessToken },
-        body: JSON.stringify({ message, history })
+        body: JSON.stringify({ message, history, selectedMonth })
       });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || "Não foi possível consultar a inteligência artificial.");
