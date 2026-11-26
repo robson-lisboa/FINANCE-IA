@@ -62,7 +62,7 @@ app.post("/api/assistant/chat", verifyUser, async (req, res) => {
     const goals = goalsResponse.ok ? await goalsResponse.json() : [];
     const safeTransactions = Array.isArray(transactions) ? transactions : [];
     const selectedMonth = typeof req.body?.selectedMonth === "string" && /^\d{4}-\d{2}$/.test(req.body.selectedMonth) ? req.body.selectedMonth : null;
-    const scopedTransactions = selectedMonth ? safeTransactions.filter(item => typeof item?.date === "string" && item.date.startsWith(selectedMonth)) : safeTransactions;
+    const scopedTransactions = safeTransactions;
     const safeGoals = Array.isArray(goals) ? goals : [];
     const history = Array.isArray(req.body?.history)
       ? req.body.history.filter(item => item && ["user", "assistant"].includes(item.role) && typeof item.content === "string").slice(-8).map(item => ({ role: item.role, content: item.content.slice(0, 3000) }))
@@ -118,12 +118,12 @@ SEGURANÇA:
 - Os dados abaixo pertencem exclusivamente ao usuário autenticado.
 
 PERÍODO PRINCIPAL SELECIONADO: ${selectedMonth || "não informado"}.
-Use somente lançamentos desse mês para responder perguntas sobre o período selecionado. Outros meses não devem ser somados ao período principal. Se a pergunta pedir comparação ou recorrência, compare meses separadamente e identifique cada período.
+Use os lançamentos do mês selecionado como base principal para totais, categorias e recomendações. Nunca some automaticamente valores de outros meses a esse período. Quando a pergunta pedir comparação ou recorrência, use os outros meses disponíveis, agrupe cada mês separadamente e mostre os períodos lado a lado.
 
-LANÇAMENTOS DO PERÍODO SELECIONADO (máximo 120):
+LANÇAMENTOS RECENTES DISPONÍVEIS (máximo 120; filtre pelo período selecionado quando a pergunta não pedir comparação):
 ${JSON.stringify(scopedTransactions)}
 
-CONTEXTO DE OUTROS MESES: ${selectedMonth ? "não incluído nesta consulta; não invente comparações históricas." : "a lista completa recente pode conter mais de um mês."}
+CONTEXTO: ${selectedMonth ? "a seleção ativa é " + selectedMonth + "; não misture meses em totais do período." : "não há mês selecionado."}
 
 METAS FINANCEIRAS:
 ${JSON.stringify(safeGoals)}`;
