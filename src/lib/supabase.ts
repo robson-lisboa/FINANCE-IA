@@ -273,3 +273,38 @@ export async function updateFinancialGoal(session: AuthSession, id: string, goal
 export async function deleteFinancialGoal(session: AuthSession, id: string): Promise<void> {
   await dataRequest<void>(session, `financial_goals?id=eq.${encodeURIComponent(id)}&user_id=eq.${encodeURIComponent(session.user.id)}`, { method: "DELETE" });
 }
+
+
+export type PersonalProfile = { firstName: string; lastName: string; age: number | null };
+
+export async function fetchPersonalProfile(session: AuthSession): Promise<PersonalProfile> {
+  const activeSession = await refreshSession(session);
+  const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
+    headers: { apikey: SUPABASE_KEY!, Authorization: "Bearer " + activeSession.access_token }
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.msg || result.message || "Não foi possível carregar seu perfil.");
+  const metadata = result.user_metadata && typeof result.user_metadata === "object" ? result.user_metadata : {};
+  const age = Number(metadata.finance_age);
+  return {
+    firstName: typeof metadata.finance_first_name === "string" ? metadata.finance_first_name : "",
+    lastName: typeof metadata.finance_last_name === "string" ? metadata.finance_last_name : "",
+    age: Number.isInteger(age) && age >= 13 && age <= 110 ? age : null
+  };
+}
+
+export async function updatePersonalProfile(session: AuthSession, profile: PersonalProfile): Promise<PersonalProfile> {
+  const activeSession = await refreshSession(session);
+  const response = await fetch(SUPABASE_URL + "/auth/v1/user", {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY!, Authorization: "Bearer " + activeSession.access_token },
+    body: JSON.stringify({ data: {
+      finance_first_name: profile.firstName.trim(),
+      finance_last_name: profile.lastName.trim(),
+      finance_age: profile.age
+    } })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(result.msg || result.message || "Não foi possível salvar seu perfil.");
+  return profile;
+}
