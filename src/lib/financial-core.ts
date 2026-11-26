@@ -24,3 +24,18 @@ export function sumTransactionAmounts<T extends { amount: number | string }>(ite
     return total + (Number.isFinite(amount) && amount >= 0 ? amount : 0);
   }, 0);
 }
+
+
+export function localDateKey(now: Date = new Date()): string {
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+}
+
+export function filterRealizedTransactions<T extends DatedTransaction>(transactions: T[], now: Date = new Date()): T[] {
+  const cutoff = localDateKey(now);
+  return transactions.filter(item => typeof item.date === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) && item.date <= cutoff);
+}
+
+export function filterScheduledTransactions<T extends DatedTransaction>(transactions: T[], now: Date = new Date()): T[] {
+  const cutoff = localDateKey(now);
+  return transactions.filter(item => typeof item.date === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) && item.date > cutoff);
+}
