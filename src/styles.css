@@ -995,3 +995,50 @@
 @media(prefers-reduced-motion:reduce){
  .app-shell,.app-shell .stat-card,.app-shell .panel{transition:none!important}
 }
+
+
+/* Saúde financeira altera a organização, não a cor escolhida pela pessoa. */
+.app-shell.health-critical,.app-shell.health-attention,.app-shell.health-recovery,
+.app-shell.health-good,.app-shell.health-excellent,.app-shell.health-unknown{
+  --health-wash:transparent;
+  --health-border:var(--line);
+  --health-glow:transparent;
+}
+.app-shell .sidebar{background:var(--panel);border-right-color:var(--line)}
+.app-shell .main-content{background:transparent}
+.app-shell .topbar{border-bottom-color:var(--line)}
+.app-shell .stat-card,.app-shell .panel{border-color:var(--line);box-shadow:none}
+.app-shell .stat-card:first-child{background:var(--panel)}
+.app-shell .health-guidance{background:var(--panel);border:1px solid var(--line);border-left:1px solid var(--line);box-shadow:none}
+.app-shell .health-guidance-mark{background:var(--panel2);color:var(--muted)}
+.app-shell .health-guidance-status{background:var(--panel2);color:var(--muted)}
+.app-shell.health-good .health-guidance-status,
+.app-shell.health-excellent .health-guidance-status,
+.app-shell.health-good .health-status-pill,
+.app-shell.health-excellent .health-status-pill{
+  background:rgba(53,201,154,.13);color:#35c99a;border-color:rgba(53,201,154,.35)
+}
+.app-shell.health-critical .health-guidance,
+.app-shell.health-attention .health-guidance,
+.app-shell.health-recovery .health-guidance,
+.app-shell.health-good .health-guidance,
+.app-shell.health-excellent .health-guidance{border-left:1px solid var(--line)}
+.app-shell.health-critical .stat-card:first-child,
+.app-shell.health-attention .stat-card:last-child,
+.app-shell.health-good .stat-card:first-child,
+.app-shell.health-excellent .stat-card:first-child{border:1px solid var(--line)}
+.app-shell.health-recovery .financial-evolution,
+.app-shell.health-good .financial-evolution,
+.app-shell.health-excellent .financial-evolution{border-top:1px solid var(--line)}
+.dashboard-critical,.dashboard-attention,.dashboard-recovery,.dashboard-good,
+.dashboard-excellent,.dashboard-unknown{background:transparent}
+.dashboard-critical .health-guidance,.dashboard-attention .health-guidance,
+.dashboard-recovery .health-guidance,.dashboard-good .health-guidance,
+.dashboard-excellent .health-guidance{background:var(--panel);border-color:var(--line);box-shadow:none}
+.dashboard-critical .health-guidance-mark,.dashboard-attention .health-guidance-mark,
+.dashboard-recovery .health-guidance-mark,.dashboard-good .health-guidance-mark,
+.dashboard-excellent .health-guidance-mark{background:var(--panel2);color:var(--muted)}
+.dashboard-critical .stat-card:first-child,.dashboard-attention .stat-card:nth-child(4){background:var(--panel);border-color:var(--line)}
+.dashboard-critical .transactions-panel{border-top:1px solid var(--line)}
+.dashboard-recovery .financial-evolution,.dashboard-excellent .financial-evolution{border-color:var(--line);box-shadow:none}
+.dashboard-excellent .stat-card{background:var(--panel)}
