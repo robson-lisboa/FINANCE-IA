@@ -218,7 +218,17 @@ async function dataRequest<T>(session: AuthSession, path: string, init: RequestI
 }
 
 export async function fetchTransactions(session: AuthSession): Promise<FinanceTransaction[]> {
-  return dataRequest<FinanceTransaction[]>(session, "transactions?select=id,title,category,date,amount,type&order=date.desc");
+  const pageSize = 1000;
+  const all: FinanceTransaction[] = [];
+  for (let offset = 0; ; offset += pageSize) {
+    const page = await dataRequest<FinanceTransaction[]>(session, "transactions?select=id,title,category,date,amount,type&order=date.desc,id.asc", {
+      headers: { "Range-Unit": "items", Range: `${offset}-${offset + pageSize - 1}` }
+    });
+    if (!Array.isArray(page)) throw new Error("O histórico retornou um formato inválido. Atualize a página e tente novamente.");
+    all.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return all;
 }
 
 export async function insertTransactions(session: AuthSession, transactions: Omit<FinanceTransaction, "id">[]): Promise<FinanceTransaction[]> {
