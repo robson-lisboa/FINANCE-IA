@@ -46,3 +46,16 @@ test("flags PIX and bank transfers for manual review", () => {
   assert.equal(isPotentialTransferMovement("Transferência entre contas 150,00"), true);
   assert.equal(isPotentialTransferMovement("Compra supermercado 85,00"), false);
 });
+
+test("filters duplicates against existing data and within the same import", async () => {
+  const { filterNewStatementRows } = await import("../src/lib/statement-parser.js");
+  const existing = [{ title: "Pao cafe", date: "2026-08-10", amount: 12.5, type: "expense" }];
+  const incoming = [
+    { title: "PÃO & CAFÉ", date: "2026-08-10", amount: 12.5, type: "expense", category: "Alimentação" },
+    { title: "Farmácia", date: "2026-08-11", amount: 32, type: "expense", category: "Saúde" },
+    { title: "Farmacia", date: "2026-08-11", amount: 32, type: "expense", category: "Saúde" }
+  ];
+  const result = filterNewStatementRows(incoming, existing);
+  assert.equal(result.length, 1);
+  assert.equal(result[0].title, "Farmácia");
+});
