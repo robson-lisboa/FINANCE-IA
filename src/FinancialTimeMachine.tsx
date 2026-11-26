@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { Clock3, TrendingUp, TrendingDown, Sparkles, AlertTriangle } from "lucide-react";
 import { parseBrazilianMoney } from "./lib/money-core.js";
+import { filterRealizedTransactions } from "./lib/financial-core";
 
 type Transaction = { date: string; amount: number; type: "income" | "expense" };
 type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
@@ -17,7 +18,7 @@ export default function FinancialTimeMachine({ transactions, formatMoney }: Prop
       return { key: date.getFullYear() + "-" + String(date.getMonth() + 1).padStart(2, "0"), income: 0, expenses: 0, count: 0 };
     });
     const map = new Map(buckets.map(item => [item.key, item]));
-    transactions.forEach(item => {
+    filterRealizedTransactions(transactions, now).forEach(item => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(item.date)) return;
       const bucket = map.get(item.date.slice(0, 7));
       const amount = Number(item.amount);
@@ -65,7 +66,7 @@ export default function FinancialTimeMachine({ transactions, formatMoney }: Prop
       <div className="time-machine-details"><div><span>Receitas projetadas</span><b>{formatMoney(futureIncome)}</b></div><div><span>Despesas projetadas, incluindo imprevisto</span><b>{formatMoney(futureExpenses)}</b></div><div><span>Meses com lançamentos usados</span><b>{history.months} de até 6</b></div></div>
       {history.net < 0 && <p className="time-machine-warning"><TrendingDown size={15}/> Seu histórico indica despesas médias maiores que receitas. O cenário futuro mantém esse padrão, a menos que você ajuste receitas ou despesas.</p>}
       {history.net >= 0 && <p className="time-machine-warning positive"><TrendingUp size={15}/> O resultado é uma projeção contábil baseada nos registros, não representa saldo bancário ou dinheiro garantido disponível.</p>}
-      <p className="insight-disclaimer">Modelo simplificado: usa a média dos até seis meses completos anteriores que tenham lançamentos. Meses sem registros ficam fora da média e podem representar ausência de cadastro, não necessariamente gasto zero; por isso, a amostra pode não representar todos os meses. Não prevê inflação, juros, impostos, sazonalidade, mudanças de renda nem compromissos não cadastrados.</p>
+      <p className="insight-disclaimer">Modelo simplificado: usa a média dos até seis meses completos anteriores que tenham lançamentos realizados. Lançamentos agendados e o mês atual ficam fora da base. Meses sem registros ficam fora da média e podem representar ausência de cadastro, não necessariamente gasto zero; por isso, a amostra pode não representar todos os meses. Não prevê inflação, juros, impostos, sazonalidade, mudanças de renda nem compromissos não cadastrados.</p>
     </>}
   </section>;
 }
