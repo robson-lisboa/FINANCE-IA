@@ -377,7 +377,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
   return (
     <div
       className={`app-shell health-${financialHealth.status} ${settings.theme === "light" ? "theme-light" : ""} density-${settings.density} font-${settings.fontScale}`}
-      style={{ "--accent": financialHealth.status === "unknown" ? (settings.customAccent || ACCENT_COLORS[settings.accent]) : financialHealth.color, "--accent-soft": `color-mix(in srgb, ${financialHealth.status === "unknown" ? (settings.customAccent || ACCENT_COLORS[settings.accent]) : financialHealth.color} 18%, transparent)`, "--health-tint": `color-mix(in srgb, ${financialHealth.color} 5%, transparent)` } as React.CSSProperties}
+      style={{ "--accent": settings.customAccent || ACCENT_COLORS[settings.accent], "--accent-soft": `color-mix(in srgb, ${settings.customAccent || ACCENT_COLORS[settings.accent]} 18%, transparent)`, "--health-tint": "transparent" } as React.CSSProperties}
     >
       <aside className={`sidebar ${menuOpen ? "sidebar-open" : ""}`}>
         <div className="brand">
@@ -569,14 +569,14 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData} margin={{ top: 12, right: 8, left: -18, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={financialHealth.color} stopOpacity={0.30}/><stop offset="95%" stopColor={financialHealth.color} stopOpacity={0}/></linearGradient>
+                    <linearGradient id="incomeFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={settings.customAccent || ACCENT_COLORS[settings.accent]} stopOpacity={0.30}/><stop offset="95%" stopColor={settings.customAccent || ACCENT_COLORS[settings.accent]} stopOpacity={0}/></linearGradient>
                     <linearGradient id="expenseFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#e45f6d" stopOpacity={0.16}/><stop offset="95%" stopColor="#e45f6d" stopOpacity={0}/></linearGradient>
                   </defs>
                   <CartesianGrid stroke="#242b3d" strokeDasharray="4 5" vertical={false}/>
                   <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 12 }}/>
                   <YAxis axisLine={false} tickLine={false} tick={{ fill: "#78839b", fontSize: 11 }} tickFormatter={(v) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: settings.currency, notation: "compact", maximumFractionDigits: 1 }).format(v)}/>
                   <Tooltip contentStyle={{ background: "#151c2d", border: "1px solid #303950", borderRadius: 12, color: "#f4f6fb" }} formatter={(value) => formatMoney(Number(value))}/>
-                  <Area type="monotone" dataKey="income" name="Receitas" stroke={financialHealth.color} strokeWidth={2.5} fill="url(#incomeFill)"/>
+                  <Area type="monotone" dataKey="income" name="Receitas" stroke={settings.customAccent || ACCENT_COLORS[settings.accent]} strokeWidth={2.5} fill="url(#incomeFill)"/>
                   <Area type="monotone" dataKey="expenses" name="Despesas" stroke="#e45f6d" strokeWidth={2.5} fill="url(#expenseFill)"/>
                 </AreaChart>
               </ResponsiveContainer>
