@@ -501,7 +501,7 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
             </div>
           </section>
         ) : activePage === "transactions" ? (
-          <section className="page-section">
+          <section className={`page-section dashboard-layout dashboard-${financialHealth.status}`}>
             <div className="page-heading">
               <div><p className="eyebrow">CONTROLE DE MOVIMENTAÇÕES</p><h1>Lançamentos</h1><p className="muted-text">Consulte, pesquise e organize todas as suas receitas e despesas.</p></div>
               <div className="transaction-actions"><button className="outline-btn" onClick={() => setInvoiceOpen(true)}><FileText size={16}/> Importar fatura</button> <button className="primary-btn" onClick={openNewTransaction}><Plus size={16}/> Novo lançamento</button></div>
