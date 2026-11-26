@@ -39,16 +39,6 @@ export default function CentralIntelligence({ transactions, formatMoney, selecte
       }
     }
 
-    const categoryTotals = current.filter(t => t.type === "expense").reduce<Record<string, number>>((acc, t) => {
-      const key = t.category?.trim() || "Sem categoria";
-      acc[key] = (acc[key] || 0) + Number(t.amount);
-      return acc;
-    }, {});
-    const topCategory = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
-    if (topCategory && expenses > 0 && topCategory[1] / expenses >= 0.35) {
-      findings.push({ id: "category", level: "warning", title: "Uma categoria concentra grande parte das despesas", summary: `${topCategory[0]} representa ${(topCategory[1] / expenses * 100).toFixed(0)}% dos gastos do período selecionado.`, evidence: `${formatMoney(topCategory[1])} de ${formatMoney(expenses)} em despesas registradas.` });
-    }
-
     const duplicateGroups = new Map<string, Transaction[]>();
     current.filter(t => t.type === "expense").forEach(t => {
       const key = [t.date, t.title.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " "), Number(t.amount).toFixed(2)].join("|");
@@ -58,24 +48,6 @@ export default function CentralIntelligence({ transactions, formatMoney, selecte
     if (duplicates.length) {
       const duplicateItems = duplicates.flat();
       findings.push({ id: "duplicates", level: "warning", title: "Possíveis lançamentos repetidos", summary: `${duplicates.length} grupo(s) têm mesma data, descrição e valor.`, evidence: "Coincidência de dados não comprova cobrança duplicada. Confira os comprovantes antes de qualquer alteração.", amount: duplicateItems.reduce((sum, t) => sum + Number(t.amount), 0), items: duplicateItems });
-    }
-
-    const recurringMap = new Map<string, Transaction[]>();
-    valid.filter(t => t.type === "expense").forEach(t => {
-      const key = t.title.trim().toLocaleLowerCase("pt-BR").replace(/\s+/g, " ");
-      if (key) recurringMap.set(key, [...(recurringMap.get(key) || []), t]);
-    });
-    const recurring = [...recurringMap.values()].filter(group => new Set(group.map(t => t.date.slice(0, 7))).size >= 2)
-      .sort((a, b) => b.reduce((sum, t) => sum + Number(t.amount), 0) - a.reduce((sum, t) => sum + Number(t.amount), 0))[0];
-    if (recurring) {
-      const months = new Set(recurring.map(t => t.date.slice(0, 7))).size;
-      findings.push({ id: "recurring", level: "info", title: "Descrição que reaparece em meses diferentes", summary: `“${recurring[0].title}” aparece em ${months} meses.`, evidence: "Pode ser uma conta recorrente ou apenas compras semelhantes. A repetição do nome, sozinha, não confirma assinatura.", amount: recurring.reduce((sum, t) => sum + Number(t.amount), 0), items: recurring });
-    }
-
-    const small = current.filter(t => t.type === "expense" && Number(t.amount) <= 100);
-    const smallTotal = small.reduce((sum, t) => sum + Number(t.amount), 0);
-    if (small.length >= 3 && expenses > 0 && smallTotal / expenses >= 0.1) {
-      findings.push({ id: "small", level: "info", title: "Pequenos gastos somam um valor relevante", summary: `${small.length} despesas de até R$ 100 somam ${formatMoney(smallTotal)}.`, evidence: `Isso representa ${(smallTotal / expenses * 100).toFixed(0)}% das despesas do período selecionado. O valor pode incluir gastos necessários.`, amount: smallTotal, items: small });
     }
 
     const priority = { critical: 0, warning: 1, info: 2 };
@@ -88,7 +60,7 @@ export default function CentralIntelligence({ transactions, formatMoney, selecte
 
   return <section className="central-intelligence panel">
     <div className="central-intelligence-head">
-      <div className="central-intelligence-brand"><span><Radar size={21}/></span><div><p className="eyebrow">NÚCLEO DE ANÁLISE</p><h2>Central de Inteligência</h2><p>Uma investigação automática dos seus registros.</p></div></div>
+      <div className="central-intelligence-brand"><span><Radar size={21}/></span><div><p className="eyebrow">NÚCLEO DE ANÁLISE</p><h2>Central de Inteligência</h2><p>Verificação de inconsistências e possíveis duplicidades.</p></div></div>
       <span className="central-live"><i/> ANÁLISE ATIVA</span>
     </div>
     <div className="central-summary">
