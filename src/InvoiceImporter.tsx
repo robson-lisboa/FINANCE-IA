@@ -5,7 +5,7 @@ import { FileUp, LoaderCircle, X, CheckCircle2, AlertTriangle, Trash2, Pencil } 
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
 
-type InvoiceRow = { title: string; date: string; amount: number; category: string };
+type InvoiceRow = { title: string; date: string; amount: number; category: string; type: "income" | "expense" };
 type ExistingTransaction = { title: string; date: string; amount: number; type: "income" | "expense" };
 type Props = { onClose: () => void; onImport: (rows: InvoiceRow[]) => Promise<void>; transactions: ExistingTransaction[] };
 
@@ -103,7 +103,7 @@ function parseRows(text: string): InvoiceRow[] {
     const key = [title.toLowerCase(),date,amount.toFixed(2)].join("|");
     if (seen.has(key)) continue;
     seen.add(key);
-    rows.push({ title:title.slice(0,100), date, amount, category:categoryFor(title) });
+    rows.push({ title:title.slice(0,100), date, amount, category:categoryFor(title), type: income ? "income" : "expense" });
   }
   return rows;
 }
@@ -180,7 +180,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const [documentNotice, setDocumentNotice] = useState("");
   const [pastedText, setPastedText] = useState("");
 
-  const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
+  const total = useMemo(() => rows.filter(row => row.type === "expense").reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
+  const incomeTotal = useMemo(() => rows.filter(row => row.type === "income").reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
   const validation = useMemo(() => {
     const issues: string[] = [];
     if (rows.length === 0) issues.push("Nenhuma compra válida foi identificada.");
@@ -192,7 +193,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     const repeatedKeys = new Set<string>();
     const seenKeys = new Set<string>();
     for (const row of rows) {
-      const key = [row.title.toLocaleLowerCase("pt-BR").trim(), row.date, row.amount.toFixed(2)].join("|");
+      const key = [row.type, row.title.toLocaleLowerCase("pt-BR").trim(), row.date, row.amount.toFixed(2)].join("|");
       if (seenKeys.has(key)) repeatedKeys.add(key);
       seenKeys.add(key);
     }
@@ -203,10 +204,10 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const audit = useMemo(() => {
     const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
     const existing = transactions.filter(item => item.type === "expense");
-    const exactMatches = rows.filter(row => existing.some(item => normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
+    const exactMatches = rows.filter(row => existing.some(item => item.type === row.type && normalize(item.title) === normalize(row.title) && item.date === row.date && Math.abs(Number(item.amount) - row.amount) < 0.01));
     const duplicateMap = new Map<string, InvoiceRow[]>();
     rows.forEach(row => {
-      const key = [normalize(row.title), row.amount.toFixed(2)].join("|");
+      const key = [row.type, normalize(row.title), row.amount.toFixed(2)].join("|");
       duplicateMap.set(key, [...(duplicateMap.get(key) || []), row]);
     });
     const repeated = [...duplicateMap.values()].filter(group => group.length > 1);
@@ -271,7 +272,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         <div><span className="eyebrow">IMPORTAÇÃO INTELIGENTE</span><h2 id="invoice-title">Importar extrato ou fatura</h2></div>
         <button type="button" className="icon-btn" onClick={onClose} disabled={busy} aria-label="Fechar"><X size={19}/></button>
       </div>
-      {done ? <div className="invoice-success"><CheckCircle2 size={32}/><strong>Fatura importada!</strong><p>Os lançamentos revisados foram adicionados à sua conta.</p><button className="primary-btn" onClick={onClose}>Concluir</button></div> : <>
+      {done ? <div className="invoice-success"><CheckCircle2 size={32}/><strong>Movimentações importadas!</strong><p>As receitas e despesas revisadas foram adicionadas à sua conta.</p><button className="primary-btn" onClick={onClose}>Concluir</button></div> : <>
         <p className="muted-text">Envie um PDF ou imagem, ou cole o texto do extrato/fatura. A leitura de arquivos é feita no navegador; o documento não é enviado para um serviço externo de OCR.</p>
         <div className="invoice-audit">
           <div className="invoice-audit-heading"><strong>Ou cole o texto do extrato</strong></div>
@@ -289,14 +290,14 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
         {file && file.size > 15 * 1024 * 1024 && <p className="invoice-error">O arquivo ultrapassa o limite de 15 MB.</p>}
         {error && <p className="invoice-error"><AlertTriangle size={15}/> {error}</p>}\n        {documentNotice && <div className="invoice-audit invoice-audit-warning" role="status"><strong><AlertTriangle size={16}/> Extrato bancário identificado</strong><p>{documentNotice}</p><p>Para conciliar corretamente, copie ou exporte a tabela detalhada de movimentações. O saldo inicial e o saldo final entram apenas na conferência, nunca como receita ou despesa.</p></div>}
         {rows.length > 0 && <div className="invoice-review">
-          <div className="invoice-review-head"><strong>{rows.length} compra(s) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
+          <div className="invoice-review-head"><strong>{rows.length} movimentação(ões) reconhecida(s)</strong><span>Revise ou corrija antes de importar</span></div>
           {detectedPeriod && <p className="invoice-period-detected"><CheckCircle2 size={15}/> Período da fatura identificado: <strong>{detectedPeriod}</strong>. Datas sem ano foram ajustadas com base nesse período.</p>}
           {statementTotal !== null && <div className="invoice-statement-total"><span>Total informado na fatura</span><strong>{statementTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong></div>}
           <button type="button" className="invoice-total-preview" aria-expanded={showItems} onClick={() => setShowItems(value => !value)}>
-            <span><strong>Soma das compras identificadas</strong><small>{showItems ? "Toque para ocultar as compras" : "Toque para ver todas as compras"}</small></span>
+            <span><strong>Despesas identificadas</strong><small>{showItems ? "Toque para ocultar os lançamentos" : "Toque para ver todos os lançamentos"}</small></span>
             <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} <span aria-hidden="true">{showItems ? "−" : "+"}</span></strong>
           </button>
-          {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total da fatura e as compras reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
+          {incomeTotal > 0 && <p className="invoice-reconciliation">Receitas identificadas: <strong>{incomeTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. Despesas identificadas: <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>.</p>}\n          {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total da fatura e as compras reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
           <section className="invoice-audit" aria-label="Validação de segurança da fatura">
             <div className="invoice-audit-heading"><span className="eyebrow">REGRAS DE CONFERÊNCIA</span><strong>Verificações antes de importar</strong></div>
             {validation.length > 0
@@ -323,13 +324,13 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
               <div className="invoice-row-subfields">
                 <label>Data<input type="date" value={row.date} onChange={e => updateRow(index, { date: e.target.value })}/></label>
                 <label>Valor (R$)<input inputMode="decimal" value={String(row.amount).replace(".", ",")} onChange={e => { const parsed = Number(e.target.value.replace(",", ".")); updateRow(index, { amount: e.target.value.trim() === "" ? 0 : parsed }); }}/></label>
-                <label>Categoria<select value={row.category} onChange={e => updateRow(index, { category: e.target.value })}>{CATEGORIES.map(category => <option key={category}>{category}</option>)}</select></label>
+                <label>Tipo<select value={row.type} onChange={e => updateRow(index, { type: e.target.value as "income" | "expense" })}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>\n                <label>Categoria<select value={row.category} onChange={e => updateRow(index, { category: e.target.value })}>{CATEGORIES.map(category => <option key={category}>{category}</option>)}</select></label>
               </div>
             </div>
             <button type="button" className="icon-btn invoice-remove" title="Remover compra" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
           </div>)}</div>
           }
-          <button className="primary-btn invoice-action" disabled={busy || !rows.length || !reviewAcknowledged || validation.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
+          <button className="primary-btn invoice-action" disabled={busy || !rows.length || !reviewAcknowledged || validation.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " movimentação(ões)"}</button>
           <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); setStatementTotal(null); setReviewAcknowledged(false); }}>Descartar leitura e tentar novamente</button>
         </div>}
         <p className="invoice-footnote">A leitura automática pode errar. Confira todos os lançamentos antes de confirmar. Compras parceladas são registradas pelo valor identificado na fatura; confira se esse valor corresponde à parcela, não ao total da compra.</p>
