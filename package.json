@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "start": "node server.mjs",
-    "test": "node --test && node --check server.mjs"
+    "test": "node --test && node --check server.mjs",
+    "build:android": "npm run build && cap sync android",
+    "build:ios": "npm run build && cap sync ios"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
@@ -19,13 +21,15 @@
     "tesseract.js": "^6.0.1",
     "express": "^4.21.2",
     "react-markdown": "^9.0.3",
-    "remark-gfm": "^4.0.1"
+    "remark-gfm": "^4.0.1",
+    "@capacitor/core": "^8.6.2"
   },
   "devDependencies": {
     "@types/react": "^18.3.18",
     "@types/react-dom": "^18.3.5",
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "~5.7.2",
-    "vite": "^6.0.7"
+    "vite": "^6.0.7",
+    "@capacitor/cli": "^8.6.2"
   }
 }
