@@ -60,7 +60,7 @@ function parseBrazilianDate(value: string, referenceDate: Date | null): string |
 }
 
 function extractStatementTotal(text: string): number | null {
-  const labels = /^(?:total da fatura|valor total da fatura|total a pagar|valor total a pagar|total desta fatura|total do demonstrativo)\b/i;
+  const labels = /^(?:total da fatura|valor total da fatura|total a pagar|valor total a pagar|total desta fatura|total do demonstrativo|valor da fatura|pagamento minimo|valor para pagamento)\b/i;
   for (const line of text.replace(/[\u00a0]/g, " ").split(/[\r\n]+/).map(value => value.trim())) {
     if (!labels.test(line)) continue;
     const values = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})\b/g)];
@@ -76,7 +76,7 @@ function parseRows(text: string): InvoiceRow[] {
   const referenceDate = detectInvoiceReferenceDate(text);
   const rows: InvoiceRow[] = [], seen = new Set<string>();
   for (const line of lines) {
-    if (/^(total|subtotal|pagamento|vencimento|saldo anterior|limite|encargos|juros|iof|parcelamento|melhor dia|resumo da fatura|anuidade|valor mínimo)\b/i.test(line)) continue;
+    if (/\b(total da fatura|valor total da fatura|total a pagar|valor total a pagar|total de compras|saldo anterior|saldo em aberto|pagamento recebido|pagamento efetuado|limite total|limite disponivel|limite disponível|limite utilizado|encargos|juros|iof|anuidade|valor minimo|valor mínimo|resumo da fatura|melhor dia de compra|vencimento)\b/i.test(line)) continue;
     if (/\b(estorno|crédito|credito|pagamento recebido|pagamento efetuado)\b/i.test(line)) continue;
     const date = parseBrazilianDate(line, referenceDate);
     if (!date) continue;
@@ -162,8 +162,28 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const [detectedPeriod, setDetectedPeriod] = useState("");
   const [statementTotal, setStatementTotal] = useState<number | null>(null);
   const [showItems, setShowItems] = useState(false);
+  const [reviewAcknowledged, setReviewAcknowledged] = useState(false);
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
+  const validation = useMemo(() => {
+    const issues: string[] = [];
+    if (rows.length === 0) issues.push("Nenhuma compra válida foi identificada.");
+    if (rows.some(row => !row.title.trim() || !/^\\d{4}-\\d{2}-\\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) issues.push("Há lançamento com descrição, data ou valor inválido.");
+    const amounts = rows.map(row => row.amount).filter(value => Number.isFinite(value) && value > 0);
+    if (amounts.some(value => value > 5000)) issues.push("Foi encontrado lançamento acima de R$ 5.000. Confira se o OCR confundiu um número ou o limite do cartão com uma compra.");
+    if (statementTotal !== null && statementTotal > 0 && total > statementTotal * 1.5) issues.push("A soma reconhecida está mais de 50% acima do total da fatura. A importação exige conferência manual dos valores.");
+    if (statementTotal !== null && statementTotal > 0 && total < statementTotal * 0.5) issues.push("A soma reconhecida está muito abaixo do total da fatura. Podem faltar compras ou existir saldo anterior/encargos.");
+    const repeatedKeys = new Set<string>();
+    const seenKeys = new Set<string>();
+    for (const row of rows) {
+      const key = [row.title.toLocaleLowerCase("pt-BR").trim(), row.date, row.amount.toFixed(2)].join("|");
+      if (seenKeys.has(key)) repeatedKeys.add(key);
+      seenKeys.add(key);
+    }
+    if (repeatedKeys.size) issues.push("Existem compras idênticas repetidas. Confira se são duplicidades ou compras realmente distintas.");
+    if (statementTotal === null) issues.push("Não foi possível localizar com segurança o total oficial da fatura no documento.");
+    return issues;
+  }, [rows, statementTotal, total]);
   const audit = useMemo(() => {
     const normalize = (value: string) => value.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
     const existing = transactions.filter(item => item.type === "expense");
@@ -185,12 +205,13 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
 
   const analyze = async () => {
     if (!file) return;
-    setBusy(true); setError(""); setRows([]); setProgress("Preparando leitura...");
+    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setProgress("Preparando leitura...");
     try {
       const text = await extractFile(file, setProgress);
       const referenceDate = detectInvoiceReferenceDate(text);
       const parsed = parseRows(text);
       setStatementTotal(extractStatementTotal(text));
+      setReviewAcknowledged(false);
       setShowItems(false);
       if (!parsed.length) throw new Error("Não encontrei compras com data e valor reconhecíveis. Tente o PDF original ou uma foto mais nítida da tabela de compras.");
       setDetectedPeriod(referenceDate ? referenceDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : "");
@@ -206,6 +227,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
       setError("Revise os campos: descrição, data e valor precisam estar válidos.");
       return;
     }
+    if (!reviewAcknowledged) { setError("Antes de importar, confira os valores e marque a confirmação de revisão."); return; }
+    if (validation.issues.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))) { setError("Importação bloqueada: a soma ou algum lançamento está muito acima do esperado. Corrija os valores ou descarte a leitura."); return; }
     setBusy(true); setError("");
     try { await onImport(rows); setDone(true); }
     catch (e) { setError(e instanceof Error ? e.message : "Falha ao importar os lançamentos."); }
@@ -238,6 +261,13 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             <strong>{total.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} <span aria-hidden="true">{showItems ? "−" : "+"}</span></strong>
           </button>
           {statementTotal !== null && <p className="invoice-reconciliation">Diferença entre o total da fatura e as compras reconhecidas: <strong>{(statementTotal-total).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}</strong>. A diferença pode incluir saldo anterior, pagamentos, créditos, juros ou itens que a leitura não reconheceu.</p>}
+          <section className="invoice-audit" aria-label="Validação de segurança da fatura">
+            <div className="invoice-audit-heading"><span className="eyebrow">REGRAS DE CONFERÊNCIA</span><strong>Verificações antes de importar</strong></div>
+            {validation.issues.length > 0
+              ? <ul className="invoice-audit-warning">{validation.issues.map((issue, index) => <li key={index}>{issue}</li>)}</ul>
+              : <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma inconsistência básica detectada. Mesmo assim, confira o documento original.</p>}
+            <label className="invoice-review-confirm"><input type="checkbox" checked={reviewAcknowledged} onChange={event => setReviewAcknowledged(event.target.checked)} /> Conferi o total da fatura e os valores de cada compra no documento original.</label>
+          </section>
           <section className="invoice-audit" aria-label="Auditoria da fatura">
             <div className="invoice-audit-heading"><span className="eyebrow">AUDITORIA AUTOMÁTICA</span><strong>O que encontrei nesta fatura</strong></div>
             <div className="invoice-audit-grid">
@@ -263,8 +293,8 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             <button type="button" className="icon-btn invoice-remove" title="Remover compra" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
           </div>)}</div>
           }
-          <button className="primary-btn invoice-action" disabled={busy || !rows.length} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
-          <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); }}>Descartar leitura e tentar novamente</button>
+          <button className="primary-btn invoice-action" disabled={busy || !rows.length || !reviewAcknowledged || validation.issues.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
+          <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); setStatementTotal(null); setReviewAcknowledged(false); }}>Descartar leitura e tentar novamente</button>
         </div>}
         <p className="invoice-footnote">A leitura automática pode errar. Confira todos os lançamentos antes de confirmar. Compras parceladas são registradas pelo valor identificado na fatura; confira se esse valor corresponde à parcela, não ao total da compra.</p>
       </>}
