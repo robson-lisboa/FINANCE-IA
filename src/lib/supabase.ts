@@ -131,7 +131,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
 }
 
 export async function signUp(email: string, password: string): Promise<{ session: AuthSession | null; needsEmailConfirmation: boolean }> {
-  const result = await authRequest<unknown>("signup", { email, password });
+  const result = await authRequest<unknown>("signup", { email, password, options: { emailRedirectTo: window.location.origin } });
   if (result && typeof result === "object" && "access_token" in result && "refresh_token" in result && (result as { access_token?: unknown }).access_token && (result as { refresh_token?: unknown }).refresh_token) {
     const session = buildAuthSession(result);
     saveSession(session);
