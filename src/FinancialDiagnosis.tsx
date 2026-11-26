@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { Activity, ArrowDownRight, ArrowUpRight, Lightbulb, ShieldAlert, TrendingDown, TrendingUp, Wallet } from "lucide-react";
-import { filterMonthToDate } from "./lib/financial-core";
+import { filterMonthToDate, filterRealizedTransactions } from "./lib/financial-core";
 import FinancialAssistant from "./FinancialAssistant";
 import InvestigationPanel from "./InvestigationPanel";
 import CentralIntelligence from "./CentralIntelligence";
@@ -16,7 +16,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
     const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonthNumber === now.getMonth() + 1;
     const previousDate = new Date(selectedYear, selectedMonthNumber - 2, 1);
     const previousKey = `${previousDate.getFullYear()}-${String(previousDate.getMonth() + 1).padStart(2, "0")}`;
-    const valid = transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)));
+    const valid = filterRealizedTransactions(transactions).filter(t => Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
     const sum = (items: Transaction[], type: "income" | "expense") => items.filter(t => t.type === type).reduce((total, t) => total + Number(t.amount), 0);
     const current = filterMonthToDate(valid, currentKey);
     const previous = valid.filter(t => t.date.startsWith(previousKey) && (!isCurrentMonth || Number(t.date.slice(8, 10)) <= now.getDate()));
@@ -87,7 +87,7 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
           : `Acompanhe os gastos de ${monthName(report.currentKey)} e defina um limite para a categoria que mais consome seu orçamento.`;
 
   return <section className="page-section diagnosis-page">
-    <div className="page-heading"><div><p className="eyebrow">INTELIGÊNCIA FINANCEIRA</p><h1>Diagnóstico financeiro</h1><p className="muted-text">Análise de {monthName(report.currentKey)} com comparação histórica separada.</p></div></div>
+    <div className="page-heading"><div><p className="eyebrow">INTELIGÊNCIA FINANCEIRA</p><h1>Diagnóstico financeiro</h1><p className="muted-text">Análise de {monthName(report.currentKey)} com lançamentos realizados; valores agendados ficam fora dos indicadores.</p></div></div>
     <div className="stats-grid">
       <div className="stat-card"><div className="stat-top"><span>Receitas do período</span><div className="stat-icon green"><ArrowDownRight size={19}/></div></div><strong className="stat-value">{formatMoney(report.currentIncome)}</strong><div className="stat-detail">Entradas em {monthName(report.currentKey)}</div></div>
       <div className="stat-card"><div className="stat-top"><span>Despesas do período</span><div className="stat-icon red"><ArrowUpRight size={19}/></div></div><strong className="stat-value">{formatMoney(report.currentExpenses)}</strong><div className="stat-detail">Média diária: {formatMoney(report.dailyAverage)}</div></div>
