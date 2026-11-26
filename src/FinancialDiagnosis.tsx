@@ -91,11 +91,11 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       <div className="stat-card"><div className="stat-top"><span>Receitas do mês</span><div className="stat-icon green"><ArrowDownRight size={19}/></div></div><strong className="stat-value">{formatMoney(report.currentIncome)}</strong><div className="stat-detail">Entradas em {monthName(report.currentKey)}</div></div>
       <div className="stat-card"><div className="stat-top"><span>Despesas do mês</span><div className="stat-icon red"><ArrowUpRight size={19}/></div></div><strong className="stat-value">{formatMoney(report.currentExpenses)}</strong><div className="stat-detail">Média diária: {formatMoney(report.dailyAverage)}</div></div>
       <div className="stat-card"><div className="stat-top"><span>Resultado do mês</span><div className="stat-icon purple"><Wallet size={19}/></div></div><strong className="stat-value">{formatMoney(report.balance)}</strong><div className="stat-detail">Receitas menos despesas</div></div>
-      <div className="stat-card"><div className="stat-top"><span>Taxa de economia</span><div className="stat-icon blue"><Activity size={19}/></div></div><strong className="stat-value">{report.savings === null ? "—" : `${report.savings.toFixed(1).replace(".", ",")}%`}</strong><div className="stat-detail">Sobre as receitas deste mês</div></div>
+      <div className="stat-card"><div className="stat-top"><span>Taxa de economia</span><div className="stat-icon blue"><Activity size={19}/></div></div><strong className="stat-value">{report.savings === null ? "—" : `${report.savings.toFixed(1).replace(".", ",")}%`}</strong><div className="stat-detail">Sobre as receitas de {monthName(report.currentKey)}</div></div>
     </div>
     <CentralIntelligence transactions={transactions} formatMoney={formatMoney} selectedMonth={selectedMonth}/>
-    <FinancialAssistant accessToken={accessToken}/>
-    <InvestigationPanel transactions={transactions} formatMoney={formatMoney}/>
+    <FinancialAssistant accessToken={accessToken} selectedMonth={selectedMonth}/>
+    <InvestigationPanel transactions={transactions} formatMoney={formatMoney} selectedMonth={selectedMonth}/>
     {report.isCurrentMonth && <div className="panel predictive-panel">
       <div className="panel-heading"><div><h2>Plano inteligente até o fim do mês</h2><p>Limite diário calculado com o saldo dos lançamentos registrados</p></div><TrendingUp size={18} className="subtle-icon"/></div>
       <div className="predictive-kpis">
@@ -107,7 +107,6 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
       {report.categoryForecast.length > 0 && <div className="predictive-watch"><strong>Categorias que merecem atenção</strong>{report.categoryForecast.map(item => <div key={item.category}><span>{item.category}</span><b>Projeção {formatMoney(item.projected)} · {item.difference !== null ? `+${item.difference.toFixed(0)}%` : ""} vs. histórico</b></div>)}</div>}
       {report.possibleDuplicates.length > 0 && <div className="predictive-watch duplicate-watch"><strong>Possíveis lançamentos duplicados — confira antes de excluir</strong>{report.possibleDuplicates.map(item => <div key={item.date + item.title + item.amount}><span>{item.title} · {item.date.split("-").reverse().join("/")}</span><b>{item.count} × {formatMoney(item.amount)}</b></div>)}</div>}
       <p className="insight-disclaimer">As tendências por categoria comparam a projeção atual à média mensal dos meses anteriores disponíveis (mínimo de dois meses). Duplicidades são suspeitas por coincidência de data, descrição e valor; não são excluídas automaticamente.</p>
-    </div>
     </div>}
     <div className="panel preventive-alerts">
       <div className="panel-heading"><div><h2>Central de alertas preventivos</h2><p>Sinais identificados automaticamente nos seus lançamentos</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
@@ -128,13 +127,14 @@ export default function FinancialDiagnosis({ transactions, formatMoney, accessTo
         <div className="insight-title"><div className="ai-icon"><Lightbulb size={18}/></div><div><h2>Recomendação do Finance IA</h2><p>Orientação baseada nos registros disponíveis</p></div></div>
         <div className="insight-highlight"><span className="insight-label">PONTO DE ATENÇÃO</span><strong>{report.count === 0 ? "Ainda faltam dados para analisar." : report.balance < 0 ? "Atenção: resultado negativo." : report.change !== null && report.change > 15 ? "Despesas em alta." : "Acompanhe seu ritmo financeiro."}</strong><p>{advice}</p></div>
         <div className="diagnosis-comparison"><div><span>Despesas em {monthName(report.previousKey)}</span><strong>{formatMoney(report.previousExpenses)}</strong></div><div><span>Variação mensal</span><strong className={report.change === null ? "" : report.change > 0 ? "diagnosis-negative" : "goal-positive"}>{report.change === null ? "Sem base anterior" : `${report.change > 0 ? "+" : ""}${report.change.toFixed(1).replace(".", ",")}%`}</strong></div></div>
-        <p className="insight-disclaimer">Comparação do mesmo intervalo de dias do mês atual e do mês anterior. O mês atual ainda está em andamento; os valores podem mudar. Análise informativa.</p>
+        <p className="insight-disclaimer">Comparação do mesmo intervalo de dias do mês atual e do mês anterior. A comparação usa o mesmo intervalo de dias quando o período selecionado é o mês atual; para meses fechados, compara o mês completo. Análise informativa.</p>
       </div>
-      <div className="panel diagnosis-forecast">
+      {report.isCurrentMonth && <div className="panel diagnosis-forecast">
         <div className="insight-title"><div className="ai-icon"><TrendingUp size={18}/></div><div><h2>Projeção de fechamento</h2><p>Estimativa pelo ritmo de gastos atual</p></div></div>
         <div className="diagnosis-forecast-grid"><div><span>Despesas estimadas no fim do mês</span><strong>{report.projectedExpenses === null ? "Indisponível" : formatMoney(report.projectedExpenses)}</strong></div><div><span>Saldo estimado no fim do mês</span><strong className={report.projectedBalance === null ? "predictive-muted" : report.projectedBalance < 0 ? "diagnosis-negative" : "goal-positive"}>{report.projectedBalance === null ? "Indisponível" : formatMoney(report.projectedBalance)}</strong></div></div>
         <p className="insight-disclaimer">{report.projectionAvailable ? `Projeção linear baseada em ${report.daysElapsed} de ${report.daysInMonth} dias e em pelo menos 5 despesas distribuídas em 3 dias. Não considera contas futuras ainda não cadastradas nem mudanças no padrão de consumo.` : "Projeção indisponível: faltam despesas distribuídas em pelo menos 3 dias diferentes."}</p>
       </div>
+      </div>}
       <div className="panel recurring-panel">
         <div className="panel-heading"><div><h2>Possíveis gastos recorrentes</h2><p>Identificados pelo mesmo nome em meses diferentes</p></div><ShieldAlert size={18} className="subtle-icon"/></div>
         {report.recurring.length === 0 ? <div className="empty-state compact">Ainda não há lançamentos suficientes com o mesmo nome em pelo menos dois meses.</div> : <>
