@@ -2,20 +2,21 @@ import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, ShieldCheck, Sparkles, Target } from "lucide-react";
 
 type Transaction = { id: string; title: string; category: string; date: string; amount: number; type: "income" | "expense" };
-type Props = { transactions: Transaction[]; formatMoney: (value: number) => string };
+type Props = { transactions: Transaction[]; formatMoney: (value: number) => string; selectedMonth: string };
 
-export default function ProactiveAdvisor({ transactions, formatMoney }: Props) {
+export default function ProactiveAdvisor({ transactions, formatMoney, selectedMonth }: Props) {
   const result = useMemo(() => {
     const now = new Date();
-    const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const month = transactions.filter(t => t.date.startsWith(key) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
+    const [year, monthNumber] = selectedMonth.split("-").map(Number);
+    const isCurrentMonth = year === now.getFullYear() && monthNumber === now.getMonth() + 1;
+    const month = transactions.filter(t => t.date.startsWith(selectedMonth) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
     const income = month.filter(t => t.type === "income").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenses = month.filter(t => t.type === "expense").reduce((sum, t) => sum + Number(t.amount), 0);
     const expenseEntries = month.filter(t => t.type === "expense");
     const distinctExpenseDays = new Set(expenseEntries.map(t => t.date)).size;
-    const daysElapsed = Math.max(1, now.getDate());
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-    const projectionHasMinimumEvidence = expenseEntries.length >= 5 && distinctExpenseDays >= 3;
+    const daysInMonth = new Date(year, monthNumber, 0).getDate();
+    const daysElapsed = isCurrentMonth ? Math.max(1, now.getDate()) : daysInMonth;
+    const projectionHasMinimumEvidence = isCurrentMonth && expenseEntries.length >= 5 && distinctExpenseDays >= 3;
     const projected = expenses / daysElapsed * daysInMonth;
     const categories = month.filter(t => t.type === "expense").reduce<Record<string, number>>((acc, t) => {
       const category = t.category?.trim() || "Sem categoria";
@@ -27,11 +28,11 @@ export default function ProactiveAdvisor({ transactions, formatMoney }: Props) {
     let level: "critical" | "warning" | "positive" | "neutral" = "neutral";
     let title = "Vamos construir seu diagnóstico";
     let action = "Registre suas receitas e despesas para que o Finance IA identifique padrões reais e priorize o que merece atenção.";
-    let evidence = "Ainda não há lançamentos suficientes neste mês para uma recomendação personalizada.";
+    let evidence = `Ainda não há lançamentos suficientes em ${new Date(year, monthNumber - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })} para uma recomendação personalizada.`;
     if (month.length > 0 && income === 0 && expenses > 0) {
       title = "Falta registrar suas receitas";
       action = "Cadastre sua renda mensal. Sem ela, não é possível avaliar se os gastos cabem no orçamento.";
-      evidence = `${month.length} lançamento(s) encontrado(s), com ${formatMoney(expenses)} em despesas e nenhuma receita registrada neste mês.`;
+      evidence = `${month.length} lançamento(s) encontrado(s), com ${formatMoney(expenses)} em despesas e nenhuma receita registrada no período selecionado.`;
     } else if (income > 0 && expenses > income) {
       level = "critical";
       title = "As despesas já passaram das receitas";
@@ -51,21 +52,21 @@ export default function ProactiveAdvisor({ transactions, formatMoney }: Props) {
       level = "positive";
       title = "Nenhum risco prioritário apareceu nos registros";
       action = "Continue registrando as movimentações e mantenha uma reserva para imprevistos. O diagnóstico melhora com dados completos.";
-      evidence = `${formatMoney(income)} em receitas e ${formatMoney(expenses)} em despesas registrados neste mês.`;
+      evidence = `${formatMoney(income)} em receitas e ${formatMoney(expenses)} em despesas registrados no período selecionado.`;
       if (income > expenses && expenses > 0 && !projectionHasMinimumEvidence) {
         evidence += ` A projeção de fechamento foi omitida: são necessários ao menos 5 despesas distribuídas em 3 dias diferentes para reduzir o risco de um alerta baseado em poucos registros.`;
       }
     }
     return { level, title, action, evidence, income, expenses, count: month.length, top, share };
-  }, [transactions, formatMoney]);
+  }, [transactions, formatMoney, selectedMonth]);
 
   return <section className={`panel proactive-advisor ${result.level}`}>
-    <div className="proactive-head"><div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Consultor financeiro proativo</h2><p>Uma prioridade clara, baseada nos seus lançamentos</p></div></div><span className="proactive-status">{result.level === "critical" ? "PRIORIDADE ALTA" : result.level === "warning" ? "ATENÇÃO" : result.level === "positive" ? "ESTÁVEL" : "AGUARDANDO DADOS"}</span></div>
+    <div className="proactive-head"><div className="insight-title"><div className="ai-icon"><Sparkles size={18}/></div><div><h2>Consultor financeiro proativo</h2><p>Uma prioridade clara para {new Date(Number(selectedMonth.slice(0, 4)), Number(selectedMonth.slice(5, 7)) - 1, 1).toLocaleDateString("pt-BR", { month: "long", year: "numeric" })}</p></div></div><span className="proactive-status">{result.level === "critical" ? "PRIORIDADE ALTA" : result.level === "warning" ? "ATENÇÃO" : result.level === "positive" ? "ESTÁVEL" : "AGUARDANDO DADOS"}</span></div>
     <div className="proactive-main">
       <div className="proactive-symbol">{result.level === "critical" || result.level === "warning" ? <AlertTriangle size={19}/> : result.level === "positive" ? <ShieldCheck size={19}/> : <Target size={19}/>}</div>
       <div><span className="insight-label">RECOMENDAÇÃO PRINCIPAL</span><h3>{result.title}</h3><p>{result.action}</p></div>
     </div>
     <div className="proactive-evidence"><strong><CheckCircle2 size={14}/> Evidência</strong><p>{result.evidence}</p></div>
-    <div className="proactive-footer"><span>{result.count} lançamento(s) considerados neste mês</span><span>Não representa saldo bancário</span></div>
+    <div className="proactive-footer"><span>{result.count} lançamento(s) no período selecionado</span><span>Não representa saldo bancário</span></div>
   </section>;
 }
