@@ -10,9 +10,6 @@ export default function ProactiveAdvisor({ transactions, formatMoney, selectedMo
     const now = new Date();
     const [year, monthNumber] = selectedMonth.split("-").map(Number);
     const isCurrentMonth = year === now.getFullYear() && monthNumber === now.getMonth() + 1;
-    const todayKey = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, "0"), String(now.getDate()).padStart(2, "0")].join("-");
-    const currentMonthKey = todayKey.slice(0, 7);
-    const includeOnlyRealized = selectedMonth >= currentMonthKey;
     const selectedTransactions = transactions.filter(t => t.date.startsWith(selectedMonth) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
     const month = filterRealizedTransactions(selectedTransactions);
     const scheduled = filterScheduledTransactions(selectedTransactions);
