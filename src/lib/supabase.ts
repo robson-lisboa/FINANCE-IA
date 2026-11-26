@@ -21,6 +21,13 @@ const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
+// Links enviados por e-mail devem apontar para o app publicado, nunca para localhost.
+function getPublicAppUrl(): string {
+  return import.meta.env.PROD
+    ? window.location.origin
+    : "https://finance-ia-wdz5.onrender.com";
+}
+
 function ensureConfigured() {
   if (!isSupabaseConfigured) {
     throw new Error("O banco ainda não foi conectado. Configure VITE_SUPABASE_URL e VITE_SUPABASE_ANON_KEY.");
@@ -131,7 +138,7 @@ export async function signIn(email: string, password: string): Promise<AuthSessi
 }
 
 export async function signUp(email: string, password: string): Promise<{ session: AuthSession | null; needsEmailConfirmation: boolean }> {
-  const result = await authRequest<unknown>("signup", { email, password, options: { emailRedirectTo: window.location.origin } });
+  const result = await authRequest<unknown>("signup", { email, password, options: { emailRedirectTo: getPublicAppUrl() } });
   if (result && typeof result === "object" && "access_token" in result && "refresh_token" in result && (result as { access_token?: unknown }).access_token && (result as { refresh_token?: unknown }).refresh_token) {
     const session = buildAuthSession(result);
     saveSession(session);
@@ -143,7 +150,7 @@ export async function signUp(email: string, password: string): Promise<{ session
 
 export async function requestPasswordRecovery(email: string): Promise<void> {
   ensureConfigured();
-  await authRequest<unknown>("recover?redirect_to=" + encodeURIComponent(window.location.origin), { email });
+  await authRequest<unknown>("recover?redirect_to=" + encodeURIComponent(getPublicAppUrl()), { email });
 }
 
 export async function updatePasswordWithRecoveryToken(accessToken: string, password: string): Promise<void> {
