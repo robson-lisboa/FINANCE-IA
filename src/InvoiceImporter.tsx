@@ -293,7 +293,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             <button type="button" className="icon-btn invoice-remove" title="Remover compra" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
           </div>)}</div>
           }
-          <button className="primary-btn invoice-action" disabled={busy || !rows.length || !reviewAcknowledged || validation.issues.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
+          <button className="primary-btn invoice-action" disabled={busy || !rows.length || !reviewAcknowledged || validation.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " compra(s)"}</button>
           <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); setStatementTotal(null); setReviewAcknowledged(false); }}>Descartar leitura e tentar novamente</button>
         </div>}
         <p className="invoice-footnote">A leitura automática pode errar. Confira todos os lançamentos antes de confirmar. Compras parceladas são registradas pelo valor identificado na fatura; confira se esse valor corresponde à parcela, não ao total da compra.</p>
