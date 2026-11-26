@@ -73,13 +73,13 @@ function extractStatementTotal(text: string): number | null {
 
 
 function isBankStatementSummary(text: string): boolean {
-  const normalized = text.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\\u0300-\\u036f]/g, "");
+  const normalized = text.toLocaleLowerCase("pt-BR").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   const signals = [
     /saldo de conta corrente/,
     /total de creditos/,
     /total de debitos/,
-    /saldo em \\d{1,2}\\/\\d{1,2}/,
-    /depositos\\s*\\/\\s*transferencias/,
+    /saldo em \d{1,2}\/\d{1,2}/,
+    /depositos\s*\/\s*transferencias/,
     /salario e proventos/
   ];
   return signals.filter(pattern => pattern.test(normalized)).length >= 3;
@@ -176,7 +176,9 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const [detectedPeriod, setDetectedPeriod] = useState("");
   const [statementTotal, setStatementTotal] = useState<number | null>(null);
   const [showItems, setShowItems] = useState(false);
-  const [reviewAcknowledged, setReviewAcknowledged] = useState(false);\n  const [documentNotice, setDocumentNotice] = useState("");
+  const [reviewAcknowledged, setReviewAcknowledged] = useState(false);
+  const [documentNotice, setDocumentNotice] = useState("");
+  const [pastedText, setPastedText] = useState("");
 
   const total = useMemo(() => rows.reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
   const validation = useMemo(() => {
@@ -217,23 +219,37 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
     setRows(current => current.map((row, rowIndex) => rowIndex === index ? { ...row, ...changes } : row));
   };
 
-  const analyze = async () => {
-    if (!file) return;
-    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setDocumentNotice(""); setProgress("Preparando leitura...");
+  const analyzeText = async (text: string) => {
+    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setDocumentNotice(""); setProgress("Analisando movimentações...");
     try {
-      const text = await extractFile(file, setProgress);
+      if (isBankStatementSummary(text)) {
+        setDocumentNotice("Este conteúdo parece ser um resumo consolidado de conta bancária, não uma lista de transações. Créditos, débitos e saldos agrupados não serão convertidos em lançamentos individuais. Cole o extrato detalhado, com data, descrição e valor de cada operação.");
+        setProgress("");
+        return;
+      }
       const referenceDate = detectInvoiceReferenceDate(text);
       const parsed = parseRows(text);
       setStatementTotal(extractStatementTotal(text));
-      setReviewAcknowledged(false);
       setShowItems(false);
-      if (!parsed.length) throw new Error("Não encontrei compras com data e valor reconhecíveis. Tente o PDF original ou uma foto mais nítida da tabela de compras.");
+      if (!parsed.length) throw new Error("Não encontrei movimentações com data e valor reconhecíveis. Confira se o texto contém as linhas detalhadas do extrato ou da fatura.");
       setDetectedPeriod(referenceDate ? referenceDate.toLocaleDateString("pt-BR", { month: "long", year: "numeric" }) : "");
       setRows(parsed);
       setProgress("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Não foi possível ler a fatura.");
+      setError(e instanceof Error ? e.message : "Não foi possível analisar o texto.");
     } finally { setBusy(false); }
+  };
+
+  const analyze = async () => {
+    if (!file) return;
+    setBusy(true); setError(""); setRows([]); setReviewAcknowledged(false); setStatementTotal(null); setDocumentNotice(""); setProgress("Preparando leitura...");
+    try { const text = await extractFile(file, setProgress); await analyzeText(text); }
+    catch (e) { setError(e instanceof Error ? e.message : "Não foi possível ler o documento."); setBusy(false); }
+  };
+
+  const analyzePastedText = () => {
+    if (pastedText.trim().length < 20) { setError("Cole o texto do extrato ou da fatura antes de analisar."); return; }
+    void analyzeText(pastedText);
   };
 
   const confirmImport = async () => {
@@ -257,6 +273,12 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
       </div>
       {done ? <div className="invoice-success"><CheckCircle2 size={32}/><strong>Fatura importada!</strong><p>Os lançamentos revisados foram adicionados à sua conta.</p><button className="primary-btn" onClick={onClose}>Concluir</button></div> : <>
         <p className="muted-text">Envie o PDF ou uma foto da fatura. A leitura é feita no seu navegador; o arquivo não é enviado para um serviço externo de OCR.</p>
+        <div className="invoice-audit">
+          <div className="invoice-audit-heading"><strong>Ou cole o texto do extrato</strong></div>
+          <p className="muted-text">Não consegue anexar o PDF? Abra o extrato no banco, copie o texto e cole aqui. Você pode enviar em partes.</p>
+          <textarea value={pastedText} onChange={event => { setPastedText(event.target.value); setError(""); }} rows={6} maxLength={100000} placeholder="Cole aqui as movimentações, com datas, descrições e valores..." disabled={busy} />
+          <button type="button" className="outline-btn invoice-action" onClick={analyzePastedText} disabled={busy || pastedText.trim().length < 20}>{busy ? "Analisando..." : "Analisar texto colado"}</button>
+        </div>
         <label className="invoice-drop">
           <FileUp size={28}/>
           <strong>{file ? file.name : "Selecionar fatura"}</strong>
