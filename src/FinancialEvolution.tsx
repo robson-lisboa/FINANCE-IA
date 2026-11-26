@@ -13,7 +13,7 @@ export default function FinancialEvolution({ transactions, selectedMonth, format
     const previousDate = new Date(year, month - 2, 1);
     const previousKey = previousDate.getFullYear() + "-" + String(previousDate.getMonth() + 1).padStart(2, "0");
     const valid = transactions.filter(t => /^\d{4}-\d{2}-\d{2}$/.test(t.date) && Number.isFinite(Number(t.amount)) && Number(t.amount) >= 0);
-    const inWindow = (t: Transaction, key: string) => t.date.startsWith(key) && Number(t.date.slice(8, 10)) <= cutoffDay;
+    const inWindow = (t: Transaction, key: string) => t.date.startsWith(key) && (!currentMonth || Number(t.date.slice(8, 10)) <= cutoffDay);
     const sum = (items: Transaction[], type: "income" | "expense") => items.filter(t => t.type === type).reduce((total, t) => total + Number(t.amount), 0);
     const current = valid.filter(t => inWindow(t, selectedMonth));
     const previous = valid.filter(t => inWindow(t, previousKey));
