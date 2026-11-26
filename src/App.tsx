@@ -5,6 +5,7 @@ import ProfileSettings from "./ProfileSettings";
 import InvoiceImporter from "./InvoiceImporter";
 import GoalsManager from "./GoalsManager";
 import FinancialDiagnosis from "./FinancialDiagnosis";
+import FinancialEvolution from "./FinancialEvolution";
 import PlanningCenter from "./PlanningCenter";
 import ProactiveAdvisor from "./ProactiveAdvisor";
 import { parseBrazilianMoney } from "./lib/money-core.js";
@@ -548,6 +549,8 @@ const initialTransactions: Transaction[] = [];function FinanceDashboard({ sessio
           </div>
           <span className="health-guidance-status">{financialHealth.label}</span>
         </section>
+
+        <FinancialEvolution transactions={transactions} selectedMonth={transactionMonth} formatMoney={formatMoney}/>
 
         {settings.widgets.stats && <section className="stats-grid">
           <StatCard title="Resultado do mês" value={formatMoney(monthlyTotals.balance)} icon={<Wallet size={19}/>} tone="purple" detail={`Receitas menos despesas · ${monthOptionLabel(transactionMonth)}`} />
