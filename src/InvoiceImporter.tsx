@@ -60,12 +60,12 @@ function parseBrazilianDate(value: string, referenceDate: Date | null): string |
 }
 
 function extractStatementTotal(text: string): number | null {
-  const labels = /^(?:total da fatura|valor total da fatura|total a pagar|valor total a pagar|total desta fatura|total do demonstrativo)\\b/i;
-  for (const line of text.replace(/[\\u00a0]/g, " ").split(/[\\r\\n]+/).map(value => value.trim())) {
+  const labels = /^(?:total da fatura|valor total da fatura|total a pagar|valor total a pagar|total desta fatura|total do demonstrativo)\b/i;
+  for (const line of text.replace(/[\u00a0]/g, " ").split(/[\r\n]+/).map(value => value.trim())) {
     if (!labels.test(line)) continue;
-    const values = [...line.matchAll(/(?:R\\$\\s*)?(\\d{1,3}(?:\\.\\d{3})*,\\d{2}|\\d+,\\d{2})\\b/g)];
+    const values = [...line.matchAll(/(?:R\$\s*)?(\d{1,3}(?:\.\d{3})*,\d{2}|\d+,\d{2})\b/g)];
     if (!values.length) continue;
-    const amount = Number(values[values.length - 1][1].replace(/\\./g, "").replace(",", "."));
+    const amount = Number(values[values.length - 1][1].replace(/\./g, "").replace(",", "."));
     if (Number.isFinite(amount) && amount >= 0 && amount <= 10000000) return amount;
   }
   return null;
