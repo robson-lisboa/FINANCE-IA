@@ -191,10 +191,10 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
   const incomeTotal = useMemo(() => rows.filter(row => row.type === "income").reduce((sum, row) => sum + (Number.isFinite(row.amount) ? row.amount : 0), 0), [rows]);
   const validation = useMemo(() => {
     const issues: string[] = [];
-    if (rows.length === 0) issues.push("Nenhuma compra válida foi identificada.");
+    if (rows.length === 0) issues.push("Nenhuma movimentação válida foi identificada.");
     if (rows.some(row => !row.title.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(row.date) || !Number.isFinite(row.amount) || row.amount <= 0)) issues.push("Há lançamento com descrição, data ou valor inválido.");
     const amounts = rows.map(row => row.amount).filter(value => Number.isFinite(value) && value > 0);
-    if (amounts.some(value => value > 5000)) issues.push("Foi encontrado lançamento acima de R$ 5.000. Confira se o OCR confundiu um número ou o limite do cartão com uma compra.");
+    if (amounts.some(value => value > 5000)) issues.push("Foi encontrado lançamento acima de R$ 5.000. Confira se o OCR confundiu um número ou um valor de referência com uma movimentação.");
     if (statementTotal !== null && statementTotal > 0 && total > statementTotal * 1.5) issues.push("A soma reconhecida está mais de 50% acima do total da fatura. A importação exige conferência manual dos valores.");
     if (statementTotal !== null && statementTotal > 0 && total < statementTotal * 0.5) issues.push("A soma reconhecida está muito abaixo do total da fatura. Podem faltar compras ou existir saldo anterior/encargos.");
     const repeatedKeys = new Set<string>();
@@ -204,7 +204,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
       if (seenKeys.has(key)) repeatedKeys.add(key);
       seenKeys.add(key);
     }
-    if (repeatedKeys.size) issues.push("Existem compras idênticas repetidas. Confira se são duplicidades ou compras realmente distintas.");
+    if (repeatedKeys.size) issues.push("Existem movimentações idênticas repetidas. Confira se são duplicidades ou compras realmente distintas.");
     if (statementTotal === null) issues.push("Não foi possível localizar com segurança o total oficial da fatura no documento.");
     return issues;
   }, [rows, statementTotal, total]);
@@ -310,7 +310,7 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
             {validation.length > 0
               ? <ul className="invoice-audit-warning">{validation.map((issue, index) => <li key={index}>{issue}</li>)}</ul>
               : <p className="invoice-audit-ok"><CheckCircle2 size={15}/> Nenhuma inconsistência básica detectada. Mesmo assim, confira o documento original.</p>}
-            <label className="invoice-review-confirm"><input type="checkbox" checked={reviewAcknowledged} onChange={event => setReviewAcknowledged(event.target.checked)} /> Conferi o total da fatura e os valores de cada compra no documento original.</label>
+            <label className="invoice-review-confirm"><input type="checkbox" checked={reviewAcknowledged} onChange={event => setReviewAcknowledged(event.target.checked)} /> Conferi os valores e os tipos de todas as movimentações no documento original.</label>
           </section>
           <section className="invoice-audit" aria-label="Auditoria da fatura">
             <div className="invoice-audit-heading"><span className="eyebrow">AUDITORIA AUTOMÁTICA</span><strong>O que encontrei nesta fatura</strong></div>
@@ -334,13 +334,13 @@ export default function InvoiceImporter({ onClose, onImport, transactions }: Pro
                 <label>Tipo<select value={row.type} onChange={e => updateRow(index, { type: e.target.value as "income" | "expense" })}><option value="expense">Despesa</option><option value="income">Receita</option></select></label>\n                <label>Categoria<select value={row.category} onChange={e => updateRow(index, { category: e.target.value })}>{CATEGORIES.map(category => <option key={category}>{category}</option>)}</select></label>
               </div>
             </div>
-            <button type="button" className="icon-btn invoice-remove" title="Remover compra" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
+            <button type="button" className="icon-btn invoice-remove" title="Remover movimentação" aria-label={"Remover " + row.title} onClick={() => setRows(current => current.filter((_, rowIndex) => rowIndex !== index))}><Trash2 size={16}/></button>
           </div>)}</div>
           }
           <button className="primary-btn invoice-action" disabled={busy || !rows.length || !reviewAcknowledged || validation.some(issue => issue.includes("acima de R$ 5.000") || issue.includes("mais de 50% acima"))} onClick={() => void confirmImport()}>{busy ? "Salvando..." : "Confirmar e importar " + rows.length + " movimentação(ões)"}</button>
           <button type="button" className="outline-btn invoice-action" disabled={busy} onClick={() => { setRows([]); setError(""); setStatementTotal(null); setReviewAcknowledged(false); }}>Descartar leitura e tentar novamente</button>
         </div>}
-        <p className="invoice-footnote">A leitura automática pode errar. Confira todos os lançamentos antes de confirmar. Compras parceladas são registradas pelo valor identificado na fatura; confira se esse valor corresponde à parcela, não ao total da compra.</p>
+        <p className="invoice-footnote">A leitura automática pode errar. Confira todos os lançamentos antes de confirmar. Confira se cada valor corresponde à movimentação efetiva, não a um saldo ou total consolidado.</p>
       </>}
     </section>
   </div>;
